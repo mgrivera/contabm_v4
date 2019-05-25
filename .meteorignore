@@ -1,0 +1,4 @@
+
+# este archivo sirve para indicar a meteor que no haga un reload del browser cuando cambien estos files/dirs 
+.tempFiles/
+public/.tempFiles/
