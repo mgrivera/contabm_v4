@@ -1005,13 +1005,20 @@ function determinarProxNumeroFacturaCxC(factura) {
     let response = null;
     let query = ``;
 
+    // las numeraciones se separan para notas de crédito, débito o facturas 
+    let criterioNcNdFactura = "NcNdFlag Is Null"; 
+
+    if (factura.ncNdFlag && factura.ncNdFlag === 'NC') { 
+        criterioNcNdFactura = "NcNdFlag = 'NC'"; 
+    } else if (factura.ncNdFlag && factura.ncNdFlag === 'ND') {  
+        criterioNcNdFactura = "NcNdFlag = 'ND'"; 
+    }
+
     // leemos el mayor número de factura, para la fecha más reciente
     // (nótese como leemos *solo* facturas cuyo numero de factura (nvarchar) sea numérico ...)
-    query = `Select Top 1 NumeroFactura as numeroFactura, NumeroControl as numeroControl,
-             FechaEmision as fechaEmision
+    query = `Select Top 1 NumeroFactura as numeroFactura, FechaEmision as fechaEmision
              From Facturas
-             Where NumeroFactura not like '%[^0-9]%' and NumeroFactura != '' And
-            	   CxCCxPFlag = ? And Cia = ?
+             Where ${criterioNcNdFactura} And NumeroFactura not like '%[^0-9]%' and NumeroFactura != '' And CxCCxPFlag = ? And Cia = ?
              Order by FechaEmision Desc, NumeroFactura Desc
             `;
 
@@ -1048,7 +1055,6 @@ function determinarProxNumeroFacturaCxC(factura) {
     }
 
     let numeroFactura = response.result[0].numeroFactura;
-    let numeroControl = response.result[0].numeroControl;
     let fechaEmision = response.result[0].fechaEmision;         // usamos solo si hay un error ...
 
     // nos *aseguramos* que el número de factura leído sea numérico (aunque el Select intenta ésto ...)
@@ -1069,6 +1075,42 @@ function determinarProxNumeroFacturaCxC(factura) {
 
     let nNumeroFactura = parseInt(numeroFactura) + 1;
     let nNumeroControl = 0;
+
+
+    // el número de control es siempre el *último*, independientemente del tipo: NC, ND o facturas 
+    query = `Select Top 1 NumeroControl as numeroControl
+             From Facturas
+             Where NumeroControl not like '%[^0-9]%' And CxCCxPFlag = ? And Cia = ?
+             Order by FechaEmision Desc, NumeroControl Desc
+            `;
+
+    response = Async.runSync(function(done) {
+        sequelize.query(query,
+            {
+                replacements: [ 2, factura.cia, ],
+                type: sequelize.QueryTypes.SELECT
+            })
+            .then(function(result) { done(null, result); })
+            .catch(function (err) { done(err, null); })
+            .done();
+    })
+
+    if (response.error) {
+        throw new Meteor.Error(response.error && response.error.message ? response.error.message : response.error.toString());
+    }
+
+    let numeroControl = response.result[0].numeroControl;
+
+
+
+
+
+
+
+
+
+
+
 
     // con el Select arriba, no chequeamos que el número de control fuera numérico
     isnum = /^\d+$/.test(numeroControl);
