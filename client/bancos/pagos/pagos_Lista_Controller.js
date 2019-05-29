@@ -13,7 +13,7 @@ function ($scope, $stateParams, $state, $meteor, $modal) {
 
     $scope.closeAlert = function (index) {
         $scope.alerts.splice(index, 1);
-    };
+    }
 
     let companiaSeleccionada = $scope.$parent.companiaSeleccionada;
 
@@ -26,7 +26,7 @@ function ($scope, $stateParams, $state, $meteor, $modal) {
             id: "0",
             limit: limit
         });
-    };
+    }
 
     $scope.regresar = function () {
         $state.go('bancos.pagos.filter', { origen: $scope.origen });
@@ -50,10 +50,8 @@ function ($scope, $stateParams, $state, $meteor, $modal) {
               function (cancel) {
                   return true;
               });
-    };
+    }
 
-
-    let list_ui_grid_api = null;
     let itemSeleccionadoEnLaLista = {};
 
     $scope.list_ui_grid = {
@@ -70,8 +68,6 @@ function ($scope, $stateParams, $state, $meteor, $modal) {
         rowHeight: 25,
 
         onRegisterApi: function (gridApi) {
-
-            list_ui_grid_api = gridApi;
 
             gridApi.selection.on.rowSelectionChanged($scope, function (row) {
                 itemSeleccionadoEnLaLista = {};
@@ -99,8 +95,7 @@ function ($scope, $stateParams, $state, $meteor, $modal) {
         getRowIdentity: function (row) {
             return row._id;
         }
-    };
-
+    }
 
     $scope.list_ui_grid.columnDefs = [
         {
@@ -113,7 +108,6 @@ function ($scope, $stateParams, $state, $meteor, $modal) {
             cellClass: 'ui-grid-leftCell',
             enableColumnMenu: false,
             enableSorting: true,
-            pinnedLeft: true,
             type: 'string'
         },
         {
@@ -127,7 +121,6 @@ function ($scope, $stateParams, $state, $meteor, $modal) {
             cellClass: 'ui-grid-centerCell',
             enableColumnMenu: false,
             enableSorting: true,
-            pinnedLeft: true,
             type: 'date'
         },
         {
@@ -140,7 +133,6 @@ function ($scope, $stateParams, $state, $meteor, $modal) {
             cellClass: 'ui-grid-centerCell',
             enableColumnMenu: false,
             enableSorting: true,
-            pinnedLeft: true,
             type: 'string'
         },
         {
@@ -153,7 +145,6 @@ function ($scope, $stateParams, $state, $meteor, $modal) {
             cellClass: 'ui-grid-leftCell',
             enableColumnMenu: false,
             enableSorting: true,
-            pinnedLeft: true,
             type: 'string'
         },
         {
@@ -166,7 +157,6 @@ function ($scope, $stateParams, $state, $meteor, $modal) {
             cellClass: 'ui-grid-leftCell',
             enableColumnMenu: false,
             enableSorting: true,
-            pinnedLeft: true,
             type: 'string'
         },
         {
@@ -206,14 +196,12 @@ function ($scope, $stateParams, $state, $meteor, $modal) {
             enableSorting: true,
             type: 'number'
         },
-    ];
-
+    ]
 
     $scope.pagos = []
     $scope.list_ui_grid.data = [];
     $scope.showProgress = true;
     let subscriptionHandle = null;
-
 
     $scope.leerRegistrosDesdeServer = (limit) => {
         // la idea es 'paginar' los registros que se suscriben, de 50 en 50
@@ -249,8 +237,8 @@ function ($scope, $stateParams, $state, $meteor, $modal) {
 
             $scope.showProgress = false;
             $scope.$apply();
-        });
-    };
+        })
+    }
 
 
     // al abrir la página, mostramos los primeros 50 items
@@ -278,19 +266,19 @@ function ($scope, $stateParams, $state, $meteor, $modal) {
         // el método regresa la cantidad de items en el collection (siempre para el usuario)
         recordCount = result;
         $scope.leerRegistrosDesdeServer(limit);
-    });
+    })
 
 
     $scope.leerMasRegistros = () => {
         limit += 50;    // la próxima vez, se leerán 50 más ...
         $scope.leerRegistrosDesdeServer(limit);     // cada vez se leen 50 más ...
-    };
+    }
 
     $scope.leerTodosLosRegistros = () => {
         // simplemente, leemos la cantidad total de registros en el collection (en el server y para el user)
         limit = recordCount;
         $scope.leerRegistrosDesdeServer(limit);     // cada vez se leen 50 más ...
-    };
+    }
 
 
 
@@ -301,7 +289,7 @@ function ($scope, $stateParams, $state, $meteor, $modal) {
     $scope.$on('$destroy', function() {
         if (subscriptionHandle && subscriptionHandle.stop) {
             subscriptionHandle.stop();
-        };
-    });
+        }
+    })
   }
-]);
+])

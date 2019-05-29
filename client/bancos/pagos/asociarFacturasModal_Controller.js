@@ -40,7 +40,7 @@ function ($scope, $modalInstance, $modal, $meteor, uiGridConstants, companiaCont
         enableRowHeaderSelection: true,
         multiSelect: true,
         enableSelectAll: false,
-        selectionRowHeaderWidth: 30,
+        selectionRowHeaderWidth: 25,
         rowHeight: 25,
 
         onRegisterApi: function (gridApi) {
@@ -94,68 +94,13 @@ function ($scope, $modalInstance, $modal, $meteor, uiGridConstants, companiaCont
             field: 'numeroFactura',
             displayName: 'Factura',
             width: 80,
-            enableFiltering: true,
+            enableFiltering: false,
             headerCellClass: 'ui-grid-leftCell',
             cellClass: 'ui-grid-leftCell',
             enableColumnMenu: false,
             enableSorting: true,
             pinnedLeft: true,
             type: 'string'
-        },
-        {
-            name: 'ncNdFlag',
-            field: 'ncNdFlag',
-            displayName: 'Nc/Nd',
-            width: 50,
-            enableFiltering: true,
-            headerCellClass: 'ui-grid-centerCell',
-            cellClass: 'ui-grid-centerCell',
-            enableColumnMenu: false,
-            enableSorting: true,
-            pinnedLeft: true,
-            type: 'string'
-        },
-        {
-            name: 'fechaEmision',
-            field: 'fechaEmision',
-            displayName: 'F emis',
-            width: 80,
-            enableFiltering: false,
-            headerCellClass: 'ui-grid-centerCell',
-            cellClass: 'ui-grid-centerCell',
-            cellFilter: 'dateFilter',
-            enableColumnMenu: false,
-            enableSorting: true,
-            pinnedLeft: true,
-            type: 'date'
-        },
-        {
-            name: 'fechaRecepcion',
-            field: 'fechaRecepcion',
-            displayName: 'F recep',
-            width: 80,
-            enableFiltering: false,
-            headerCellClass: 'ui-grid-centerCell',
-            cellClass: 'ui-grid-centerCell',
-            cellFilter: 'dateFilter',
-            enableColumnMenu: false,
-            enableSorting: true,
-            pinnedLeft: true,
-            type: 'date'
-        },
-        {
-            name: 'fechaVencimiento',
-            field: 'fechaVencimiento',
-            displayName: 'F venc',
-            width: 80,
-            enableFiltering: false,
-            headerCellClass: 'ui-grid-centerCell',
-            cellClass: 'ui-grid-centerCell',
-            cellFilter: 'dateFilter',
-            enableColumnMenu: false,
-            enableSorting: true,
-            pinnedLeft: true,
-            type: 'date'
         },
         {
             name: 'numeroCuota',
@@ -169,6 +114,61 @@ function ($scope, $modalInstance, $modal, $meteor, uiGridConstants, companiaCont
             enableSorting: true,
             pinnedLeft: true,
             type: 'number'
+        },
+        {
+            name: 'ncNdFlag',
+            field: 'ncNdFlag',
+            displayName: 'Nc/Nd',
+            width: 50,
+            enableFiltering: false,
+            headerCellClass: 'ui-grid-centerCell',
+            cellClass: 'ui-grid-centerCell',
+            enableColumnMenu: false,
+            enableSorting: true,
+            // pinnedLeft: true,
+            type: 'string'
+        },
+        {
+            name: 'fechaEmision',
+            field: 'fechaEmision',
+            displayName: 'F emis',
+            width: 80,
+            enableFiltering: false,
+            headerCellClass: 'ui-grid-centerCell',
+            cellClass: 'ui-grid-centerCell',
+            cellFilter: 'dateFilter',
+            enableColumnMenu: false,
+            enableSorting: true,
+            // pinnedLeft: true,
+            type: 'date'
+        },
+        {
+            name: 'fechaRecepcion',
+            field: 'fechaRecepcion',
+            displayName: 'F recep',
+            width: 80,
+            enableFiltering: false,
+            headerCellClass: 'ui-grid-centerCell',
+            cellClass: 'ui-grid-centerCell',
+            cellFilter: 'dateFilter',
+            enableColumnMenu: false,
+            enableSorting: true,
+            // pinnedLeft: true,
+            type: 'date'
+        },
+        {
+            name: 'fechaVencimiento',
+            field: 'fechaVencimiento',
+            displayName: 'F venc',
+            width: 80,
+            enableFiltering: false,
+            headerCellClass: 'ui-grid-centerCell',
+            cellClass: 'ui-grid-centerCell',
+            cellFilter: 'dateFilter',
+            enableColumnMenu: false,
+            enableSorting: true,
+            // pinnedLeft: true,
+            type: 'date'
         },
         {
             name: 'montoCuota',
@@ -395,9 +395,9 @@ function ($scope, $modalInstance, $modal, $meteor, uiGridConstants, companiaCont
     $scope.grabarPagos = () => {
 
         // nótese como obtenemos los selected rows en el ui-grid
-        let selectedRows = facturas_ui_grid_api.selection.getSelectedRows();
+        const count = facturas_ui_grid_api.selection.getSelectedCount();
 
-        if (!selectedRows || !_.isArray(selectedRows) || !selectedRows.length) {
+        if (!count) {
             DialogModal($modal, "<em>Bancos - Pagos</em>",
             `Aparentemente, Ud. no ha seleccionado ninguna factura en la lista.<br />
              Por favor seleccione al menos una factura en la lista antes de intentar
@@ -407,9 +407,16 @@ function ($scope, $modalInstance, $modal, $meteor, uiGridConstants, companiaCont
             return;
         }
 
+        // note: a partir de una versión reciente de ui-grid, no pudimos obtener más las selected entities desde 
+        // selection.getSelectedRows(). getSelectedGridRows() si funciona correctamente, sin embargo ... 
+        let selectedRows = facturas_ui_grid_api.selection.getSelectedGridRows();
+
         // todos los pagos a efectuar deben tener un monto a pagar ...
-        selectedRows.forEach((pago) => {
-            if (!pago.montoAPagar) {
+        selectedRows.forEach((gridRow) => {
+
+            const factura = gridRow.entity; 
+
+            if (!factura.montoAPagar) {
                 DialogModal($modal, "<em>Bancos - Pagos</em>",
                 `Aparentemente, Ud. no ha indicado un monto a pagar para alguna de las facturas seleccionadas.<br />
                  Por favor indique un monto a pagar para cada factura seleccionada en la lista.
@@ -423,7 +430,10 @@ function ($scope, $modalInstance, $modal, $meteor, uiGridConstants, companiaCont
         let pagosArray = [];
         let pagoItem = {};
 
-        selectedRows.forEach((factura) => {
+        selectedRows.forEach((gridRow) => {
+
+            const factura = gridRow.entity; 
+
             pagoItem = {
                 claveUnicaPago: pago.claveUnica,
                 claveUnicaFactura: factura.claveUnicaFactura,
@@ -471,7 +481,6 @@ function ($scope, $modalInstance, $modal, $meteor, uiGridConstants, companiaCont
                 });
                 $scope.showProgress = false;
             });
-
     }
 }
-]);
+])

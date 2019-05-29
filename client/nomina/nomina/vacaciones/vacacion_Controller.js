@@ -2,6 +2,7 @@
 
 import { DialogModal } from '/client/imports/general/genericUIBootstrapModal/angularGenericModal'; 
 import { Empleados } from '/models/nomina/empleados'; 
+import { GruposEmpleados } from '/models/nomina/catalogos'; 
 import { mensajeErrorDesdeMethod_preparar } from '/client/imports/clientGlobalMethods/mensajeErrorDesdeMethod_preparar'; 
 
 angular.module("contabm").controller("Nomina_Vacacion_Controller",
