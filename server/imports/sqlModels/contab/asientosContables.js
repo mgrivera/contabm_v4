@@ -1,8 +1,11 @@
 
-import { sequelize } from '../_globals/_loadThisFirst/_globals';
-import Sequelize from 'sequelize';
 
-AsientosContables_sql = sequelize.define('AsientosContables_sql', {
+import { sequelize } from '../../../../server/sqlModels/_globals/_loadThisFirst/_globals';
+import * as Sequelize from 'sequelize';
+
+import { CuentasContables_sql } from './cuentasContables'; 
+
+export const AsientosContables_sql = sequelize.define('AsientosContables_sql', {
     numeroAutomatico: { type: Sequelize.INTEGER, field: 'NumeroAutomatico', allowNull: false, autoIncrement: true, primaryKey: true,},
     numero: { type: Sequelize.INTEGER, field: 'Numero', allowNull: false, },
     mes: { type: Sequelize.INTEGER, field: 'Mes', allowNull: false,  },
@@ -18,7 +21,7 @@ AsientosContables_sql = sequelize.define('AsientosContables_sql', {
     provieneDe_id: { type: Sequelize.INTEGER, field: 'ProvieneDe_ID', allowNull: true, },
     ingreso: { type: Sequelize.DATE, field: 'Ingreso', allowNull: false, },
     ultAct: { type: Sequelize.DATE, field: 'UltAct', allowNull: false,  },
-    copiablaFlag: { type: Sequelize.BOOLEAN, field: 'CopiableFlag', allowNull: true, },
+    copiableFlag: { type: Sequelize.BOOLEAN, field: 'CopiableFlag', allowNull: true, },
     asientoTipoCierreAnualFlag: { type: Sequelize.BOOLEAN, field: 'AsientoTipoCierreAnualFlag', allowNull: true, },
     mesFiscal: { type: Sequelize.INTEGER, field: 'MesFiscal', allowNull: false, },
     anoFiscal: { type: Sequelize.INTEGER, field: 'AnoFiscal', allowNull: false, },
@@ -30,7 +33,7 @@ AsientosContables_sql = sequelize.define('AsientosContables_sql', {
 });
 
 
-dAsientosContables_sql = sequelize.define('AsientosContables_sql', {
+export const dAsientosContables_sql = sequelize.define('AsientosContables_sql', {
     numeroAutomatico: { type: Sequelize.INTEGER, field: 'NumeroAutomatico', allowNull: false, autoIncrement: false, primaryKey: true, },
     partida: { type: Sequelize.INTEGER, field: 'Partida', allowNull: false, autoIncrement: false, primaryKey: true, },
     cuentaContableID: { type: Sequelize.INTEGER, field: 'CuentaContableID', allowNull: false,  },

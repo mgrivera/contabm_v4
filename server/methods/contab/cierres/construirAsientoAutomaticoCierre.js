@@ -1,8 +1,13 @@
 
+
 import { sequelize } from '/server/sqlModels/_globals/_loadThisFirst/_globals';
 import moment from 'moment';
 import numeral from 'numeral';
 import { TimeOffset } from '/globals/globals'; 
+
+import { MesesDelAnoFiscal_sql } from '/server/imports/sqlModels/contab/contab'; 
+import { AsientosContables_sql, dAsientosContables_sql } from '/server/imports/sqlModels/contab/asientosContables';
+import { CuentasContables_sql } from '/server/imports/sqlModels/contab/cuentasContables'; 
 
 Meteor.methods(
 {
@@ -104,8 +109,14 @@ Meteor.methods(
             methodResult = Meteor.call('eventDDP_matchEmit', eventName, eventSelector, eventData);
             // -------------------------------------------------------------------------------------------------------------
 
+            console.log("1) obtener número del asiento ... ")
+
             let numeroContabAsientoAutomatico =
                 determinarNumeroContabAsientoAutomatico(moneda, primerDiaMes, ultimoDiaMes, ciaContab);
+
+            console.log(`1) obtener número del asiento - Ok, número ${numeroContabAsientoAutomatico} ... `)
+            
+            console.log("2) leer saldos GyP ... ")
 
             // leemos los saldos del mes 12, para cuentas
             // contables de tipo gastos/ingresos. Estos saldos deben ser, justamente, revertidos, para
@@ -558,7 +569,7 @@ function determinarNumeroContabAsientoAutomatico(moneda, primerDiaMes, ultimoDia
         // el asiento automático no existe; determinamos un número de asiento Contab ...
 
         // TODO: (very important!!!) debemos revisar y cambiar esta función, para que permita determinar un número
-        // de asiento para el mes 12, cuando este está cerrado. En realidad, estamos agrgando asientos de cierre y el
+        // de asiento para el mes 12, cuando este mes está cerrado. En realidad, estamos agrgando asientos de cierre y el
         // mes 12 debe estar cerrado, más no el mes 13 ...
 
         let asientoTipoCierreAnualFlag = true;
@@ -575,7 +586,6 @@ function determinarNumeroContabAsientoAutomatico(moneda, primerDiaMes, ultimoDia
                                    `Error: ha ocurrido un error al intentar obtener un número de asiento Contab. <br />
                                    El mensaje específico del error es: <br />
                                    ${numeroAsientoContab.errMessage}`);
-
         };
 
         numeroAsiento = numeroAsientoContab.numeroAsientoContab;

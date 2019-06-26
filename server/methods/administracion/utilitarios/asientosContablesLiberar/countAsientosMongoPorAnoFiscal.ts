@@ -1,6 +1,13 @@
 
 
 import SimpleSchema from 'simpl-schema';
+import * as moment from 'moment'; 
+
+import { Companias } from 'imports/collections/companias';
+import { CompaniaSeleccionada } from 'imports/collections/companiaSeleccionada';
+import { AsientosContables_respaldo_headers } from "imports/collections/contab/asientosContables_respaldo";
+import { AsientosContables_respaldo_asientos } from "imports/collections/contab/asientosContables_respaldo";
+import { AsientosContables_respaldo_partidas } from "imports/collections/contab/asientosContables_respaldo";
 
 Meteor.methods(
 {
@@ -10,38 +17,52 @@ Meteor.methods(
             ciaContabID: { type: SimpleSchema.Integer, optional: false, },
         }).validate({ ciaContabID, });
 
-        const items = [ 
-            { ano: 2008, count: 3850, }, 
-            { ano: 2009, count: 4500, }, 
-            { ano: 2010, count: 1385, }, 
-            { ano: 2011, count: 2500, }, 
-            { ano: 2012, count: 9850, }, 
-            { ano: 2013, count: 5400, }, 
-            { ano: 2014, count: 3001, }, 
-            { ano: 2015, count: 910, }, 
-            { ano: 2016, count: 4875, }, 
-            { ano: 2017, count: 1900, }, 
-            { ano: 2018, count: 8700, }, 
-            { ano: 2019, count: 150, }, 
-        ]; 
+        // leemos la compañía seleccionada por el usuario 
+        let companiaSeleccionadaUsuario = CompaniaSeleccionada.findOne({ userID: this.userId });
 
-        return hacerTiempo(5000, items); 
+        if (!companiaSeleccionadaUsuario) {
+            let message = `Error inesperado: no pudimos leer la compañía Contab seleccionada por el usuario.<br />
+                           No se ha seleccionado una compañía antes de ejecutar este proceso?`; 
+            message = message.replace(/\/\//g, '');     // quitamos '//' del query; typescript agrega estos caracteres???
+
+            return { 
+                error: true, 
+                message: message, 
+            }
+        }
+
+        const companiaSeleccionada = Companias.findOne(companiaSeleccionadaUsuario ? companiaSeleccionadaUsuario.companiaID : -999, { fields: { abreviatura: 1 }});
+
+        // 1) leemos los items en ...headers, ordenados por año fiscal 
+        const headers = AsientosContables_respaldo_headers.find({ ciaContab: ciaContabID }, { sort: { anoFiscal: 1, fecha: 1, }}).fetch(); 
+
+        // para cada row leído, leemos la cantidad de asientos y la cantidad de partidas; 
+        // regresamos estos datos para mostrarlos al usuario 
+        let respaldoArray: {}[] = []; 
+
+        for (let header of headers) { 
+
+            const countAsientos = AsientosContables_respaldo_asientos.find({ headerId: header._id }).count(); 
+            const countPartidas = AsientosContables_respaldo_partidas.find({ headerId: header._id }).count(); 
+
+            respaldoArray.push({ 
+                headerId: header._id, 
+                anoFiscal: header.anoFiscal, 
+                fecha: header.fecha ? moment(header.fecha).format("YYYY-MMM-DD H:m a") : "invalid", 
+                countAsientos: countAsientos, 
+                countPartidas: countPartidas, 
+                cia: ciaContabID, 
+                nombreCia: companiaSeleccionada.abreviatura
+            })
+        }
+
+        let message = `Ok, la cantidad de asientos contables por año fiscal, ha sido leída de forma satisfactoria.`; 
+            message = message.replace(/\/\//g, '');     // quitamos '//' del query; typescript agrega estos caracteres???
+
+        return { 
+            error: false, 
+            message: message, 
+            items: respaldoArray
+        }; 
     }
 })
-
-const hacerTiempo = (time: number, items: {}[]) => { 
-    return new Promise((resolve, reject) => { 
-        setTimeout(function(){ 
-
-            let message = `Ok, la cantidad de asientos contables por año fiscal, ha sido leída de forma satisfactoria.`; 
-            message = message.replace(/\/\//g, '');     // quitamos '//' del query; typescript agrega estos caracteres???
-    
-            resolve({ 
-                error: false, 
-                message: message, 
-                items: items
-            }) 
-
-         }, time);
-    }); 
-}

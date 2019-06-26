@@ -2,6 +2,8 @@
 import moment from 'moment';
 import { TimeOffset } from '/globals/globals'; 
 
+import { AsientosContables_sql, dAsientosContables_sql } from '/server/imports/sqlModels/contab/asientosContables'; 
+
 Meteor.methods(
 {
     'asientoContable.leerByFilter.desdeSql': function (filter) {

@@ -3,8 +3,6 @@ import { sequelize } from '/server/sqlModels/_globals/_loadThisFirst/_globals';
 
 let  determinarNumeroAsientoContab = (fechaAsiento, tipoAsiento, ciaContab, asientoTipoCierreAnualFlag) => {
 
-    // debugger;
-
     // esta función determina y regresa un número de asiento Contab. Nótese que el número determinado
     // depende de si se genera por grupos de tipo o no. Esto lo determina un flag en ParametrosContab:
     // NumeracionAsientosSeparadaFlag.
@@ -51,11 +49,10 @@ let  determinarNumeroAsientoContab = (fechaAsiento, tipoAsiento, ciaContab, asie
                      compañía Contab seleccionada.`;
 
         return { error: true, errMessage: errMessage };
-    };
+    }
 
     // lo primero que hacemos es determinar si el número se genera de acuerdo al tipo del asiento
     let numeracionAsientosSeparadaFlag = response.result[0].NumeracionAsientosSeparadaFlag;
-
 
     if (typeof numeracionAsientosSeparadaFlag == 'undefined' || numeracionAsientosSeparadaFlag == null) {
         errMessage = "Error: aparentemente, no se ha definido si la numeración de los asientos es o " +
@@ -63,7 +60,7 @@ let  determinarNumeroAsientoContab = (fechaAsiento, tipoAsiento, ciaContab, asie
             "Por favor abra la tabla <em>parámetros</em> en Contab y defina un valor para este item.";
 
         return { error: true, errMessage: errMessage };
-    };
+    }
 
 
     if (!numeracionAsientosSeparadaFlag)
@@ -80,7 +77,7 @@ let  determinarNumeroAsientoContab = (fechaAsiento, tipoAsiento, ciaContab, asie
                 .then(function(result) { done(null, result); })
                 .catch(function (err) { done(err, null); })
                 .done();
-        });
+        })
 
         if (response.error)
             throw new Meteor.Error(response.error && response.error.message ? response.error.message : response.error.toString());
@@ -98,7 +95,7 @@ let  determinarNumeroAsientoContab = (fechaAsiento, tipoAsiento, ciaContab, asie
                     .then(function(result) { done(null, result); })
                     .catch(function (err) { done(err, null); })
                     .done();
-            });
+            })
 
             if (response.error)
                 throw new Meteor.Error(response.error && response.error.message ? response.error.message : response.error.toString());
@@ -138,7 +135,7 @@ let  determinarNumeroAsientoContab = (fechaAsiento, tipoAsiento, ciaContab, asie
 
         if (response.result.length == 0 || response.result[0].Grupo == null) {
             errMessage = `Error: aparentemente, no se ha definido el <em>grupo</em> al cual corresponde el tipo de asientos
-                que Ud. ha indicado para el asiento contable.<br />
+                (${tipoAsiento}) que Ud. ha indicado para el asiento contable.<br />
                 Como la numeración de los asientos contables es <em>separada de acuerdo a su tipo</em>
                 (según está ahora definido en el sistema <em>Contab</em>), cada tipo de asientos debe corresponder
                 a un grupo (de tipos de asiento).<br />
@@ -234,6 +231,5 @@ let  determinarNumeroAsientoContab = (fechaAsiento, tipoAsiento, ciaContab, asie
 
     return { error: false, numeroAsientoContab: numeroAsientoContab };
 };
-
 
 ContabFunctions.determinarNumeroAsientoContab = determinarNumeroAsientoContab;

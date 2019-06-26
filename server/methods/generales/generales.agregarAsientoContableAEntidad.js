@@ -21,6 +21,7 @@ import { ParametrosGlobalBancos } from '/imports/collections/bancos/parametrosGl
 import { Monedas_sql } from '../../imports/sqlModels/monedas'; 
 import { Chequeras_sql } from '/server/imports/sqlModels/bancos/movimientosBancarios'; 
 import { Bancos } from '/imports/collections/bancos/bancos';
+import { AsientosContables_sql, dAsientosContables_sql } from '/server/imports/sqlModels/contab/asientosContables'; 
 
 Meteor.methods({
    'generales.agregarAsientoContableAEntidad': function (provieneDe, provieneDe_ID, ciaContabSeleccionada_ID) {

@@ -1,6 +1,4 @@
 
-import moment from 'moment';
-import lodash from 'lodash';
 import numeral from 'numeral';
 import { sequelize } from '/server/sqlModels/_globals/_loadThisFirst/_globals';
 import SimpleSchema from 'simpl-schema';
@@ -36,7 +34,7 @@ Meteor.methods(
         let methodResult = Meteor.call('eventDDP_matchEmit', eventName, eventSelector, eventData);
         // -------------------------------------------------------------------------------------------------------------
 
-        deleteFromSql_result = eliminarRegistrosSql('Pagos', ciaContab.numero);
+        let deleteFromSql_result = eliminarRegistrosSql('Pagos', ciaContab.numero);
 
         if (deleteFromSql_result.error) {
           return {
@@ -62,7 +60,7 @@ Meteor.methods(
         methodResult = Meteor.call('eventDDP_matchEmit', eventName, eventSelector, eventData);
         // ---------------------------------------------------------------------------------------------------
         // intentamos eliminar las facturas
-        let deleteFromSql_result = eliminarRegistrosSql('Facturas', ciaContab.numero);
+        deleteFromSql_result = eliminarRegistrosSql('Facturas', ciaContab.numero);
 
         if (deleteFromSql_result.error) {
           return {

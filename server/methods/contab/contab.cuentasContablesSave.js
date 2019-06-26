@@ -1,5 +1,8 @@
 
+
 import lodash from 'lodash';
+import { AsientosContables_sql, dAsientosContables_sql } from '/server/imports/sqlModels/contab/asientosContables'; 
+import { CuentasContables_sql } from '/server/imports/sqlModels/contab/cuentasContables'; 
 
 Meteor.methods(
 {

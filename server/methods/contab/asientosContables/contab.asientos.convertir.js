@@ -5,6 +5,8 @@ import { Monedas } from '/imports/collections/monedas';
 import { sequelize } from '/server/sqlModels/_globals/_loadThisFirst/_globals';
 import { TimeOffset } from '/globals/globals'; 
 
+import { AsientosContables_sql, dAsientosContables_sql } from '/server/imports/sqlModels/contab/asientosContables'; 
+
 Meteor.methods(
 {
     'contab.asientos.convertir': function (asientoContableID) {

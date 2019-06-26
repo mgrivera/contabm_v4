@@ -13,6 +13,8 @@ import { Chequeras } from '/imports/collections/bancos/chequeras';
 import { AsientosContables } from '/imports/collections/contab/asientosContables'; 
 import { ParametrosGlobalBancos } from '/imports/collections/bancos/parametrosGlobalBancos'; 
 
+import { AsientosContables_sql, dAsientosContables_sql } from '/server/imports/sqlModels/contab/asientosContables'; 
+
 Meteor.methods(
 {
     bancos_itf_generarAsientoContable: function (ciaContab) {

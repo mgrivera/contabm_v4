@@ -1,8 +1,9 @@
 
-import { sequelize } from '../_globals/_loadThisFirst/_globals';
+
+import { sequelize } from '../../../../server/sqlModels/_globals/_loadThisFirst/_globals';
 import Sequelize from 'sequelize';
 
-CuentasContables_sql = sequelize.define('cuentaContable', {
+export const CuentasContables_sql = sequelize.define('cuentaContable', {
     id: { type: Sequelize.INTEGER, field: 'ID', primaryKey: true, autoIncrement: true, allowNull: false, },
     cuenta: { type: Sequelize.STRING, field: 'Cuenta', allowNull: false, validate: { isNumeric: true, len: [1, 25]}},
     descripcion: { type: Sequelize.STRING, allowNull: false, field: 'Descripcion', validate: { len: [1, 40], } },

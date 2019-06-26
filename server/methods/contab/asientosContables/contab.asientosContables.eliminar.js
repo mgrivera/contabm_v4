@@ -1,6 +1,7 @@
 
 
 import * as lodash from 'lodash';
+import { AsientosContables_sql } from '/server/imports/sqlModels/contab/asientosContables'; 
 
 Meteor.methods(
 {

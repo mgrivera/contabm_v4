@@ -5,6 +5,7 @@ import moment from 'moment';
 import { Monedas } from '/imports/collections/monedas';
 
 import { sequelize } from '/server/sqlModels/_globals/_loadThisFirst/_globals';
+import { CuentasContables_sql } from '/server/imports/sqlModels/contab/cuentasContables'; 
 
 Meteor.methods(
 {

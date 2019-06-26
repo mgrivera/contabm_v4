@@ -1,5 +1,7 @@
 
+
 import moment from 'moment';
+import { MesesDelAnoFiscal_sql } from '/server/imports/sqlModels/contab/contab'; 
 
 let validarMesCerradoEnContab = (fecha, ciaContab, asientoTipoCierreAnualFlag) => {
 
@@ -7,7 +9,7 @@ let validarMesCerradoEnContab = (fecha, ciaContab, asientoTipoCierreAnualFlag) =
 
       if (typeof asientoTipoCierreAnualFlag === 'undefined') {
          asientoTipoCierreAnualFlag = false;
-       };
+       }
       // ----------------------------------------------------------------------------------------------
       // determinamos el mes y año fiscal en base al mes y año calendario del asiento
 
@@ -22,7 +24,7 @@ let validarMesCerradoEnContab = (fecha, ciaContab, asientoTipoCierreAnualFlag) =
               .then(function(result) { done(null, result); })
               .catch(function (err) { done(err, null); })
               .done();
-      });
+      })
 
       if (response.error)
           throw new Meteor.Error(response.error && response.error.message ? response.error.message : response.error.toString());
@@ -33,7 +35,7 @@ let validarMesCerradoEnContab = (fecha, ciaContab, asientoTipoCierreAnualFlag) =
               Por favor revise y corrija esta situación.`;
 
           return { error: true, errMessage: errMessage };
-      };
+      }
 
 
       let mesAnoFiscal = response.result.rows[0].dataValues;
@@ -65,7 +67,7 @@ let validarMesCerradoEnContab = (fecha, ciaContab, asientoTipoCierreAnualFlag) =
             "Por favor revise y corrija esta situación.`;
 
         return { error: true, errMessage: errMessage };
-    };
+    }
 
     let ultimoMesCerrado = response.result[0];
 
@@ -79,8 +81,7 @@ let validarMesCerradoEnContab = (fecha, ciaContab, asientoTipoCierreAnualFlag) =
         // cuando el mes (fiscal!) cerrado en anterior a 12, la validación es muy simple
 
         if ((anoFiscal_asientoContable < anoCerradoContab_Fiscal) ||
-            (anoFiscal_asientoContable == anoCerradoContab_Fiscal &&
-             mesFiscal_asientoContable <= mesCerradoContab_Fiscal)) {
+            (anoFiscal_asientoContable == anoCerradoContab_Fiscal && mesFiscal_asientoContable <= mesCerradoContab_Fiscal)) {
 
             errMessage = `Error: la fecha que se desea editar o registrar, corresponde a un mes ya cerrado en <em>Contab</em>.<br />
                          Ud. no puede alterar un mes ya cerrado en <em>Contab</em>.`;
@@ -89,7 +90,7 @@ let validarMesCerradoEnContab = (fecha, ciaContab, asientoTipoCierreAnualFlag) =
         };
 
         return { error: false };
-    };
+    }
 
     // en adelante en este código, el mes cerrado (fiscal) es 12 o 13 ...
 
@@ -102,7 +103,7 @@ let validarMesCerradoEnContab = (fecha, ciaContab, asientoTipoCierreAnualFlag) =
                          Ud. no puede alterar un mes ya cerrado en <em>Contab</em>.`;
 
             return { error: true, errMessage: errMessage };
-        };
+        }
 
         if (anoFiscal_asientoContable = anoCerradoContab_Fiscal) {
 
@@ -117,7 +118,7 @@ let validarMesCerradoEnContab = (fecha, ciaContab, asientoTipoCierreAnualFlag) =
         // aunque el cierre anual fue efectuado y no el traspaso de saldos, el asiento que se intenta grabar
         // corresponde a un mes de un año **posterior**; permitirmos ...
         return { error: false };
-    };
+    }
 
     if (mesCerradoContab_Fiscal == 12) {
         // en la contabilidad, para la cia del asiento, se hizo el cierre mensual para el último mes del año fiscal
@@ -168,9 +169,6 @@ let validarMesCerradoEnContab = (fecha, ciaContab, asientoTipoCierreAnualFlag) =
         asientos contables de tipo <em>cierre anual</em>.`;
 
         return { error: true, errMessage: errMessage };
-            // }
-
-        // return true;
     };
 
     return { error: false };

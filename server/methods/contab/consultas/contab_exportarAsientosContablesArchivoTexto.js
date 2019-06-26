@@ -3,6 +3,9 @@ import moment from 'moment';
 import numeral from 'numeral';
 import { TimeOffset } from '/globals/globals'; 
 
+import { AsientosContables_sql, dAsientosContables_sql } from '/server/imports/sqlModels/contab/asientosContables'; 
+import { CuentasContables_sql } from '/server/imports/sqlModels/contab/cuentasContables'; 
+
 Meteor.methods(
 {
     exportarAsientosContablesAArchivoTexto: function () {

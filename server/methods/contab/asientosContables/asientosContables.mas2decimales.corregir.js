@@ -1,12 +1,12 @@
 
 
-
-
 import SimpleSchema from 'simpl-schema';
 import lodash from 'lodash';     
 import numeral from 'numeral';    
 import moment from 'moment'; 
 import { TimeOffset } from '/globals/globals';    
+
+import { AsientosContables_sql, dAsientosContables_sql } from '/server/imports/sqlModels/contab/asientosContables'; 
 
 Meteor.methods(
 {

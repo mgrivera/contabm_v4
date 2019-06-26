@@ -31,6 +31,8 @@ import { Bancos } from '/imports/collections/bancos/bancos';
 import { Chequeras_sql } from '/server/imports/sqlModels/bancos/movimientosBancarios'; 
 import { Monedas_sql } from '/server/imports/sqlModels/monedas'; 
 
+import { AsientosContables_sql, dAsientosContables_sql } from '/server/imports/sqlModels/contab/asientosContables'; 
+
 import { Companias } from '/imports/collections/companias';
 import { CompaniaSeleccionada } from '/imports/collections/companiaSeleccionada';
 
