@@ -19,13 +19,13 @@ Meteor.methods(
 
         let lista = [];
 
-        if (_.isArray(asientosContablesSeleccionados) && asientosContablesSeleccionados.length > 0) {
+        if (Array.isArray(asientosContablesSeleccionados) && asientosContablesSeleccionados.length > 0) {
             asientosContablesSeleccionados.forEach((a) => {
                 lista.push(a.numeroAutomatico);
             });
 
             filtro.NumeroAutomatico = { $in: lista };
-        };
+        }
 
         // ---------------------------------------------------------------------------------------------------
         let response = null;
@@ -37,7 +37,7 @@ Meteor.methods(
                 .then(function(result) { done(null, result); })
                 .catch(function (err) { done(err, null); })
                 .done();
-        });
+        })
 
         if (response.error)
             throw new Meteor.Error(response.error && response.error.message ? response.error.message : response.error.toString());
@@ -47,7 +47,7 @@ Meteor.methods(
 
         if (!response.result.length) {
             return "Cero registros han sido leídos desde la base de datos en el servidor.";
-        };
+        }
 
         // -------------------------------------------------------------------------------------------------------------
         // para reportar progreso solo 20 veces; si hay menos de 20 registros, reportamos siempre ...
@@ -103,7 +103,8 @@ Meteor.methods(
                     periodo: `${asientoContable.mes.toString()}-${asientoContable.ano.toString()}`,
                     tipo: asientoContable.tipo,
                     numero: asientoContable.numero.toString(),
-                    comprobante: asientoContable.descripcion,
+                    comprobante_descripcion: asientoContable.descripcion,
+                    provieneDe: asientoContable.provieneDe, 
                     cuenta: p[ 'cuentaContable.cuenta' ],
                     nombreCuenta: p[ 'cuentaContable.descripcion' ],
                     descripcion: p.descripcion,
