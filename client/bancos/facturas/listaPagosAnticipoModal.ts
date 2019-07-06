@@ -126,9 +126,10 @@ function ($scope, $modalInstance, pagosAnticipoArray, ciaSeleccionada) {
     let message = `Hemos leído <b>${pagosAnticipoArray.length.toString()}</b> pagos de anticipo registrados para esta compañía. 
                    Estos son pagos <em>sin facturas asociadas</em>.<br />
                    Si Ud. selecciona un pago en la lista, el monto de anticipo en la factura será actualizado con su monto.<br /><br />
-                   <b>Nota importante:</b> si algún pago de anticipo aplica a esta factura, Ud. deberá <b>después</b> abrir el pago y 
-                   asociar la factura que está ahora registrando. De esa forma, disminuirá el monto del pago del saldo pendiente de la 
-                   factura.
+                   <b>Nota importante:</b> si algún pago de anticipo aplica a esta factura, Ud. deberá <b>después</b> asociar 
+                   la factura al pago; ésto podrá ser efectuado una vez que Ud. complete el registro de la factura y haga un 
+                   <em>click</em> en <em>Grabar</em>.  
+                   
                   `
     message = message.replace(/\/\//g, '');     // quitamos '//' del query; typescript agrega estos caracteres??? 
 

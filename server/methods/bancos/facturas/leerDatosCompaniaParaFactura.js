@@ -14,12 +14,10 @@ Meteor.methods(
             companiaSeleccionadaID: { type: Number, optional: false }, 
           }).validate({ pk, companiaSeleccionadaID });
 
-        let query = `Select Ciudad as ciudad, AplicaIvaFlag as aplicaIvaFlag,
-                     ContribuyenteEspecialFlag as contribuyenteEspecialFlag,
-                     SujetoARetencionFlag as sujetoARetencionFlag,
-                     NuestraRetencionSobreIvaPorc as nuestraRetencionSobreIvaPorc, 
-                     RetencionSobreIvaPorc as retencionSobreIvaPorc 
-                     From Proveedores Where Proveedor = ?`;
+        let query = `Select Ciudad as ciudad, AplicaIvaFlag as aplicaIvaFlag, ContribuyenteEspecialFlag as contribuyenteEspecialFlag,
+                     Abreviatura as abreviatura, 
+                     SujetoARetencionFlag as sujetoARetencionFlag, NuestraRetencionSobreIvaPorc as nuestraRetencionSobreIvaPorc, 
+                     RetencionSobreIvaPorc as retencionSobreIvaPorc From Proveedores Where Proveedor = ?`;
 
         let response = null;
         response = Async.runSync(function(done) {
@@ -31,13 +29,13 @@ Meteor.methods(
                 .then(function(result) { done(null, result); })
                 .catch(function (err) { done(err, null); })
                 .done();
-        });
+        })
 
         if (response.error) {
             throw new Meteor.Error(response.error && response.error.message ? response.error.message : response.error.toString());
         }
 
-        if (!_.isArray(response.result) || !response.result.length) {
+        if (!Array.isArray(response.result) || !response.result.length) {
             return {
                 error: true,
                 message: `Error (inesperado): hemos obtenido un error al intentar leer la compañía desde la base de datos.<br /> 
@@ -59,11 +57,12 @@ Meteor.methods(
             }
         }
 
+        // ---------------------------------------------------------------------------------------------------------------
         // leemos los pagos de anticipo *sin facturas asociadas* (sin registros en dPagos) que pueda tener el proveedor 
         query = `Select Pagos.ClaveUnica as _id, NumeroPago as numeroPago, Fecha as fecha, Monto as monto, Concepto as concepto, 
                  dPagos.MontoPagado as montoPagado 
                  From Pagos Left Outer Join dPagos On Pagos.ClaveUnica = dPagos.ClaveUnicaPago 
-                 Where Proveedor = ? And AnticipoFlag = 1 And Cia = ? and montoPagado Is Null`;
+                 Where Proveedor = ? And AnticipoFlag = 1 And Cia = ? and MontoPagado Is Null`;
 
         response = null;
         response = Async.runSync(function(done) {
@@ -83,11 +82,10 @@ Meteor.methods(
 
         let pagosAnticipoArray = []; 
 
-        // TODO: aquí debemos leer solo pagos *sin* facturas asociadas ... 
-
         if (response.result.length) {
             for (let pago of response.result) { 
                 pago.fecha = moment(pago.fecha).add(TimeOffset, 'hours').toDate();
+                pago.proveedor = proveedor.abreviatura, 
                 pagosAnticipoArray.push(pago); 
             }
         }
@@ -95,4 +93,4 @@ Meteor.methods(
         return JSON.stringify({ datosProveedor: proveedor, 
                                 pagosAnticipo: pagosAnticipoArray }); 
     }
-});
+})

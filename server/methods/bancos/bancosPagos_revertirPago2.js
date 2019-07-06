@@ -29,9 +29,10 @@ Meteor.methods(
                 .done();
         });
 
-        if (response.error)
+        if (response.error) { 
             throw new Meteor.Error(response.error && response.error.message ? response.error.message : response.error.toString());
-
+        }
+            
         let registrosEndPagos = 0;
 
         response.result.forEach((pago) => {
@@ -54,11 +55,12 @@ Meteor.methods(
                     .then(function(result) { done(null, result); })
                     .catch(function (err) { done(err, null); })
                     .done();
-            });
+            })
 
-            if (response.error)
+            if (response.error) { 
                 throw new Meteor.Error(response.error && response.error.message ? response.error.message : response.error.toString());
-
+            }
+                
             let cuotaFactura = response.result[0];
 
             cuotaFactura.saldoCuota += pago.montoPagado;
@@ -83,10 +85,11 @@ Meteor.methods(
                     .then(function(result) { done(null, result); })
                     .catch(function (err) { done(err, null); })
                     .done();
-            });
+            })
 
-            if (response.error)
+            if (response.error) { 
                 throw new Meteor.Error(response.error && response.error.message ? response.error.message : response.error.toString());
+            }  
 
             // revertimos el saldo y estado en la factura; nótese que su pk fue leído al leer la cuota
             // si el total a pagar es igual al monto pagado (en dPagos), al sumar este monto quedará en en saldo original,
@@ -106,11 +109,12 @@ Meteor.methods(
                     .then(function(result) { done(null, result); })
                     .catch(function (err) { done(err, null); })
                     .done();
-            });
+            })
 
-            if (response.error)
+            if (response.error) { 
                 throw new Meteor.Error(response.error && response.error.message ? response.error.message : response.error.toString());
-
+            }
+                
             registrosEndPagos++;
         })
 
@@ -127,13 +131,15 @@ Meteor.methods(
                 .then(function(result) { done(null, result); })
                 .catch(function (err) { done(err, null); })
                 .done();
-        });
+        })
 
-        if (response.error)
+        if (response.error) { 
             throw new Meteor.Error(response.error && response.error.message ? response.error.message : response.error.toString());
-
-        // ponemos el monto del pago en Nulls
-        query = `Update Pagos Set Monto = null Where ClaveUnica = ?`;
+        }
+            
+        // ponemos el monto del pago en Nulls *solo* si el pago no es un anticipo. Normalmente, el usuario *si* registra un 
+        // monto cuando el pago es un anticipo ... 
+        query = `Update Pagos Set Monto = null Where ClaveUnica = ? And AnticipoFlag <> 1`;
 
         response = null;
         response = Async.runSync(function(done) {
@@ -147,10 +153,10 @@ Meteor.methods(
                 .done();
         });
 
-        if (response.error)
+        if (response.error) { 
             throw new Meteor.Error(response.error && response.error.message ? response.error.message : response.error.toString());
-
-
+        }
+            
         return {
             error: false,
             message: `Ok, el pago fue revertido en forma satisfactoria.<br />

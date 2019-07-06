@@ -71,12 +71,19 @@ function ($scope, $stateParams, $state, $meteor, $modal, uiGridConstants, leerTa
     $scope.fechaEmisionOriginal = null;
     $scope.fechaRecepcionOriginal = null;
 
+    // para que el usuario pueda indicar pagos de anticipo asociados a la factura 
+    $scope.pagosAnticipoSeleccionados_array = []; 
+
     $scope.setIsEdited = function (value) {
 
         // cuando el usuario indica la compañía (prov o cliente), leemos sus datos en sql ...
         if (value === 'compania' && $scope.factura.proveedor) {
 
-            Meteor.call('leerDatosCompaniaParaFactura', $scope.factura.proveedor, $scope.companiaSeleccionada.numero, (err, result) => {
+            $scope.pagosAnticipoSeleccionados_array = []; 
+
+            Meteor.call('leerDatosCompaniaParaFactura', $scope.factura.proveedor, 
+                                                        $scope.companiaSeleccionada.numero, 
+                                                        (err, result) => {
 
                 if (err) {
                     let errorMessage = mensajeErrorDesdeMethod_preparar(err);
@@ -91,6 +98,12 @@ function ($scope, $stateParams, $state, $meteor, $modal, uiGridConstants, leerTa
                     $scope.$apply();
 
                     return;
+                }
+
+                if (!result) { 
+                    $scope.alerts.length = 0;
+                    $scope.showProgress = false;
+                    $scope.$apply();
                 }
 
                 if (result.error) {
@@ -161,19 +174,22 @@ function ($scope, $stateParams, $state, $meteor, $modal, uiGridConstants, leerTa
                             function (ok) {
                                 return true;
                             },
-                            function (pagosAnticipoSeleccionados) {
+                            function (pagosAnticipoSeleccionados_array) {
 
-                                if (pagosAnticipoSeleccionados && Array.isArray(pagosAnticipoSeleccionados) && pagosAnticipoSeleccionados.length) { 
-                                    $scope.factura.anticipo = lodash.sumBy(pagosAnticipoSeleccionados, "monto"); 
+                                $scope.pagosAnticipoSeleccionados_array = []; 
 
-                                    let message = `Ok, el monto de anticipo en la factura ha sido actualizado usando el monto del 
-                                               pago que se ha seleccionado en la lista.<br /><br />
-                                               Luego de grabar la factura, no olvide abrir el pago y asociarla. De esta forma, 
-                                               el monto del pago de anticipo será restado del saldo pendiente de la factura.  
+                                if (pagosAnticipoSeleccionados_array && Array.isArray(pagosAnticipoSeleccionados_array) && pagosAnticipoSeleccionados_array.length) { 
+                                    $scope.factura.anticipo = lodash.sumBy(pagosAnticipoSeleccionados_array, "monto"); 
+
+                                    let message = `Ok, el monto de <em>pago anticipado</em> en la factura, ha sido actualizado usando el 
+                                               monto del pago (o pagos) que se ha seleccionado en la lista.<br /><br />
+                                               Luego de grabar la factura, Ud. podrá ver los pagos de anticipo en una lista y aplicarlos
+                                               a la factura desde allí.  
                                               `; 
                                     message = message.replace(/\/\//g, '');     // quitamos '//' del query; typescript agrega estos caracteres??? 
 
                                     DialogModal($modal, "<em>Bancos - Facturas</em>", message, false).then();
+                                    $scope.pagosAnticipoSeleccionados_array = pagosAnticipoSeleccionados_array; 
                                 }
 
                                 return true;
@@ -265,7 +281,22 @@ function ($scope, $stateParams, $state, $meteor, $modal, uiGridConstants, leerTa
     }
 
     $scope.refresh = () => {
-        factura_leerByID_desdeSql($scope.factura.claveUnica);
+        factura_leerByID_desdeSql($scope.id).
+            then((result) => { 
+                $scope.showProgress = false;
+                $scope.$apply();
+            }).
+            catch((err) => { 
+
+                $scope.alerts.length = 0;
+                $scope.alerts.push({
+                    type: 'danger',
+                    msg: err
+                });
+
+                $scope.showProgress = false;
+                $scope.$apply();
+            }); 
     }
 
     $scope.exportarAMicrosoftWord = () => {
@@ -1746,117 +1777,147 @@ function ($scope, $stateParams, $state, $meteor, $modal, uiGridConstants, leerTa
             $scope.showProgress = false;
         } else {
             // mantenemos las fechas de la factura, pues puede ser necesario validar los valores originales
-            factura_leerByID_desdeSql($scope.id);
+            factura_leerByID_desdeSql($scope.id).
+                then(() => { 
+                    $scope.showProgress = false;
+                    $scope.$apply();
+
+                    // revisamos el arreglo de pagos de anticipo a ver si el usuario indicó que existían, y quería aplicar, 
+                    // pagos de anticipo a esta factura. 
+                    // la factura puede tener pagos anticipados; de ser así, el usuario pudo haberlos seleccionado al 
+                    // indicar el proveedor para una factura nueva. Ahora debemos mostrarmos los pagos de anticipo seleccionados
+                    // antes para permitir 'rebajarlos' del saldo pendiente de la factura ... 
+                    if ($scope.pagosAnticipoSeleccionados_array && Array.isArray($scope.pagosAnticipoSeleccionados_array) && $scope.pagosAnticipoSeleccionados_array.length) { 
+
+                        $modal.open({
+                            templateUrl: 'client/bancos/facturas/pagosAnticipoAplicar/listaPagosAnticipoAplicarModal.html',
+                            controller: 'ListaPagosAnticipoAplicarModal_Controller',
+                            size: 'lg',
+                            resolve: {
+                                facturaID: () => {
+                                    return $scope.factura.claveUnica;
+                                },
+                                pagosAnticipoSeleccionados_array: () => {
+                                    return $scope.pagosAnticipoSeleccionados_array;
+                                },
+                                ciaSeleccionada: function () {
+                                    return $scope.companiaSeleccionada;
+                                },
+                            },
+                        }).result.then(
+                            function (ok) {
+                                $scope.pagosAnticipoSeleccionados_array = []; 
+                                return true;
+                            },
+                            function (cancel) {
+                                $scope.pagosAnticipoSeleccionados_array = []; 
+                                return true;
+                            })
+                    }
+                }).
+                catch((err) => { 
+
+                    $scope.alerts.length = 0;
+                    $scope.alerts.push({
+                        type: 'danger',
+                        msg: err
+                    });
+
+                    $scope.showProgress = false;
+                    $scope.$apply();
+                }); 
         }
     }
 
     inicializarItem();
 
-    function factura_leerByID_desdeSql(pk) {
+    function factura_leerByID_desdeSql(pk) { 
+        return new Promise(function(resolve, reject) { 
 
-        // ejecutamos un método para leer el asiento contable en sql server y grabarlo a mongo (para el current user)
-        let facturaID = parseInt($scope.id);
-        Meteor.call('factura.leerByID.desdeSql', facturaID, (err, result) => {
-
-            if (err) {
-                let errorMessage = mensajeErrorDesdeMethod_preparar(err);
-
-                $scope.alerts.length = 0;
-                $scope.alerts.push({
-                    type: 'danger',
-                    msg: errorMessage
-                });
-
-                $scope.showProgress = false;
-                $scope.$apply();
-
-                return;
-            }
-
-            $scope.factura = {};
-            $scope.factura = JSON.parse(result);
-
-            if ($scope.factura == null) {
-                // el usuario eliminó el registro y, por eso, no pudo se leído desde sql
-                $scope.factura = {};
-                $scope.impuestosRetenciones_ui_grid.data = [];
-
-                $scope.showProgress = false;
-                $scope.$apply();
-
-                return;
-            }
-
-            // las fechas vienen serializadas como strings; convertimos nuevamente a dates
-            $scope.factura.fechaEmision = $scope.factura.fechaEmision ? moment($scope.factura.fechaEmision).toDate() : null;
-            $scope.factura.fechaRecepcion = $scope.factura.fechaRecepcion ? moment($scope.factura.fechaRecepcion).toDate() : null;
-            $scope.factura.fRecepcionRetencionISLR = $scope.factura.fRecepcionRetencionISLR ? moment($scope.factura.fRecepcionRetencionISLR).toDate() : null;
-            $scope.factura.fRecepcionRetencionIVA = $scope.factura.fRecepcionRetencionIVA ? moment($scope.factura.fRecepcionRetencionIVA).toDate() : null;
-            $scope.factura.ingreso = $scope.factura.ingreso ? moment($scope.factura.ingreso).toDate() : null;
-            $scope.factura.ultAct = $scope.factura.ultAct ? moment($scope.factura.ultAct).toDate() : null;
-
-            // las fechas serializadas vienen siempre como strings; convertimos a Date ...
-            $scope.factura.impuestosRetenciones.forEach((x) => {
-                x.fechaRecepcionPlanilla = x.fechaRecepcionPlanilla ? moment(x.fechaRecepcionPlanilla).toDate() : null;
-            });
-
-            $scope.factura.cuotasFactura.forEach((x) => {
-                x.fechaVencimiento = x.fechaVencimiento ? moment(x.fechaVencimiento).toDate() : null;
-            })
-
-            // nótese que este es un valor virtual, que no existe en sql ...
-            $scope.factura.montoFactura = 0;
-            $scope.factura.montoFactura += $scope.factura.montoFacturaSinIva ? $scope.factura.montoFacturaSinIva : 0;
-            $scope.factura.montoFactura += $scope.factura.montoFacturaConIva ? $scope.factura.montoFacturaConIva : 0;
-
-            $scope.impuestosRetenciones_ui_grid.data = $scope.factura.impuestosRetenciones;
-
-            // mantenemos las fechas de la factura para poder validar luego los valores originales de las mismas
-            $scope.fechaEmisionOriginal = $scope.factura.fechaEmision;
-            $scope.fechaRecepcionOriginal = $scope.factura.fechaRecepcion;
-
-            // finalmente, leemos lo datos importantes del proveedor para tenerlos para cuando sea
-            // necesario (al calcular, determinar impuestos y retenciones, etc.)
-            Meteor.call('leerDatosCompaniaParaFactura', $scope.factura.proveedor, $scope.companiaSeleccionada.numero, (err, result) => {
+            // ejecutamos un método para leer el asiento contable en sql server y grabarlo a mongo (para el current user)
+            let facturaID = parseInt($scope.id);
+            Meteor.call('factura.leerByID.desdeSql', facturaID, (err, result) => {
 
                 if (err) {
                     let errorMessage = mensajeErrorDesdeMethod_preparar(err);
-
-                    $scope.alerts.length = 0;
-                    $scope.alerts.push({
-                        type: 'danger',
-                        msg: errorMessage
-                    });
-
-                    $scope.showProgress = false;
-                    $scope.$apply();
-
-                    return;
+                    reject(errorMessage); 
                 }
 
-                if (result.error) {
-                    $scope.alerts.length = 0;
-                    $scope.alerts.push({
-                        type: 'danger',
-                        msg: result.message
-                    });
+                $scope.factura = {};
+                $scope.factura = JSON.parse(result);
 
-                    $scope.showProgress = false;
-                    $scope.$apply();
-                } else {
-                    // en result puede venir también un array de pagos de anticipo pendientes por aplicar para el proveedor. 
-                    // pero lo usamos solo cuando se ingresa la factura ... 
-                    let infoCompania = JSON.parse(result);
-                    $scope.proveedor = infoCompania.datosProveedor; 
+                if ($scope.factura == null) {
+                    // el usuario eliminó el registro y, por eso, no pudo se leído desde sql
+                    $scope.factura = {};
+                    $scope.impuestosRetenciones_ui_grid.data = [];
 
-                    $scope.showProgress = false;
-                    $scope.$apply();
+                    resolve(); 
                 }
+
+                // las fechas vienen serializadas como strings; convertimos nuevamente a dates
+                $scope.factura.fechaEmision = $scope.factura.fechaEmision ? moment($scope.factura.fechaEmision).toDate() : null;
+                $scope.factura.fechaRecepcion = $scope.factura.fechaRecepcion ? moment($scope.factura.fechaRecepcion).toDate() : null;
+                $scope.factura.fRecepcionRetencionISLR = $scope.factura.fRecepcionRetencionISLR ? moment($scope.factura.fRecepcionRetencionISLR).toDate() : null;
+                $scope.factura.fRecepcionRetencionIVA = $scope.factura.fRecepcionRetencionIVA ? moment($scope.factura.fRecepcionRetencionIVA).toDate() : null;
+                $scope.factura.ingreso = $scope.factura.ingreso ? moment($scope.factura.ingreso).toDate() : null;
+                $scope.factura.ultAct = $scope.factura.ultAct ? moment($scope.factura.ultAct).toDate() : null;
+
+                // las fechas serializadas vienen siempre como strings; convertimos a Date ...
+                if ($scope.factura.impuestosRetenciones && Array.isArray($scope.factura.impuestosRetenciones)) { 
+                    $scope.factura.impuestosRetenciones.forEach((x) => {
+                        x.fechaRecepcionPlanilla = x.fechaRecepcionPlanilla ? moment(x.fechaRecepcionPlanilla).toDate() : null;
+                    })
+                }
+
+                if ($scope.factura.cuotasFactura && Array.isArray($scope.factura.cuotasFactura)) { 
+                    // cuando el usuario elimina viene la factura, pero en null 
+                    $scope.factura.cuotasFactura.forEach((x) => {
+                        x.fechaVencimiento = x.fechaVencimiento ? moment(x.fechaVencimiento).toDate() : null;
+                    })
+                }
+                
+                // nótese que este es un valor virtual, que no existe en sql ...
+                $scope.factura.montoFactura = 0;
+                $scope.factura.montoFactura += $scope.factura.montoFacturaSinIva ? $scope.factura.montoFacturaSinIva : 0;
+                $scope.factura.montoFactura += $scope.factura.montoFacturaConIva ? $scope.factura.montoFacturaConIva : 0;
+
+                $scope.impuestosRetenciones_ui_grid.data = $scope.factura.impuestosRetenciones;
+
+                // mantenemos las fechas de la factura para poder validar luego los valores originales de las mismas
+                $scope.fechaEmisionOriginal = $scope.factura.fechaEmision;
+                $scope.fechaRecepcionOriginal = $scope.factura.fechaRecepcion;
+
+                // finalmente, leemos lo datos importantes del proveedor para tenerlos para cuando sea
+                // necesario (al calcular, determinar impuestos y retenciones, etc.)
+                Meteor.call('leerDatosCompaniaParaFactura', $scope.factura.proveedor, 
+                                                            $scope.companiaSeleccionada.numero, 
+                                                            (err, result) => {
+
+                    if (err) {
+                        let errorMessage = mensajeErrorDesdeMethod_preparar(err);
+                        reject(errorMessage); 
+                    }
+
+                    if (result && result.error) {
+                        reject(result.message); 
+                    } else {
+                        // en result puede venir también un array de pagos de anticipo pendientes por aplicar para el proveedor. 
+                        // pero lo usamos solo cuando se ingresa la factura ... 
+
+                        if (result) { 
+                            // solo cuando el usuario elimina la factura, este método no trae los datos de su proveedor 
+                            let infoCompania = JSON.parse(result);
+                            $scope.proveedor = infoCompania.datosProveedor; 
+                        }
+                        
+                        resolve(); 
+                    }
+                })
             })
         })
     }
 
-
+    
     // ------------------------------------------------------------------------------------
     // para determinar el tipo de alícuota que corresponde a la tasa de impuesto Iva
     // que usa el usuario; por ejemplo: para 12% el tipo de alícuota es 'G' (general)
