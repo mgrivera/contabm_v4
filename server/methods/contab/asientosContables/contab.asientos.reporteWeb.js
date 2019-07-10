@@ -65,7 +65,7 @@ Meteor.methods(
             // cuando viene un solo asiento, debemos también seleccionar uno convertido que pueda existir ... 
             // leemos el número del asiento para encontrar el convertido, que tiene siempre el mismo número 
 
-            query = `Select Top 1 Numero, Fecha From Asientos Where NumeroAutomatico = ${asientoContableId}`;
+            query = `Select Top 1 Numero, MesFiscal, AnoFiscal, Cia From Asientos Where NumeroAutomatico = ${asientoContableId}`;
 
             response = null;
             response = Async.runSync(function(done) {
@@ -83,7 +83,8 @@ Meteor.methods(
 
             // ahora leemos asientos para el número y la fecha; si hay convertidos, se leerán dos ... 
             query = `Select NumeroAutomatico as numeroAutomatico From Asientos Where Numero = ${asientoContable.Numero} And 
-                     Fecha = '${moment(asientoContable.Fecha).format("YYYY-MM-DD")}'`;
+                     MesFiscal = ${asientoContable.MesFiscal} And AnoFiscal = ${asientoContable.AnoFiscal} And 
+                     Cia = ${asientoContable.Cia}`;
 
             response = null;
             response = Async.runSync(function(done) {
@@ -97,7 +98,7 @@ Meteor.methods(
                 throw new Meteor.Error(response.error && response.error.message ? response.error.message : response.error.toString());
             }
 
-            where = `a.Cia = ${reportConfig.ciaNumero}`;
+            where = "";
             numeroAutomaticoLista = "";
 
             response.result.forEach((a) => {
@@ -108,7 +109,7 @@ Meteor.methods(
             });
 
             numeroAutomaticoLista += ")";
-            where += ` and (a.NumeroAutomatico In ${numeroAutomaticoLista})`;
+            where += ` (a.NumeroAutomatico In ${numeroAutomaticoLista})`;
         }
         
         // ---------------------------------------------------------------------------------------------------
