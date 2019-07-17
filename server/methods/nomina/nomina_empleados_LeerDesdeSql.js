@@ -9,15 +9,10 @@ Meteor.methods(
 {
     nomina_empleados_LeerDesdeSql: function (filtro, ciaContab) {
 
-        // debugger;
         let filtro2 = JSON.parse(filtro);
 
         check(filtro2, Object);
         check(ciaContab, Number);
-
-        // if (!asientoContable || !asientoContable.docState) {
-        //     throw new Meteor.Error("Aparentemente, no se han editado los datos en la forma. No hay nada que actualizar.");
-        // };
 
         let where = "";
 
@@ -27,7 +22,7 @@ Meteor.methods(
             }
             else
                 where = `(e.FechaIngreso = '${moment(filtro2.fechaIngreso1).format('YYYY-MM-DD')}')`;
-        };
+        }
 
         if (filtro2.fechaRetiro1) {
             if (where)
@@ -40,7 +35,7 @@ Meteor.methods(
             }
             else
                 where += `(e.FechaRetiro = '${moment(filtro2.fechaRetiro1).format('YYYY-MM-DD')}')`;
-        };
+        }
 
         if (filtro2.nombre) {
             if (where)
@@ -52,15 +47,8 @@ Meteor.methods(
             let criteria = filtro2.nombre.replace(/\*/g, '');
             criteria = `%${criteria}%`;
 
-            // if (filtro2.nombre.indexOf('*') > -1) {
-            //     filtro2.nombre = filtro2.nombre.replace(new RegExp("\\*", 'g'), "%");
-            //     where += ` (e.Nombre Like '${criteria}')`;
-            // } else {
-            //     where += ` (e.Nombre = '${filtro2.nombre}')`;
-            // };
-
             where += `(e.Nombre Like '${criteria}')`;
-        };
+        }
 
         if (where)
             where += " And ";
@@ -70,7 +58,7 @@ Meteor.methods(
         where += `(Cia = ${ciaContab.toString()})`;
 
 
-        if (_.isArray(filtro2.cargos) && filtro2.cargos.length > 0) {
+        if (Array.isArray(filtro2.cargos) && filtro2.cargos.length > 0) {
 
             if (where)
                 where += " And ";
@@ -88,10 +76,10 @@ Meteor.methods(
 
             cargosLista += ")";
             where += ` (e.Cargo In ${cargosLista})`;
-        };
+        }
 
 
-        if (_.isArray(filtro2.departamentos) && filtro2.departamentos.length > 0) {
+        if (Array.isArray(filtro2.departamentos) && filtro2.departamentos.length > 0) {
 
             if (where)
                 where += " And ";
@@ -109,11 +97,9 @@ Meteor.methods(
 
             departamentosLista += ")";
             where += ` (e.Departamento In ${departamentosLista})`;
-        };
+        }
 
-
-
-        if (_.isArray(filtro2.tiposNomina) && filtro2.tiposNomina.length > 0) {
+        if (Array.isArray(filtro2.tiposNomina) && filtro2.tiposNomina.length > 0) {
 
             if (where)
                 where += " And ";
@@ -131,10 +117,9 @@ Meteor.methods(
 
             lista += ")";
             where += ` (e.TipoNomina In ${lista})`;
-        };
+        }
 
-
-        if (_.isArray(filtro2.situacionActual) && filtro2.situacionActual.length > 0) {
+        if (Array.isArray(filtro2.situacionActual) && filtro2.situacionActual.length > 0) {
 
             if (where)
                 where += " And ";
@@ -152,10 +137,9 @@ Meteor.methods(
 
             lista += ")";
             where += ` (e.SituacionActual In ${lista})`;
-        };
+        }
 
-
-        if (_.isArray(filtro2.estados) && filtro2.estados.length > 0) {
+        if (Array.isArray(filtro2.estados) && filtro2.estados.length > 0) {
 
             if (where)
                 where += " And ";
@@ -173,16 +157,7 @@ Meteor.methods(
 
             lista += ")";
             where += ` (e.Status In ${lista})`;
-        };
-
-
-        if (!where)
-            where = "1 = 1";            // esto nunca va a ocurrir aquí ...
-
-
-        // ---------------------------------------------------------------------------------------------------
-        // leemos los movimientos bancarios para el período seleccionado. Además, leemos la chequera y la
-        // cuenta bancaria (associations en model - include en query)
+        }
 
         let query = `Select e.Empleado as empleado, e.Nombre as nombre, e.Cedula as cedula,
                     e.FechaIngreso as fechaIngreso, e.FechaRetiro as fechaRetiro,
@@ -201,19 +176,19 @@ Meteor.methods(
                 .then(function(result) { done(null, result); })
                 .catch(function (err) { done(err, null); })
                 .done();
-        });
+        })
 
-        if (response.error)
+        if (response.error) { 
             throw new Meteor.Error(response.error && response.error.message ? response.error.message : response.error.toString());
-
-
+        }
+            
         // eliminamos los asientos que el usuario pueda haber registrado antes ...
         Temp_Consulta_Empleados.remove({ user: this.userId });
 
 
         if (response.result.length == 0) {
             return "Cero registros han sido leídos desde sql server.";
-        };
+        }
 
         // -------------------------------------------------------------------------------------------------------------
         // para reportar progreso solo 20 veces; si hay menos de 20 registros, reportamos siempre ...
@@ -308,10 +283,10 @@ Meteor.methods(
                                         { current: 1, max: 1, progress: numeral(cantidadRecs / numberOfItems).format("0 %") });
                     reportar = 0;
                 };
-            };
+            }
             // -------------------------------------------------------------------------------------------------------
-        });
+        })
 
         return "Ok, los empleados han sido leídos desde sql server.";
     }
-});
+})

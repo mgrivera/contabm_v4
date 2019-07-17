@@ -836,7 +836,7 @@ Meteor.methods(
             // para cada catálogos, hacemos un 'upsert'; primero leemos a ver si existe; de ser así, usamos el _id
             // del doc que existe ...
 
-            let itemExiste_ID = GruposEmpleados.findOne({ grupo: item.grupoID }, { fields: { _id: true }});
+            let itemExiste_ID = GruposEmpleados.findOne({ grupo: item.grupo }, { fields: { _id: true }});
 
             let document = {
                 _id: itemExiste_ID ? itemExiste_ID._id : new Mongo.ObjectID()._str,
@@ -883,8 +883,6 @@ Meteor.methods(
             };
             // -------------------------------------------------------------------------------------------------------
         })
-
-
 
         // -----------------------
         // tdGrupposEmpleados
