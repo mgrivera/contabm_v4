@@ -38,6 +38,7 @@ function actualizar_definicionAnticipos(items, items2) {
 
         // localizamos la fecha antes de actualizar en sql server 
         item.desde = item.desde ? moment(item.desde).subtract(AppGlobalValues.TimeOffset, 'hours').toDate() : null;
+        item.id = 0;        // al poner 0 evitamos que sequelize use Identity-Insert y use ese valor como pk (que ahora no es la idea)
 
         response = Async.runSync(function (done) {
             Nomina_DefinicionAnticipos_sql.create(item)
@@ -134,6 +135,7 @@ function actualizar_definicionAnticipos_empleados(items) {
 
         // localizamos la fecha antes de actualizar en sql server 
         item.desde = item.desde ? moment(item.desde).subtract(AppGlobalValues.TimeOffset, 'hours').toDate() : null;
+        item.id = 0;        // al poner 0 evitamos que sequelize use Identity-Insert y use ese valor como pk (que ahora no es la idea)
 
         response = Async.runSync(function (done) {
             Nomina_DefinicionAnticipos_Empleados_sql.create(item)

@@ -1,7 +1,7 @@
 
 
-
-import lodash from 'lodash';           
+import lodash from 'lodash';   
+import { Cargos_sql } from '/server/imports/sqlModels/nomina/catalogos/cargos';         
 
 Meteor.methods(
 {

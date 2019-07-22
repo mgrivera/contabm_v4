@@ -1,10 +1,12 @@
 
-import { sequelize } from '../_globals/_loadThisFirst/_globals';
-import Sequelize from 'sequelize';
 
-import { Departamentos_sql } from '/server/imports/sqlModels/nomina/catalogos/departamentos';
+import { sequelize } from '../../../../../server/sqlModels/_globals/_loadThisFirst/_globals';
+import * as Sequelize from 'sequelize';
 
-Empleados_sql = sequelize.define('empleados', {
+import { Departamentos_sql } from 'server/imports/sqlModels/nomina/catalogos/departamentos';
+import { Cargos_sql } from 'server/imports/sqlModels/nomina/catalogos/cargos'; 
+
+export const Empleados_sql = sequelize.define('empleados', {
     empleado: { type: Sequelize.INTEGER, field: 'Empleado', allowNull: false, primaryKey: true, autoIncrement: true, },
     cedula: { type: Sequelize.STRING, field: 'Cedula', allowNull: false, },
     alias: { type: Sequelize.STRING, field: 'Alias', allowNull: false, },
@@ -62,7 +64,7 @@ Empleados_sql = sequelize.define('empleados', {
 
 
 
- EmpleadosFaltas_sql = sequelize.define('empleadosFaltas', {
+export const EmpleadosFaltas_sql = sequelize.define('empleadosFaltas', {
      id: { type: Sequelize.INTEGER, field: 'ID', allowNull: false, primaryKey: true, autoIncrement: true, },
      empleadoID: { type: Sequelize.INTEGER, field: 'Empleado', allowNull: false, },
      desde: { type: Sequelize.DATE, field: 'Desde', allowNull: false, },
@@ -84,7 +86,7 @@ Empleados_sql = sequelize.define('empleados', {
  });
 
 
-EmpleadosSueldo_sql = sequelize.define('empleadosFaltas', {
+ export const EmpleadosSueldo_sql = sequelize.define('empleadosFaltas', {
     id: { type: Sequelize.INTEGER, field: 'ID', allowNull: false, primaryKey: true, autoIncrement: true, },
     empleadoID: { type: Sequelize.INTEGER, field: 'Empleado', allowNull: false, },
     desde: { type: Sequelize.DATE, field: 'Desde', allowNull: false, },

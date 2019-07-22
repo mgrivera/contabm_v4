@@ -1,6 +1,5 @@
 
 
-
 import * as angular from 'angular';
 import * as lodash from 'lodash';
 import { Meteor } from 'meteor/meteor';
@@ -10,9 +9,6 @@ import { nomina_deduccionesIslr_schema } from '../../../../../../imports/collect
 
 import { Companias } from '../../../../../../imports/collections/companias';
 import { CompaniaSeleccionada } from '../../../../../../imports/collections/companiaSeleccionada';
-
-import { GruposEmpleados } from '../../../../../../models/nomina/catalogos'; 
-import { Empleados } from '../../../../../../models/nomina/empleados'; 
 
 // Este controller (angular) se carga con la página primera del programa
 angular.module("contabm.nomina.catalogos").controller("catalogos_nomina_parametros_deduccionesIslr_Controller",
@@ -37,19 +33,6 @@ angular.module("contabm.nomina.catalogos").controller("catalogos_nomina_parametr
             ciaContabSeleccionada = Companias.findOne({ _id: ciaSeleccionada.companiaID });
         }
     }
-
-    $scope.helpers({ 
-        gruposEmpleados: () => { 
-            return GruposEmpleados.find({ 
-                cia: ciaContabSeleccionada && ciaContabSeleccionada.numero ? ciaContabSeleccionada.numero : -999, 
-                grupoNominaFlag: true, 
-            }); 
-        }, 
-        empleados: () => { 
-            return Empleados.find({ cia: ciaContabSeleccionada && ciaContabSeleccionada.numero ? ciaContabSeleccionada.numero : -999 }, 
-                                  { fields: { empleado: 1, alias: 1 }, sort: { alias: true, }} ); 
-        }, 
-    })
 
     let items_ui_grid_api = null;
     let itemSeleccionado = null; 
@@ -491,18 +474,82 @@ angular.module("contabm.nomina.catalogos").controller("catalogos_nomina_parametr
             
             $scope.items_ui_grid.data = $scope.deduccionesIslr;
 
-            Meteor.subscribe('nomina.gruposEmpleados', () => [],
-            {
-                onReady: function() {
-                    // cuando la tabla de grupos de empleados está en el cliente, establecemos el catálogo para el ddl en el ui-grid ... 
-                    $scope.items_ui_grid.columnDefs[2].editDropdownOptionsArray =  $scope.gruposEmpleados; 
-
-                    $scope.showProgress = false;
-                    $scope.$apply();
-                }
-            })
+            Promise.all([leerGruposEmpleados(ciaContabSeleccionada.numero),
+                leerListaEmpleados(ciaContabSeleccionada.numero)])
+                    .then((result: any) => {
+                        // el resultado es un array; cada item tiene un array con items (año y cant de asientos) 
+                        $scope.helpers({ 
+                            gruposEmpleados: () => { 
+                                return result[0].items;
+                            }, 
+                            empleados: () => { 
+                                return result[1].items;
+                            }, 
+                        })
+    
+                        // cuando la tabla de grupos de empleados está en el cliente, establecemos el catálogo para el ddl en el ui-grid ... 
+                        $scope.items_ui_grid.columnDefs[2].editDropdownOptionsArray =  $scope.gruposEmpleados; 
+                        $scope.items_ui_grid.columnDefs[3].editDropdownOptionsArray =  $scope.empleados; 
+    
+                        $scope.showProgress = false;
+                        $scope.$apply();
+                    })
+                    .catch((err) => {
+                        let errorMessage = mensajeErrorDesdeMethod_preparar(err);
+    
+                        $scope.alerts.length = 0;
+                        $scope.alerts.push({
+                            type: 'danger',
+                            msg: errorMessage
+                        });
+    
+                        $scope.showProgress = false;
+                        $scope.$apply();
+    
+                        return;
+                    })
         }
     })
 
 }
 ])
+
+
+
+const leerGruposEmpleados = (ciaContabSeleccionadaID) => { 
+
+    return new Promise((resolve, reject) => { 
+
+        Meteor.call('gruposEmpleados_lista_leerDesdeSql', ciaContabSeleccionadaID, (err, result) => {
+
+            if (err) {
+                reject(err); 
+            }
+    
+            if (result && result.error) { 
+                reject(result); 
+            }
+    
+            resolve(result)
+        })
+    })
+}
+
+const leerListaEmpleados = (ciaContabSeleccionadaID) => { 
+
+    return new Promise((resolve, reject) => { 
+
+        Meteor.call('empleados_lista_leerDesdeSql', ciaContabSeleccionadaID, (err, result) => {
+
+            if (err) {
+                reject(err); 
+            }
+    
+            if (result && result.error) { 
+                reject(result); 
+            }
+    
+            resolve(result)
+        })
+    })
+}

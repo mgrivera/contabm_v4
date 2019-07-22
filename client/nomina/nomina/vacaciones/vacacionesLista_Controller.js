@@ -229,8 +229,6 @@ function ($scope, $stateParams, $state, $meteor, $modal) {
     $scope.subscribe("vacacionesLista", () => [],
     {
           onReady: function() {
-
-            // debugger;
             $scope.helpers({
                 tempVacacionesLista: () => {
                     return Temp_Consulta_Vacaciones_Lista.find(

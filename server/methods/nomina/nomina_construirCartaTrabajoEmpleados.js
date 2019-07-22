@@ -4,7 +4,11 @@ import lodash from 'lodash';
 import moment from 'moment';
 import numeral from 'numeral';
 import { TimeOffset } from '/globals/globals'; 
+
 import { Departamentos_sql } from '/server/imports/sqlModels/nomina/catalogos/departamentos';
+import { Empleados_sql } from '/server/imports/sqlModels/nomina/catalogos/empleados'; 
+import { EmpleadosSueldo_sql } from '/server/imports/sqlModels/nomina/catalogos/empleados';
+import { Cargos_sql } from '/server/imports/sqlModels/nomina/catalogos/cargos'; 
 
 Meteor.methods(
 {

@@ -109,7 +109,7 @@ TiposDeCuentaBancaria.attachSchema(tiposDeCuentaBancaria_SimpleSchema);
 // Grupos de empleados
 // Solo para validar los datos al grabar
 // ----------------------------------------
-let gruposEmpleados_empleados_SimpleSchema = new SimpleSchema({
+const gruposEmpleados_empleados_SimpleSchema = new SimpleSchema({
     claveUnica: { type: Number, label: "ID en contab", optional: false, },
     empleado: { type: Number, label: "ID empleado", optional: false, },
     grupo: { type: Number, label: "Grupo", optional: false, },
@@ -117,8 +117,8 @@ let gruposEmpleados_empleados_SimpleSchema = new SimpleSchema({
     docState: { type: Number, optional: true, },
 })
 
-export const GruposEmpleados_empleados = new Mongo.Collection("gruposEmpleados_empleados");
-GruposEmpleados_empleados.attachSchema(gruposEmpleados_empleados_SimpleSchema);
+// export const GruposEmpleados_empleados = new Mongo.Collection("gruposEmpleados_empleados");
+// GruposEmpleados_empleados.attachSchema(gruposEmpleados_empleados_SimpleSchema);
 
 
 export const GruposEmpleados_SimpleSchema = new SimpleSchema({
@@ -135,8 +135,8 @@ export const GruposEmpleados_SimpleSchema = new SimpleSchema({
     docState: { type: Number, optional: true, },
 })
 
-export const GruposEmpleados = new Mongo.Collection("gruposEmpleados");
-GruposEmpleados.attachSchema(GruposEmpleados_SimpleSchema);
+// export const GruposEmpleados = new Mongo.Collection("gruposEmpleados");
+// GruposEmpleados.attachSchema(GruposEmpleados_SimpleSchema);
 
 
 // ----------------------------------------

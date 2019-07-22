@@ -216,6 +216,15 @@ angular.module("contabm").config(['$urlRouterProvider', '$stateProvider', '$loca
         })
 
         // -------------------------------------------------------------------------------------------
+        // comprobantes (números de) Seniat
+        .state('bancos.comprobantesSeniat', {
+            url: '/comprobantesSeniat',
+            templateUrl: 'client/imports/bancos/comprobantesSeniat/comprobantesSeniat.html',
+            controller: 'Bancos_ComprobantesSeniat_Controller',
+            parent: 'bancos'
+        })
+
+        // -------------------------------------------------------------------------------------------
         // conciliación bancaria
         .state('bancos.conciliacionesBancarias', {
             url: '/conciliacionesBancarias',

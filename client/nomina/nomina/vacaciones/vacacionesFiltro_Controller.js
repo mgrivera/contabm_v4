@@ -8,7 +8,6 @@ angular.module("contabm").controller("Nomina_VacacionesFilter_Controller",
 ['$scope', '$stateParams', '$state', '$meteor', '$modal',
 function ($scope, $stateParams, $state, $meteor, $modal) {
 
-    // debugger;
     $scope.showProgress = false;
 
     $scope.processProgress = {
@@ -16,7 +15,7 @@ function ($scope, $stateParams, $state, $meteor, $modal) {
         max: 0,
         progress: 0,
         message: ''
-    };
+    }
 
     // -------------------------------------------------------------------------------------------------------
     // para recibir los eventos desde la tarea en el servidor ...
@@ -29,7 +28,7 @@ function ($scope, $stateParams, $state, $meteor, $modal) {
         // if we don't call this method, angular wont refresh the view each time the progress changes ...
         // until, of course, the above process ends ...
         $scope.$apply();
-    });
+    })
     // -------------------------------------------------------------------------------------------------------
 
     // ui-bootstrap alerts ...
@@ -37,7 +36,7 @@ function ($scope, $stateParams, $state, $meteor, $modal) {
 
     $scope.closeAlert = function (index) {
         $scope.alerts.splice(index, 1);
-    };
+    }
 
     $scope.origen = $stateParams.origen;
 
@@ -47,16 +46,16 @@ function ($scope, $stateParams, $state, $meteor, $modal) {
         empleados: () => {
             return Empleados.find({ cia: companiaContab.numero });
         },
-    });
+    })
 
     // para limpiar el filtro, simplemente inicializamos el $scope.filtro ...
     $scope.limpiarFiltro = function () {
         $scope.filtro = {};
-    };
+    }
 
     $scope.nuevo = function () {
         $state.go("nomina.vacaciones.vacacion", { origen: 'edicion', id: '0', pageNumber: -1, vieneDeAfuera: false });
-    };
+    }
 
     // -------------------------------------------------------------------------
     // aplicamos el filtro indicado por el usuario y abrimos la lista
@@ -79,7 +78,7 @@ function ($scope, $stateParams, $state, $meteor, $modal) {
                   $scope.showProgress = false;
                   $scope.$apply();
                   return;
-              };
+              }
 
               if (parseInt(result) == 0) {
                   $scope.alerts.length = 0;
@@ -92,7 +91,7 @@ function ($scope, $stateParams, $state, $meteor, $modal) {
                   $scope.showProgress = false;
                   $scope.$apply();
                   return;
-              };
+              }
 
               // ------------------------------------------------------------------------------------------------------
               // guardamos el filtro indicado por el usuario
@@ -108,7 +107,7 @@ function ($scope, $stateParams, $state, $meteor, $modal) {
                       userId: Meteor.userId(),
                       nombre: 'nomina.vacaciones',
                       filtro: $scope.filtro
-                  });
+                  })
               // ------------------------------------------------------------------------------------------------------
 
               $scope.showProgress = false;

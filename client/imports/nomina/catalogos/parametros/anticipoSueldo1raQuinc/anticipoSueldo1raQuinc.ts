@@ -12,9 +12,6 @@ import { nomina_DefinicionAnticipos_empleados_schema } from '../../../../../../i
 import { Companias } from '../../../../../../imports/collections/companias';
 import { CompaniaSeleccionada } from '../../../../../../imports/collections/companiaSeleccionada';
 
-import { GruposEmpleados } from '../../../../../../models/nomina/catalogos'; 
-import { Empleados } from '../../../../../../models/nomina/empleados'; 
-
 // Este controller (angular) se carga con la página primera del programa
 angular.module("contabm.nomina.catalogos").controller("catalogos_nomina_parametros_anticipoSueldo1raQuinc_Controller",
 ['$scope', '$modal', function ($scope, $modal) {
@@ -38,19 +35,6 @@ angular.module("contabm.nomina.catalogos").controller("catalogos_nomina_parametr
             ciaContabSeleccionada = Companias.findOne({ _id: ciaSeleccionada.companiaID });
         }
     }
-
-    $scope.helpers({ 
-        gruposEmpleados: () => { 
-            return GruposEmpleados.find({ 
-                cia: ciaContabSeleccionada && ciaContabSeleccionada.numero ? ciaContabSeleccionada.numero : -999, 
-                grupoNominaFlag: true, 
-            }); 
-        }, 
-        empleados: () => { 
-            return Empleados.find({ cia: ciaContabSeleccionada && ciaContabSeleccionada.numero ? ciaContabSeleccionada.numero : -999 }, 
-                                  { fields: { empleado: 1, alias: 1 }, sort: { alias: true, }} ); 
-        }, 
-    })
 
     let definicionAnticipos_ui_grid: any = null;
     let definicionAnticipos_itemSeleccionado: any = null; 
@@ -473,7 +457,7 @@ angular.module("contabm.nomina.catalogos").controller("catalogos_nomina_parametr
         let isValid = false;
         let errores: string[] = [];
 
-        editedItems.forEach((item) => {
+        editedItems.forEach((item: any) => {
             if (item.docState != 3) {
                 isValid = nomina_DefinicionAnticipos_schema.namedContext().validate(item);
 
@@ -492,7 +476,7 @@ angular.module("contabm.nomina.catalogos").controller("catalogos_nomina_parametr
         // nótese como validamos cada item antes de intentar guardar (en el servidor)
         isValid = false;
 
-        editedItems2.forEach((item) => {
+        editedItems2.forEach((item: any) => {
             if (item.docState != 3) {
                 isValid = nomina_DefinicionAnticipos_empleados_schema.namedContext().validate(item);
 
@@ -659,18 +643,83 @@ angular.module("contabm.nomina.catalogos").controller("catalogos_nomina_parametr
             $scope.definicionAnticipos_ui_grid.data = $scope.definicionAnticipos;
             $scope.definicionAnticiposEmpleados_ui_grid.data = [];
 
-            Meteor.subscribe('nomina.gruposEmpleados', () => [],
-            {
-                onReady: function() {
+
+            Promise.all([leerGruposEmpleados(ciaContabSeleccionada.numero),
+            leerListaEmpleados(ciaContabSeleccionada.numero)])
+                .then((result: any) => {
+                    // el resultado es un array; cada item tiene un array con items (año y cant de asientos) 
+                    $scope.helpers({ 
+                        gruposEmpleados: () => { 
+                            return result[0].items;
+                        }, 
+                        empleados: () => { 
+                            return result[1].items;
+                        }, 
+                    })
+
                     // cuando la tabla de grupos de empleados está en el cliente, establecemos el catálogo para el ddl en el ui-grid ... 
                     $scope.definicionAnticipos_ui_grid.columnDefs[2].editDropdownOptionsArray =  $scope.gruposEmpleados; 
+                    $scope.definicionAnticiposEmpleados_ui_grid.columnDefs[3].editDropdownOptionsArray =  $scope.empleados; 
 
                     $scope.showProgress = false;
                     $scope.$apply();
-                }
-            });
+                })
+                .catch((err) => {
+                    let errorMessage = mensajeErrorDesdeMethod_preparar(err);
+
+                    $scope.alerts.length = 0;
+                    $scope.alerts.push({
+                        type: 'danger',
+                        msg: errorMessage
+                    });
+
+                    $scope.showProgress = false;
+                    $scope.$apply();
+
+                    return;
+                })
         }
     })
 
 }
 ])
+
+
+
+const leerGruposEmpleados = (ciaContabSeleccionadaID) => { 
+
+    return new Promise((resolve, reject) => { 
+
+        Meteor.call('gruposEmpleados_lista_leerDesdeSql', ciaContabSeleccionadaID, (err, result) => {
+
+            if (err) {
+                reject(err); 
+            }
+    
+            if (result && result.error) { 
+                reject(result); 
+            }
+    
+            resolve(result)
+        })
+    })
+}
+
+const leerListaEmpleados = (ciaContabSeleccionadaID) => { 
+
+    return new Promise((resolve, reject) => { 
+
+        Meteor.call('empleados_lista_leerDesdeSql', ciaContabSeleccionadaID, (err, result) => {
+
+            if (err) {
+                reject(err); 
+            }
+    
+            if (result && result.error) { 
+                reject(result); 
+            }
+    
+            resolve(result)
+        })
+    })
+}

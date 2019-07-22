@@ -4,6 +4,10 @@ import lodash from 'lodash';
 import moment from 'moment';
 import { TimeOffset } from '/globals/globals'; 
 
+import { Empleados_sql } from '/server/imports/sqlModels/nomina/catalogos/empleados'; 
+import { EmpleadosFaltas_sql } from '/server/imports/sqlModels/nomina/catalogos/empleados'; 
+import { EmpleadosSueldo_sql } from '/server/imports/sqlModels/nomina/catalogos/empleados';
+
 Meteor.methods(
 {
     empleadosSave: function (empleado) {

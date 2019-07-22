@@ -1,4 +1,8 @@
 
+
+import { tGruposEmpleados_sql } from '/server/imports/sqlModels/nomina/catalogos/gruposEmpleados'; 
+import { tdGruposEmpleados_sql } from '/server/imports/sqlModels/nomina/catalogos/gruposEmpleados'; 
+
 Meteor.methods(
 {
     'nomina.gruposEmpleados.leerDesdeSql': function (ciaContab) {

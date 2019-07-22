@@ -1,13 +1,14 @@
 
 import numeral from 'numeral';
 import { Companias } from '/imports/collections/companias';
-import { GruposEmpleados } from '/models/nomina/catalogos'; 
-import { GruposEmpleados_empleados } from '/models/nomina/catalogos'; 
 import { Empleados } from '/models/nomina/empleados'; 
 import { Departamentos_sql } from '/server/imports/sqlModels/nomina/catalogos/departamentos'; 
 import { Bancos_sql } from '/server/imports/sqlModels/bancos/movimientosBancarios'; 
 import { Compania_sql } from '/server/imports/sqlModels/companias'; 
 import { Bancos } from '/imports/collections/bancos/bancos';
+
+import { Empleados_sql } from '/server/imports/sqlModels/nomina/catalogos/empleados'; 
+import { Cargos_sql } from '/server/imports/sqlModels/nomina/catalogos/cargos'; 
 
 Meteor.methods(
 {
@@ -732,7 +733,6 @@ Meteor.methods(
         methodResult = Meteor.call('eventDDP_matchEmit', eventName, eventSelector, eventData);
         // -------------------------------------------------------------------------------------------------------------
 
-
         // aunque no mantenemos los empleados en mongo, aún lo hacemos directamente desde sql server, si mantenemos
         // una lista en mongo, para dropdownlists en las formas ...
 
@@ -795,181 +795,7 @@ Meteor.methods(
                 };
             };
             // -------------------------------------------------------------------------------------------------------
-        });
-
-
-        // -----------------------
-        // Grupos de empleados 
-        // -----------------------
-        response = Async.runSync(function(done) {
-            tGruposEmpleados_sql.findAndCountAll()
-                .then(function(result) { done(null, result); })
-                .catch(function (err) { done(err, null); })
-                .done();
-        });
-
-        if (response.error)
-            throw new Meteor.Error(response.error && response.error.message ? response.error.message : response.error.toString());
-
-
-        // -------------------------------------------------------------------------------------------------------------
-        numberOfItems = response.result.count;
-        reportarCada = Math.floor(numberOfItems / 25);
-        reportar = 0;
-        cantidadRecs = 0;
-        currentProcess++;
-
-        eventData = {
-                      current: currentProcess, max: numberOfProcess, progress: '0 %',
-                      message: `grupos de empleados ...`
-                    };
-
-        // sync call
-        methodResult = Meteor.call('eventDDP_matchEmit', eventName, eventSelector, eventData);
-        // -------------------------------------------------------------------------------------------------------------
-
-
-        // aunque no mantenemos los empleados en mongo, aún lo hacemos directamente desde sql server, si mantenemos
-        // una lista en mongo, para dropdownlists en las formas ...
-
-        response.result.rows.forEach((item) => {
-            // para cada catálogos, hacemos un 'upsert'; primero leemos a ver si existe; de ser así, usamos el _id
-            // del doc que existe ...
-
-            let itemExiste_ID = GruposEmpleados.findOne({ grupo: item.grupo }, { fields: { _id: true }});
-
-            let document = {
-                _id: itemExiste_ID ? itemExiste_ID._id : new Mongo.ObjectID()._str,
-
-                grupo: item.grupo,
-                nombre: item.nombre,
-                descripcion: item.descripcion,
-                grupoNominaFlag: item.grupoNominaFlag,
-                cia: item.cia,
-            };
-
-            // aquí intentamos usar un upsert, pero sin éxito; recurrimos a un insert o update, de acuerdo a si
-            // el doc fue encontrado arriba
-            if (itemExiste_ID && itemExiste_ID._id) { 
-                GruposEmpleados.update({ _id: itemExiste_ID._id }, { $set: document });
-            }  
-            else { 
-                GruposEmpleados.insert(document);
-            }
-                
-            // -------------------------------------------------------------------------------------------------------
-            // vamos a reportar progreso al cliente; solo 20 veces ...
-            cantidadRecs++;
-            if (numberOfItems <= 25) {
-                // hay menos de 20 registros; reportamos siempre ...
-                eventData = {
-                              current: currentProcess, max: numberOfProcess,
-                              progress: numeral(cantidadRecs / numberOfItems).format("0 %"),
-                              message: `grupos de empleados ...`
-                            };
-                let methodResult = Meteor.call('eventDDP_matchEmit', eventName, eventSelector, eventData);
-            }
-            else {
-                reportar++;
-                if (reportar === reportarCada) {
-                    eventData = {
-                                  current: currentProcess, max: numberOfProcess,
-                                  progress: numeral(cantidadRecs / numberOfItems).format("0 %"),
-                                  message: `grupos de empleados ...`
-                                };
-                    let methodResult = Meteor.call('eventDDP_matchEmit', eventName, eventSelector, eventData);
-                    reportar = 0;
-                };
-            };
-            // -------------------------------------------------------------------------------------------------------
         })
-
-        // -----------------------
-        // tdGrupposEmpleados
-        // -----------------------
-        response = Async.runSync(function(done) {
-            tdGruposEmpleados_sql.findAndCountAll()
-                .then(function(result) { done(null, result); })
-                .catch(function (err) { done(err, null); })
-                .done();
-        });
-
-        if (response.error)
-            throw new Meteor.Error(response.error && response.error.message ? response.error.message : response.error.toString());
-
-
-        // -------------------------------------------------------------------------------------------------------------
-        numberOfItems = response.result.count;
-        reportarCada = Math.floor(numberOfItems / 25);
-        reportar = 0;
-        cantidadRecs = 0;
-        currentProcess++;
-
-        eventData = {
-                      current: currentProcess, max: numberOfProcess, progress: '0 %',
-                      message: `empleados en grupos de empleados ...`
-                    };
-
-        // sync call
-        methodResult = Meteor.call('eventDDP_matchEmit', eventName, eventSelector, eventData);
-        // -------------------------------------------------------------------------------------------------------------
-
-
-        // aunque no mantenemos los empleados en mongo, aún lo hacemos directamente desde sql server, si mantenemos
-        // una lista en mongo, para dropdownlists en las formas ...
-
-        response.result.rows.forEach((item) => {
-            // para cada catálogos, hacemos un 'upsert'; primero leemos a ver si existe; de ser así, usamos el _id
-            // del doc que existe ...
-
-            let itemExiste_ID = GruposEmpleados_empleados.findOne({ claveUnica: item.claveUnica }, { fields: { _id: true }});
-
-            let document = {
-                _id: itemExiste_ID ? itemExiste_ID._id : new Mongo.ObjectID()._str,
-
-                claveUnica: item.claveUnica,
-                empleado: item.empleado,
-                grupo: item.grupo,
-                suspendidoFlag: item.suspendidoFlag,
-            };
-
-            // aquí intentamos usar un upsert, pero sin éxito; recurrimos a un insert o update, de acuerdo a si
-            // el doc fue encontrado arriba
-            if (itemExiste_ID && itemExiste_ID._id) { 
-                GruposEmpleados_empleados.update({ _id: itemExiste_ID._id }, { $set: document });
-            }  
-            else { 
-                GruposEmpleados_empleados.insert(document);
-            }
-                
-            // -------------------------------------------------------------------------------------------------------
-            // vamos a reportar progreso al cliente; solo 20 veces ...
-            cantidadRecs++;
-            if (numberOfItems <= 25) {
-                // hay menos de 20 registros; reportamos siempre ...
-                eventData = {
-                              current: currentProcess, max: numberOfProcess,
-                              progress: numeral(cantidadRecs / numberOfItems).format("0 %"),
-                              message: `empleados en grupos de empleados ...`
-                            };
-                let methodResult = Meteor.call('eventDDP_matchEmit', eventName, eventSelector, eventData);
-            }
-            else {
-                reportar++;
-                if (reportar === reportarCada) {
-                    eventData = {
-                                  current: currentProcess, max: numberOfProcess,
-                                  progress: numeral(cantidadRecs / numberOfItems).format("0 %"),
-                                  message: `empleados en grupos de empleados ...`
-                                };
-                    let methodResult = Meteor.call('eventDDP_matchEmit', eventName, eventSelector, eventData);
-                    reportar = 0;
-                };
-            };
-            // -------------------------------------------------------------------------------------------------------
-        })
-
-
 
         // ---------------------------------------------------------------------------------------------------
         // Maestra de rubros
@@ -979,7 +805,7 @@ Meteor.methods(
                 .then(function(result) { done(null, result); })
                 .catch(function (err) { done(err, null); })
                 .done();
-        });
+        })
 
         if (response.error)
             throw new Meteor.Error(response.error && response.error.message ? response.error.message : response.error.toString());

@@ -7,13 +7,13 @@ import '../../../imports/globals/tsDeclares';
 
 Meteor.methods(
 {
-    'nomina.parametros.deduccionesNomina.leerDesdeSqlServer': function () {
+    'nomina.parametros.deduccionesNomina.leerDesdeSqlServer': function (ciaContab: number) {
         
         // ---------------------------------------------------------------------------------------------------
         // leemos los registros que se han grabado en la tabla de salario mínimo ... 
         let response:any = null;
         response = Async.runSync(function(done) {
-            DeduccionesNomina_sql.findAll({ raw: true })
+            DeduccionesNomina_sql.findAll({ where: { cia: ciaContab }, raw: true })
                 .then(function(result) { done(null, result); })
                 .catch(function (err) { done(err, null); })
                 .done();

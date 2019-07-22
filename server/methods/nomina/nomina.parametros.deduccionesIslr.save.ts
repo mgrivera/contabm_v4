@@ -26,6 +26,7 @@ Meteor.methods(
             let response: any = null;
 
             item.desde = item.desde ? moment(item.desde).subtract(AppGlobalValues.TimeOffset, 'hours').toDate() : null;
+            item.id = 0;        // al poner 0 evitamos que sequelize use Identity-Insert y use ese valor como pk (que ahora no es la idea)
 
             response = Async.runSync(function(done) {
                 DeduccionesIslr_sql.create(item)

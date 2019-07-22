@@ -65,6 +65,8 @@ vieneDeAfuera es true cuando una p√°gina, como factura, es abierta desde otro m√
                                 <li ng-if="userHasRole(['bancos_consultas']) || userHasRole(['bancos'])"><a ui-sref="bancos.pagos.filter({ origen: 'consulta' })">Consulta</a></li>
                             </ul>
                         </li>
+                        <li class="divider"></li>
+                        <li ng-if="userHasRole(['bancos_facturas'])"><a ui-sref="bancos.comprobantesSeniat">Comprobantes Seniat</a></li>
                     </ul>
                 </li>
 

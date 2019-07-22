@@ -2,14 +2,6 @@
 import { sequelize } from '../_globals/_loadThisFirst/_globals';
 import Sequelize from 'sequelize';
 
-Cargos_sql = sequelize.define('cargos', {
-    cargo: { type: Sequelize.INTEGER, field: 'Cargo', allowNull: false, primaryKey: true, autoIncrement: true, },
-    descripcion: { type: Sequelize.STRING, field: 'Descripcion', allowNull: false, },
-}, {
-     tableName: 'tCargos'
-});
-
-
 Ciudades_sql = sequelize.define('ciudades', {
     ciudad: { type: Sequelize.STRING, field: 'Ciudad', allowNull: false, primaryKey: true, autoIncrement: false, },
     pais: { type: Sequelize.STRING, field: 'Pais', allowNull: false, },
@@ -47,7 +39,6 @@ MaestraRubros_sql = sequelize.define('maestraRubros', {
 });
 
 
-
 TiposDeCuentaBancaria_sql = sequelize.define('tiposDeCuentaBancaria', {
     tipoCuenta: { type: Sequelize.INTEGER, field: 'TipoCuenta', allowNull: false, primaryKey: true, autoIncrement: true, },
     descripcion: { type: Sequelize.STRING, field: 'Descripcion', allowNull: false, },
@@ -55,32 +46,6 @@ TiposDeCuentaBancaria_sql = sequelize.define('tiposDeCuentaBancaria', {
      tableName: 'TiposDeCuentaBancaria'
 });
 
-
-
-// ----------------------------------------
-// Grupos de empleados
-// ----------------------------------------
-tGruposEmpleados_sql = sequelize.define('gruposEmpleados', {
-    grupo: { type: Sequelize.INTEGER, field: 'Grupo', allowNull: false, primaryKey: true, autoIncrement: true, },
-    nombre: { type: Sequelize.STRING, field: 'NombreGrupo', allowNull: false, },
-    descripcion: { type: Sequelize.STRING, field: 'Descripcion', allowNull: false, },
-    grupoNominaFlag: { type: Sequelize.BOOLEAN, field: 'GrupoNominaFlag', allowNull: false,  },
-    cia: { type: Sequelize.INTEGER, field: 'Cia', allowNull: false, },
-}, {
-     tableName: 'tGruposEmpleados'
-})
-
-tdGruposEmpleados_sql = sequelize.define('gruposEmpleados_Empleados', {
-    claveUnica: { type: Sequelize.INTEGER, field: 'ClaveUnica', allowNull: false, primaryKey: true, autoIncrement: true, },
-    empleado: { type: Sequelize.INTEGER, field: 'Empleado', allowNull: false, },
-    grupo: { type: Sequelize.INTEGER, field: 'Grupo', allowNull: false, },
-    suspendidoFlag: { type: Sequelize.BOOLEAN, field: 'SuspendidoFlag', allowNull: false,  },
-}, {
-     tableName: 'tdGruposEmpleados'
-})
-
-tGruposEmpleados_sql.hasMany(tdGruposEmpleados_sql, { as: 'empleados', foreignKey: 'grupo' } );
-tdGruposEmpleados_sql.belongsTo(tGruposEmpleados_sql, { as: 'grupoEmpleados', foreignKey: 'grupo' } );
 
 // ----------------------------------------
 // Dias feriados y dís de fiesta nacionalñ

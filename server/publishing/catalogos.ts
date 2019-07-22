@@ -1,9 +1,8 @@
 ﻿
+
 import { Monedas } from '../../imports/collections/monedas';
 import { Companias } from '../../imports/collections/companias';
 import { CompaniaSeleccionada } from '../../imports/collections/companiaSeleccionada';
-import { GruposEmpleados } from '../../models/nomina/catalogos';
-import { GruposEmpleados_empleados } from '../../models/nomina/catalogos';
 import { Empleados } from '../../models/nomina/empleados'; 
 import { TiposAsientoContable } from '../../imports/collections/contab/tiposAsientoContable'; 
 import { Bancos } from 'imports/collections/bancos/bancos';
@@ -42,8 +41,6 @@ Meteor.publish(null, function () {
              ParametrosBancos.find(),
              ParametrosGlobalBancos.find(),
              MesesDelAnoFiscal.find(),
-             Empleados.find(),
-             GruposEmpleados.find(),
-             GruposEmpleados_empleados.find(), 
+             Empleados.find()
     ]
 })

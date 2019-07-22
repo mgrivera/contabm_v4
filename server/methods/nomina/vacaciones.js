@@ -1,26 +1,20 @@
 
+
+import { sequelize } from '/server/sqlModels/_globals/_loadThisFirst/_globals';
 import moment from 'moment';
 import numeral from 'numeral'; 
-import { GruposEmpleados } from '/models/nomina/catalogos';
-import { Empleados } from '/models/nomina/empleados'; 
+
+import { tGruposEmpleados_sql } from '/server/imports/sqlModels/nomina/catalogos/gruposEmpleados'; 
+import { Empleados_sql } from '/server/imports/sqlModels/nomina/catalogos/empleados'; 
 
 Meteor.methods(
 {
     vacaciones: function (filtro, ciaContab) {
 
-        // debugger;
         let filtro2 = JSON.parse(filtro);
 
         check(filtro2, Object);
         check(ciaContab, Number);
-
-        // if (!asientoContable || !asientoContable.docState) {
-        //     throw new Meteor.Error("Aparentemente, no se han editado los datos en la forma. No hay nada que actualizar.");
-        // };
-
-        // TODO: si recibimos el nombre del empleado, debemos leer en Empleados y regresar un array con sus IDs
-        // luego, usar para seleccionar las vacaciones, como se hace con las listas. Nota: no olvidar que el usuario
-        // puede usar asteriscos (*) en el nombre ...
 
         let selector = {};
 
@@ -57,21 +51,23 @@ Meteor.methods(
         let arrayEmpleados = [];
         if (filtro2.empleados && filtro2.empleados.length) {
             filtro2.empleados.forEach((e) => { arrayEmpleados.push(e) });
-        };
+        }
 
         // nótese como para filtrar por nombre de empleado, leemos los IDs de éstos en el collection Empleados
         if (filtro2.nombreEmpleado) {
             // a veces el usuario usa '*' para generalizar, aunque en este caso, no es necesario ...
             let criteria = filtro2.nombreEmpleado.replace(/\*/g, '');
-            let search = new RegExp(criteria, 'i');       // para que mongo haga una busqueda genérica ...
 
-            Empleados.find({ nombre: search }).forEach((e) => {
+            const result = buscarIDsEmpleados_searchPorNombre(criteria, ciaContab); 
+            
+            result.items.forEach((e) => {
                 arrayEmpleados.push(e.empleado);
-            });
-        };
+            })
+        }
 
-        if (arrayEmpleados.length)
+        if (arrayEmpleados.length) { 
             selector.empleado = { $in: arrayEmpleados };
+        }
         // ---------------------------------------------------------------------------------------------
 
         selector.cia = ciaContab;
@@ -79,19 +75,22 @@ Meteor.methods(
         // eliminamos los registros que el usuario pueda haber registrado antes ...
         Temp_Consulta_Vacaciones_Lista.remove({ user: this.userId });
 
-
         // TODO: leer vacaciones que cumplan el filtro desde mongo ...
         // TODO: leer solo los fields que sean necesarios ...
         let vacaciones = Vacaciones.find(selector).fetch();
 
-
         if (!vacaciones || vacaciones.length == 0) {
             return 0;
-        };
+        }
 
+        let empleados = [];
+        let gruposEmpleados = [];
 
-        let empleados = Empleados.find({ cia: ciaContab }, { fields: { empleado: 1, alias: 1 }}).fetch();
-        let gruposEmpleados = GruposEmpleados.find({ cia: ciaContab }).fetch();
+        let result = leerEmpleadosFromSql(ciaContab); 
+        empleados = result.items; 
+
+        result = leerGruposEmpleadosFromSql(ciaContab);
+        gruposEmpleados = result.items;  
 
         // -------------------------------------------------------------------------------------------------------------
         // para reportar progreso solo 20 veces; si hay menos de 20 registros, reportamos siempre ...
@@ -111,15 +110,26 @@ Meteor.methods(
         vacaciones.forEach((vacacion) => {
 
             // nótese como los 'registros' en sql y mongo son idénticos, salvo algunos fields adicionales que existen en mongo ...
+            const empleado = empleados.find(x => x.empleado === vacacion.empleado); 
+            
+            // por alguna razón, la fecha de ingreso del empleado no está con el registro en Vacaciones en mongo. Cuando es así, 
+            // la tomamos del empleado mismo 
+            let fechaIngreso = vacacion.fechaIngreso ? vacacion.fechaIngreso : null;
+
+            if (!fechaIngreso) { 
+                fechaIngreso = empleado.fechaIngreso; 
+            }
+
+            const grupoEmpleados = gruposEmpleados.find(x => x.grupo === vacacion.grupoNomina);
 
             let vacacionItem  = {};
 
             vacacionItem._id = new Mongo.ObjectID()._str;
 
             vacacionItem.vacacionID = vacacion._id;
-            vacacionItem.nombreEmpleado = _.find(empleados, (x) => { return x.empleado === vacacion.empleado; }).alias;
-            vacacionItem.nombreGrupoNomina = _.find(gruposEmpleados, (x) => { return x.grupo === vacacion.grupoNomina; }).descripcion;
-            vacacionItem.fechaIngreso = vacacion.fechaIngreso ? vacacion.fechaIngreso : null;
+            vacacionItem.nombreEmpleado = empleado.alias;
+            vacacionItem.nombreGrupoNomina = grupoEmpleados.descripcion;
+            vacacionItem.fechaIngreso = fechaIngreso; 
             vacacionItem.salida = vacacion.salida;
             vacacionItem.regreso = vacacion.regreso;
             vacacionItem.fechaReintegro = vacacion.fechaReintegro;
@@ -133,13 +143,7 @@ Meteor.methods(
             vacacionItem.cia = vacacion.cia;
             vacacionItem.user = Meteor.userId();
 
-            // TODO: grabar a Temp_Consulta_Vacaciones_Lista
             Temp_Consulta_Vacaciones_Lista.insert(vacacionItem);
-
-            // Temp_Consulta_Empleados.insert(empleado, function (error, result) {
-            //     if (error)
-            //         throw new Meteor.Error("validationErrors", error.invalidKeys.toString());
-            // });
 
             // -------------------------------------------------------------------------------------------------------
             // vamos a reportar progreso al cliente; solo 20 veces ...
@@ -161,11 +165,88 @@ Meteor.methods(
                                           progress: numeral(cantidadRecs / numberOfItems).format("0 %"),
                                           message: `leyendo las vacaciones ... ` });
                     reportar = 0;
-                };
-            };
+                }
+            }
             // -------------------------------------------------------------------------------------------------------
-        });
+        })
 
         return cantidadRecs;
     }
-});
+})
+
+
+function leerEmpleadosFromSql(ciaContabSeleccionadaID) { 
+
+    let response = null;
+    response = Async.runSync(function(done) {
+        Empleados_sql.findAll({ 
+                where: { cia: ciaContabSeleccionadaID }, 
+                attributes: ['empleado', 'alias', 'fechaIngreso', ], 
+                order: [ ['nombre', 'ASC'] ], 
+                raw: true,      
+            })
+            .then(function(result) { done(null, result); })
+            .catch(function (err) { done(err, null); })
+            .done();
+    });
+
+    if (response.error) { 
+        throw new Meteor.Error(response.error && response.error.message ? response.error.message : response.error.toString());
+    }
+        
+    return { 
+        error: false, 
+        message: '', 
+        items: response.result, 
+    }
+}
+
+function leerGruposEmpleadosFromSql(ciaContabSeleccionadaID) { 
+
+    let response = null;
+    response = Async.runSync(function(done) {
+        tGruposEmpleados_sql.findAll({ 
+                where: { cia: ciaContabSeleccionadaID }, 
+                order: [ ['nombre', 'ASC'] ], 
+                raw: true,      
+            })
+            .then(function(result) { done(null, result); })
+            .catch(function (err) { done(err, null); })
+            .done();
+    });
+
+    if (response.error) { 
+        throw new Meteor.Error(response.error && response.error.message ? response.error.message : response.error.toString());
+    }
+        
+    return ({ 
+        error: false, 
+        message: '', 
+        items: response.result, 
+    })
+}
+
+function buscarIDsEmpleados_searchPorNombre(nombre, ciaContabSeleccionadaID) { 
+    // cuando el usuario indica un nombre en su filtro, puede solo indicar un pedacito del mismo. Usamos like en sql 
+    // y regresamos los pks que lo cumplan
+    let response = null;
+    const query = `Select Empleado as empleado From tEmpleados Where Cia = ? And Nombre Like '%${nombre}%'`; 
+
+    response = Async.runSync(function(done) {
+        sequelize.query(query, { replacements: [ ciaContabSeleccionadaID ],
+            type: sequelize.QueryTypes.SELECT })
+            .then(function(result) { done(null, result); })
+            .catch(function (err) { done(err, null); })
+            .done();
+    })
+
+    if (response.error) { 
+        throw new Meteor.Error(response.error && response.error.message ? response.error.message : response.error.toString());
+    }
+        
+    return { 
+        error: false, 
+        message: '', 
+        items: response.result, 
+    }
+}

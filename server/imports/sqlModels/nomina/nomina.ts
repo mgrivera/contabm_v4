@@ -1,8 +1,9 @@
 
-import { sequelize } from '../_globals/_loadThisFirst/_globals';
-import Sequelize from 'sequelize';
 
-NominaHeaders_sql = sequelize.define('bancos', {
+import { sequelize } from 'server/sqlModels/_globals/_loadThisFirst/_globals';
+import * as Sequelize from 'sequelize';
+
+export const NominaHeaders_sql = sequelize.define('bancos', {
     id: { type: Sequelize.INTEGER, field: 'ID', allowNull: false, primaryKey: true, autoIncrement: true, },
     fechaNomina: { type: Sequelize.DATE, field: 'FechaNomina', allowNull: false, },
     fechaEjecucion: { type: Sequelize.DATE, field: 'FechaEjecucion', allowNull: false, },
