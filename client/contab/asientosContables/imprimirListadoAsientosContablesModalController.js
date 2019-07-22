@@ -43,8 +43,6 @@ function ($scope, $modalInstance, ciaSeleccionada, asientoContableId, asientoCon
     $scope.submitted = false;
     $scope.parametros = {};
 
-    
-
     $scope.reportConfig = {};
 
     if (!asientoContableId) { 
@@ -79,6 +77,7 @@ function ($scope, $modalInstance, ciaSeleccionada, asientoContableId, asientoCon
     if (reportConfigAnterior && reportConfigAnterior.reportConfig) {
         // estos valores en el reportConfig intentamos mantenerlos desde una ejecución a la otra
         $scope.reportConfig.saltoPaginaPorFecha = reportConfigAnterior.reportConfig.saltoPaginaPorFecha ? reportConfigAnterior.reportConfig.saltoPaginaPorFecha : false;
+        $scope.reportConfig.unaColumnaParaDebeYHaber = reportConfigAnterior.reportConfig.unaColumnaParaDebeYHaber ? reportConfigAnterior.reportConfig.unaColumnaParaDebeYHaber : false;
 
         if (!asientoContableId) { 
             $scope.reportConfig.titulo = reportConfigAnterior.reportConfig.titulo ? reportConfigAnterior.reportConfig.titulo : "";
@@ -90,6 +89,7 @@ function ($scope, $modalInstance, ciaSeleccionada, asientoContableId, asientoCon
     } else {
         // si no existe un config anterior, usamos defaults, para facilitar las cosas al usuario
         $scope.reportConfig.saltoPaginaPorFecha = false;
+        $scope.reportConfig.unaColumnaParaDebeYHaber = false;
         $scope.reportConfig.titulo = "";
     }
     // ------------------------------------------------------------------------------------------------------
@@ -148,6 +148,7 @@ function ($scope, $modalInstance, ciaSeleccionada, asientoContableId, asientoCon
                     if (currentFilter.reportConfig) {
                         Filtros.update( currentFilter._id, { $set: {
                             'reportConfig.saltoPaginaPorFecha': $scope.reportConfig.saltoPaginaPorFecha,
+                            'reportConfig.unaColumnaParaDebeYHaber': $scope.reportConfig.unaColumnaParaDebeYHaber,
                             'reportConfig.titulo': $scope.reportConfig.titulo,
                         } }, { validate: false } );
                     } else {
@@ -159,6 +160,7 @@ function ($scope, $modalInstance, ciaSeleccionada, asientoContableId, asientoCon
                             nombre: 'contab.report.asientosContables.config',
                             reportConfig: {
                                 saltoPaginaPorFecha: $scope.reportConfig.saltoPaginaPorFecha,
+                                unaColumnaParaDebeYHaber: $scope.reportConfig.unaColumnaParaDebeYHaber,
                                 titulo: $scope.reportConfig.titulo,
                             },
                         });
@@ -171,6 +173,7 @@ function ($scope, $modalInstance, ciaSeleccionada, asientoContableId, asientoCon
                         nombre: 'contab.report.asientosContables.config',
                         reportConfig: {
                             saltoPaginaPorFecha: $scope.reportConfig.saltoPaginaPorFecha,
+                            unaColumnaParaDebeYHaber: $scope.reportConfig.unaColumnaParaDebeYHaber,
                             titulo: $scope.reportConfig.titulo,
                         },
                     });
@@ -200,4 +203,4 @@ function ($scope, $modalInstance, ciaSeleccionada, asientoContableId, asientoCon
         $scope.$apply();
     });
 }
-]);
+])

@@ -118,7 +118,8 @@ Meteor.methods(
         query = `Select m.Descripcion as nombreMoneda, m.Simbolo as simboloMoneda, a.Fecha as fecha, a.Numero as numero,
                     a.Descripcion as descripcionComprobante, d.Partida as numeroPartida,
                     c.Cuenta as cuentaContable, c.CuentaEditada as cuentaEditada, c.Descripcion as nombreCuenta,
-                    d.Descripcion as descripcionPartida, d.Referencia as referencia, d.Debe as debe, d.Haber as haber
+                    d.Descripcion as descripcionPartida, d.Referencia as referencia, d.Debe as debe, d.Haber as haber, 
+                    (d.Debe - d.Haber) as monto 
                     From dAsientos d Inner Join Asientos a On a.NumeroAutomatico = d.NumeroAutomatico
                     Inner Join CuentasContables c On d.CuentaContableID = c.ID
                     Inner Join Monedas m On a.Moneda = m.Moneda
@@ -179,9 +180,9 @@ Meteor.methods(
                                         { current: 1, max: 1, progress: numeral(cantidadRecs / numberOfItems).format("0 %") });
                     reportar = 0;
                 };
-            };
+            }
             // -------------------------------------------------------------------------------------------------------
-        });
+        })
 
         // construimos un link para obtener el reporte
         const contabSysNet_app_address = Meteor.settings.public.contabSysNet_app_address;
