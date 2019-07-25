@@ -1,6 +1,5 @@
 
 
-import { Mongo } from 'meteor/mongo';
 import SimpleSchema from 'simpl-schema';
 
 // centros de costo (para asientos contables) - Nota: solo para validar en el client al grabar (al menos por ahora)

@@ -1,9 +1,9 @@
 
+
 import numeral from "numeral";
 import moment from "moment";
 import { Monedas } from '/imports/collections/monedas';
 import { Companias } from '/imports/collections/companias';
-import { Empleados } from '/models/nomina/empleados'; 
 import { CuentasContables2 } from '/imports/collections/contab/cuentasContables2'; 
 import { GruposContables } from '/imports/collections/contab/gruposContables'; 
 
@@ -14,8 +14,7 @@ angular.module("contabm").filter('currencyFilter', function () {
     return function (value) {
         return numeral(value).format('0,0.00');
     };
-});
-
+})
 
 angular.module("contabm").filter('number8decimals', function () {
     return function (value) {
@@ -24,7 +23,7 @@ angular.module("contabm").filter('number8decimals', function () {
         else
             return "";
     };
-});
+})
 
 angular.module("contabm").filter('number6decimals', function () {
     return function (value) {
@@ -33,7 +32,7 @@ angular.module("contabm").filter('number6decimals', function () {
         else
             return "";
     };
-});
+})
 
 angular.module("contabm").filter('currencyFilterAndNull', function () {
     return function (value) {
@@ -42,7 +41,7 @@ angular.module("contabm").filter('currencyFilterAndNull', function () {
         else
             return "";
     };
-});
+})
 
 angular.module("contabm").filter('currencyFilterNorCeroNorNull', function () {
     return function (value) {
@@ -51,7 +50,7 @@ angular.module("contabm").filter('currencyFilterNorCeroNorNull', function () {
         else
             return "";
     };
-});
+})
 
 angular.module("contabm").filter('currencyFilterNorCeroNorNull4decimals', function () {
     return function (value) {
@@ -60,7 +59,7 @@ angular.module("contabm").filter('currencyFilterNorCeroNorNull4decimals', functi
         else
             return "";
     };
-});
+})
 
 
 angular.module("contabm").filter('dateFilter', function () {
@@ -70,7 +69,7 @@ angular.module("contabm").filter('dateFilter', function () {
         else
             return "";
     };
-});
+})
 
 angular.module("contabm").filter('dateTimeFilter', function () {
     return function (value) {
@@ -79,7 +78,7 @@ angular.module("contabm").filter('dateTimeFilter', function () {
         else
             return "";
     };
-});
+})
 
 angular.module("contabm").filter('dateTimeShortFilter', function () {
     return function (value) {
@@ -88,7 +87,7 @@ angular.module("contabm").filter('dateTimeShortFilter', function () {
         else
             return "";
     };
-});
+})
 
 let estadosFactura = [
     { estado: 1, descripcion: 'Pendiente', },
@@ -102,20 +101,20 @@ angular.module("contabm").filter('nombreEstadoFactura', function () {
         var found = _.find(estadosFactura, function (x) { return x.estado === estadoFactura; });
         return found ? found.descripcion : "Indefinido";
     };
-});
+})
 
 angular.module("contabm").filter('boolFilter', function () {
     return function (value) {
         return value ? "Ok" : "";
     };
-});
+})
 
 angular.module("contabm").filter('grupoContableFilter', function () {
     return function (grupoContableID) {
         var grupoContable = GruposContables.findOne({ grupo: grupoContableID });
         return !grupoContable || _.isEmpty(grupoContable) ? "Indefinido" : grupoContable.descripcion;
     };
-});
+})
 
 angular.module("contabm").filter('tipoCompania2Filter', function () {
     // la diferencia con el anterior es que aquí recibimos una compañía, la buscamos; buscamos su tipo y lo regresamos
@@ -133,7 +132,7 @@ angular.module("contabm").filter('tipoCompania2Filter', function () {
 
         return found ? found.descripcion : "Indefinido";
     };
-});
+})
 
 // para mostrar las chequeras en el Select en la página que permite agregar mov bancarios;
 // la idea es mostrar: banco + mon + cuenta + etc.
@@ -172,7 +171,7 @@ angular.module("contabm").filter('formatChequera', function () {
         };
         return descripcionChequera;
     };
-});
+})
 
 
 angular.module("contabm").filter('empresaUsuariaSeleccionadaFilter', function () {
@@ -180,14 +179,14 @@ angular.module("contabm").filter('empresaUsuariaSeleccionadaFilter', function ()
         var compania = Companias.findOne(companiaID, { fields: { nombre: 1 } });
         return !compania || _.isEmpty(compania) ? "Indefinido" : compania.nombre;
     };
-});
+})
 
 angular.module("contabm").filter('companiaAbreviaturaFilter', function () {
     return function (companiaID) {
         var compania = Companias.findOne({ numero: companiaID }, { fields: { abreviatura: 1 } });
         return !compania || _.isEmpty(compania) ? "Indefinido" : compania.abreviatura;
     };
-});
+})
 
 
 angular.module("contabm").filter('companiaNombreCortoFilter', function () {
@@ -195,14 +194,14 @@ angular.module("contabm").filter('companiaNombreCortoFilter', function () {
         var compania = Companias.findOne({ _id: companiaID }, { fields: { nombreCorto: 1 } });
         return !compania || _.isEmpty(compania) ? "Indefinido" : compania.nombreCorto;
     };
-});
+})
 
 angular.module("contabm").filter('companiaNombreCortoFilter_byNumeroContab', function () {
     return function (companiaID) {
         var compania = Companias.findOne({ numero: companiaID }, { fields: { nombreCorto: 1 } });
         return !compania || _.isEmpty(compania) ? "Indefinido" : compania.nombreCorto;
     };
-});
+})
 
 
 angular.module("contabm").filter('companiaNombreFilter', function () {
@@ -210,21 +209,21 @@ angular.module("contabm").filter('companiaNombreFilter', function () {
         var compania = Companias.findOne({ _id: companiaID }, { fields: { nombre: 1 } });
         return !compania || _.isEmpty(compania) ? "Indefinido" : compania.nombre;
     };
-});
+})
 
 angular.module("contabm").filter('monedaDescripcionFilter', function () {
     return function (monedaID) {
         var moneda = Monedas.findOne({ moneda: monedaID });
         return !moneda || _.isEmpty(moneda) ? "Indefinido" : moneda.descripcion;
     };
-});
+})
 
 angular.module("contabm").filter('monedaSimboloFilter', function () {
     return function (monedaID) {
         var moneda = Monedas.findOne({ moneda: monedaID });
         return !moneda || _.isEmpty(moneda) ? "Indefinido" : moneda.simbolo;
     };
-});
+})
 
 angular.module("contabm").filter('cuentasContables_cuentaDescripcionCia', function () {
     return function (cuentaContableID) {
@@ -238,7 +237,7 @@ angular.module("contabm").filter('cuentasContables_cuentaDescripcionCia', functi
         var cuentaContable = CuentasContables2.findOne({ id: cuentaContableID });
         return !cuentaContable ? "Indefinido" : cuentaContable.cuentaDescripcionCia();
     };
-});
+})
 
 angular.module("contabm").filter('cuentasContables_soloCuenta', function () {
     return function (cuentaContableID) {
@@ -252,20 +251,50 @@ angular.module("contabm").filter('cuentasContables_soloCuenta', function () {
         var cuentaContable = CuentasContables2.findOne({ id: cuentaContableID });
         return !cuentaContable ? "Indefinido" : cuentaContable.cuenta;
     };
-});
+})
 
 angular.module("contabm").filter('mesesAnoFiscal_ano', function () {
     return function (ano) {
         return ano == 0 ? "Mismo año" : "Próximo año";
     };
-});
+})
 
 angular.module("contabm").filter('empleadoFilter', function () {
-    return function (empleado) {
-        const empleadoItem = Empleados.findOne({ empleado: empleado });
-        return empleadoItem ? empleadoItem.alias : "Indefinido";
-    };
-});
+    return function (ciaContab, empleado) {
+
+        leerListaEmpleados(ciaContab)
+            .then((result0) => {
+
+                const empleados = result0.items;
+                const empleadoItem = empleados.find({ empleado: empleado });
+
+                return empleadoItem ? empleadoItem.alias : "Indefinido";
+            })
+            .catch((err) => {
+                return "Indefinido";
+            })
+    }
+})
+
+
+const leerListaEmpleados = (ciaContabSeleccionadaID) => { 
+
+    return new Promise((resolve, reject) => { 
+
+        Meteor.call('empleados_lista_leerDesdeSql', ciaContabSeleccionadaID, (err, result) => {
+
+            if (err) {
+                reject(err); 
+            }
+    
+            if (result && result.error) { 
+                reject(result); 
+            }
+    
+            resolve(result)
+        })
+    })
+}
 
 
 angular.module("contabm").filter('userNameOrEmailFilter', function () {
@@ -279,7 +308,7 @@ angular.module("contabm").filter('userNameOrEmailFilter', function () {
             if (user.userName)
                 userName = user.userName;
             else
-                if (_.isArray(user.emails) && user.emails.length && user.emails[0].address)
+                if (Array.isArray(user.emails) && user.emails.length && user.emails[0].address)
                     userName = user.emails[0].address;
 
         return userName;

@@ -3,7 +3,6 @@ import numeral from 'numeral';
 
 import { Companias } from '/imports/collections/companias';
 import { CompaniaSeleccionada } from '/imports/collections/companiaSeleccionada';
-import { Empleados } from '/models/nomina/empleados'; 
 import { CuentasContables2 } from '/imports/collections/contab/cuentasContables2'; 
 import { Filtros } from '/imports/collections/general/filtros'; 
 
@@ -33,39 +32,36 @@ angular.module("contabm").controller("Catalogos_Nomina_CuentasContablesEmpleadoR
     let companiaSeleccionadaUser = CompaniaSeleccionada.findOne({ userID: Meteor.userId() });
     let companiaSeleccionada = {};
 
-    if (companiaSeleccionadaUser) { 
-    companiaSeleccionada = Companias.findOne(companiaSeleccionadaUser.companiaID,
-        { fields: { numero: true, nombre: true, nombreCorto: true } });
+    if (companiaSeleccionadaUser) {
+        companiaSeleccionada = Companias.findOne(companiaSeleccionadaUser.companiaID,
+            { fields: { numero: true, nombre: true, nombreCorto: true } });
     }
           
     $scope.companiaSeleccionada = {};
 
-    if (companiaSeleccionada && !_.isEmpty(companiaSeleccionada)) { 
-    $scope.companiaSeleccionada = companiaSeleccionada;
+    if (companiaSeleccionada && !_.isEmpty(companiaSeleccionada)) {
+        $scope.companiaSeleccionada = companiaSeleccionada;
     }
-    else { 
-    $scope.companiaSeleccionada.nombre = "No hay una compañía seleccionada ...";
+    else {
+        $scope.companiaSeleccionada.nombre = "No hay una compañía seleccionada ...";
     }
           
     // ------------------------------------------------------------------------------------------------
     $scope.helpers({
         maestraRubros: () => {
-        return MaestraRubros.find({}, { items: { rubro: 1, nombreCortoRubro: 1 },
-                                        sort: { nombreCortoRubro: 1 } });
-        },
-        empleados: () => {
-            return Empleados.find({ cia:  companiaSeleccionada ? companiaSeleccionada.numero : -999 },
-                                { items: { empleado: 1, alias: 1 },
-                                    sort: { alias: 1 }});
+            return MaestraRubros.find({}, {
+                items: { rubro: 1, nombreCortoRubro: 1 },
+                sort: { nombreCortoRubro: 1 }
+            });
         },
         departamentos: () => {
-            return Departamentos.find({}, { sort: { descripcion: 1 }});
+            return Departamentos.find({}, { sort: { descripcion: 1 } });
         },
         cuentasContables: () => {
-            return CuentasContables2.find({ cia:  companiaSeleccionada ? companiaSeleccionada.numero : -999 },
-                                        { sort: { cuenta: 1 }})
+            return CuentasContables2.find({ cia: companiaSeleccionada ? companiaSeleccionada.numero : -999 },
+                { sort: { cuenta: 1 } })
         },
-    });
+    })
 
 
     let cuentasContables_ui_grid_api = null;
@@ -317,8 +313,9 @@ angular.module("contabm").controller("Catalogos_Nomina_CuentasContablesEmpleadoR
     $scope.filtro = {};
     var filtroAnterior = Filtros.findOne({ nombre: 'nomina.cuentasContablesEmpleadoRubro', userId: Meteor.userId() });
 
-    if (filtroAnterior)
+    if (filtroAnterior) { 
         $scope.filtro = _.clone(filtroAnterior.filtro);
+    }
     // ------------------------------------------------------------------------------------------------------
 
     $scope.cuentasContablesEmpleadoRubro = []
@@ -390,18 +387,18 @@ angular.module("contabm").controller("Catalogos_Nomina_CuentasContablesEmpleadoR
             $scope.showProgress = false;
             $scope.$apply();
         });
-    };
+    }
 
     $scope.leerMasRegistros = function () {
         limit += 50;    // la próxima vez, se leerán 50 más ...
         $scope.leerRegistrosDesdeServer(limit);     // cada vez se leen 50 más ...
-    };
+    }
 
     $scope.leerTodosLosRegistros = function () {
         // simplemente, leemos la cantidad total de registros en el collection (en el server y para el user)
         limit = recordCount;
         $scope.leerRegistrosDesdeServer(limit);     // cada vez se leen 50 más ...
-    };
+    }
 
     $scope.save = function () {
         $scope.showProgress = true;
@@ -425,7 +422,7 @@ angular.module("contabm").controller("Catalogos_Nomina_CuentasContablesEmpleadoR
                     });
                 }
             }
-        });
+        })
 
         if (errores && errores.length) {
             $scope.alerts.length = 0;
@@ -440,11 +437,11 @@ angular.module("contabm").controller("Catalogos_Nomina_CuentasContablesEmpleadoR
                         else
                             return previous + "<br />" + current;
                     }, "")
-            });
+            })
 
             $scope.showProgress = false;
             return;
-        };
+        }
 
         $meteor.call('nomina.cuentasContablesEmpleadoRubroSave', editedItems).then(
             function (data) {
@@ -469,8 +466,8 @@ angular.module("contabm").controller("Catalogos_Nomina_CuentasContablesEmpleadoR
                 });
 
                 $scope.showProgress = false;
-        });
-    };
+        })
+    }
 
     // ------------------------------------------------------------------------------------------------------
     // para recibir los eventos desde la tarea en el servidor ...
@@ -486,13 +483,51 @@ angular.module("contabm").controller("Catalogos_Nomina_CuentasContablesEmpleadoR
     });
     // ------------------------------------------------------------------------------------------------------
 
+    $scope.showProgress = true;
+    leerListaEmpleados($scope.companiaSeleccionada.numero)
+        .then((result0) => {
+
+            $scope.helpers({
+                empleados: () => {
+                    return result0.items;
+                },
+            })
+
+            // ahora que tenemos la lista de empleados, establecemos el ddl en el ui-grid 
+            $scope.cuentasContables_ui_grid.columnDefs[2].editDropdownOptionsArray = $scope.empleados; 
+
+            $scope.showProgress = false;
+            $scope.$apply();
+        })
+        .catch((err) => {
+            return "Indefinido";
+        })
+
     // ------------------------------------------------------------------------------------------------
     // cuando el usuario sale de la página, nos aseguramos de detener (ie: stop) el subscription,
     // para limpiar los items en minimongo ...
     $scope.$on('$destroy', function() {
         if (subscriptionHandle && subscriptionHandle.stop) {
             subscriptionHandle.stop();
-        };
-    });
+        }
+    })
+}])
+
+const leerListaEmpleados = (ciaContabSeleccionadaID) => { 
+
+    return new Promise((resolve, reject) => { 
+
+        Meteor.call('empleados_lista_leerDesdeSql', ciaContabSeleccionadaID, (err, result) => {
+
+            if (err) {
+                reject(err); 
+            }
+    
+            if (result && result.error) { 
+                reject(result); 
+            }
+    
+            resolve(result)
+        })
+    })
 }
-]);

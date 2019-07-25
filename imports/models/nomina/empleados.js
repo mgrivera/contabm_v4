@@ -1,12 +1,12 @@
 
-import { Mongo } from 'meteor/mongo';
+
 import SimpleSchema from 'simpl-schema';
 
 // NOTA: por ahora *no* tenemos un collection en mongo para los empleados; sin embargo,
 // agregamos este schema para validar fácilmente cuando el usuario intenta editar un
 // empleado ...
 
-let empleadoFaltas_simpleSchema = new SimpleSchema({
+const empleadoFaltas_simpleSchema = new SimpleSchema({
     id: { type: Number, label: "ID", optional: false, },
     empleadoID: { type: Number, label: "EmpleadoID", optional: false, },
     desde: { type: Date, label: "Desde", optional: false, },
@@ -23,9 +23,9 @@ let empleadoFaltas_simpleSchema = new SimpleSchema({
     observaciones: { type: String, label: "Observaciones", optional: true, },
     descripcionRubroNomina: { type: String, label: "Descripción rubro", optional: true, },
     docState: { type: Number, optional: true },
-});
+})
 
-let empleadoSueldos_simpleSchema = new SimpleSchema({
+const empleadoSueldos_simpleSchema = new SimpleSchema({
     id: { type: Number, label: "ID", optional: false, },
     empleadoID: { type: Number, label: "EmpleadoID", optional: false, },
     desde: { type: Date, label: "Desde", optional: false, },
@@ -33,7 +33,7 @@ let empleadoSueldos_simpleSchema = new SimpleSchema({
     docState: { type: Number, optional: true },
 });
 
-let simpleSchema = new SimpleSchema({
+export const Empleados_SimpleSchema = new SimpleSchema({
     empleado: { type: Number, label: "Empleado", optional: false },
     cedula: { type: String, label: "Cédula", optional: false },
     alias: { type: String, label: "Alias", optional: false },
@@ -91,12 +91,4 @@ let simpleSchema = new SimpleSchema({
     cia: { type: Number, label: "Cia Contab", optional: false, },
 
     docState: { type: Number, optional: true },
-});
-
-export const Empleados = new Mongo.Collection("empleados");
-Empleados.attachSchema(simpleSchema);
-
-if (Meteor.isServer) {
-    // indicamos a mongo que queremos un índice ..
-    Empleados._ensureIndex({ empleado: 1 });
-}
+})

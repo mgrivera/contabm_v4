@@ -1,5 +1,7 @@
 
-import { Empleados } from '/models/nomina/empleados'; 
+
+import lodash from 'lodash'; 
+
 import { Filtros } from '/imports/collections/general/filtros'; 
 
 import { mensajeErrorDesdeMethod_preparar } from '/client/imports/clientGlobalMethods/mensajeErrorDesdeMethod_preparar'; 
@@ -41,12 +43,6 @@ function ($scope, $stateParams, $state, $meteor, $modal) {
     $scope.origen = $stateParams.origen;
 
     let companiaContab = $scope.$parent.companiaSeleccionada; 
-
-    $scope.helpers({
-        empleados: () => {
-            return Empleados.find({ cia: companiaContab.numero });
-        },
-    })
 
     // para limpiar el filtro, simplemente inicializamos el $scope.filtro ...
     $scope.limpiarFiltro = function () {
@@ -125,7 +121,56 @@ function ($scope, $stateParams, $state, $meteor, $modal) {
     var filtroAnterior = Filtros.findOne({ nombre: 'nomina.vacaciones', userId: Meteor.userId() });
 
     // solo hacemos el subscribe si no se ha hecho antes; el collection se mantiene a lo largo de la session del usuario
-    if (filtroAnterior)
-        $scope.filtro = _.clone(filtroAnterior.filtro);
+    if (filtroAnterior) { 
+        $scope.filtro = lodash.clone(filtroAnterior.filtro);
+    }   
+
+    $scope.showProgress = true; 
+
+    leerListaEmpleados(companiaContab.numero)
+        .then((result) => {
+            // el resultado es un array; cada item tiene un array con items (año y cant de asientos) 
+            $scope.helpers({
+                empleados: () => {
+                    return result.items;
+                },
+            })
+
+            $scope.showProgress = false;
+            $scope.$apply();
+        })
+        .catch((err) => {
+            let errorMessage = mensajeErrorDesdeMethod_preparar(err);
+
+            $scope.alerts.length = 0;
+            $scope.alerts.push({
+                type: 'danger',
+                msg: errorMessage
+            });
+
+            $scope.showProgress = false;
+            $scope.$apply();
+            
+            return;
+        })
+}])
+
+
+const leerListaEmpleados = (ciaContabSeleccionadaID) => {
+
+    return new Promise((resolve, reject) => {
+
+        Meteor.call('empleados_lista_leerDesdeSql', ciaContabSeleccionadaID, (err, result) => {
+
+            if (err) {
+                reject(err);
+            }
+
+            if (result && result.error) {
+                reject(result);
+            }
+
+            resolve(result)
+        })
+    })
 }
-]);

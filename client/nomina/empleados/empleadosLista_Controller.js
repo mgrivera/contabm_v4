@@ -2,11 +2,10 @@
 import { Companias } from '/imports/collections/companias';
 import { CompaniaSeleccionada } from '/imports/collections/companiaSeleccionada';
 
-angular.module("contabm").controller("Nomina_EmpleadosList_Controller",
-['$scope', '$stateParams', '$state', '$meteor', '$modal',
-function ($scope, $stateParams, $state, $meteor, $modal) {
+import { Temp_Consulta_Empleados } from '/imports/collections/temp/tempConsultaEmpleados'; 
 
-    //debugger;
+angular.module("contabm").
+        controller("Nomina_EmpleadosList_Controller", ['$scope', '$stateParams', '$state', '$modal', function ($scope, $stateParams, $state, $modal) {
 
     $scope.showProgress = false;
 
@@ -19,20 +18,11 @@ function ($scope, $stateParams, $state, $meteor, $modal) {
 
     $scope.origen = $stateParams.origen;
     var pageNumber = $stateParams.pageNumber;
-
+ 
     // ------------------------------------------------------------------------------------------------
-    // leemos la compañía seleccionada
-    let companiaContabSeleccionada = CompaniaSeleccionada.findOne({ userID: Meteor.userId() });
-    let companiaContab = {};
-
-    if (companiaContabSeleccionada)
-        companiaContab = Companias.findOne(companiaContabSeleccionada.companiaID);
-    // ------------------------------------------------------------------------------------------------
-
     $scope.regresarALista = function () {
         $state.go("nomina.empleados.filter", { origen: $scope.origen });
-    };
-
+    }
 
     $scope.nuevo = function () {
         $state.go('nomina.empleados.empleado', {
@@ -41,7 +31,7 @@ function ($scope, $stateParams, $state, $meteor, $modal) {
             pageNumber: 0,                          // nota: por ahora no vamos a paginar; tal vez luego, cuando esto funcione bien ...
             vieneDeAfuera: false
         });
-    };
+    }
 
     $scope.abrirPaginaDetalles = function (siniestroID) {
         // vamos al state específico, dependiendo de si estamos consultando/editando
@@ -52,11 +42,11 @@ function ($scope, $stateParams, $state, $meteor, $modal) {
             pageNumber: 0,                          // nota: por ahora no vamos a paginar; tal vez luego, cuando esto funcione bien ...
             vieneDeAfuera: false
         });
-    };
+    }
 
     $scope.regresar = function () {
         $state.go('nomina.empleados.filter', { origen: $scope.origen });
-    };
+    }
 
 
     let empleados_ui_grid_api = null;
@@ -78,7 +68,6 @@ function ($scope, $stateParams, $state, $meteor, $modal) {
             empleados_ui_grid_api = gridApi;
 
             gridApi.selection.on.rowSelectionChanged($scope, function (row) {
-                //debugger;
                 empleadoSeleccionado = {};
 
                 if (row.isSelected) {
@@ -105,7 +94,7 @@ function ($scope, $stateParams, $state, $meteor, $modal) {
         getRowIdentity: function (row) {
             return row._id;
         }
-    };
+    }
 
 
     $scope.empleados_ui_grid.columnDefs = [
@@ -243,7 +232,7 @@ function ($scope, $stateParams, $state, $meteor, $modal) {
             enableSorting: true,
             type: 'string'
         },
-    ];
+    ]
 
 
     $scope.empleados = []
@@ -266,7 +255,5 @@ function ($scope, $stateParams, $state, $meteor, $modal) {
 
         $scope.showProgress = false;
         $scope.$apply();
-    });
-
-  }
-]);
+    })
+  }])

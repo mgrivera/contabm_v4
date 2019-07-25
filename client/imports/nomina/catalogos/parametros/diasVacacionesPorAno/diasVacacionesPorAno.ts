@@ -1,12 +1,10 @@
 
 
-
 import * as angular from 'angular';
 import * as lodash from 'lodash';
 import { Meteor } from 'meteor/meteor';
 
 import { mensajeErrorDesdeMethod_preparar } from '../../../../../imports/clientGlobalMethods/mensajeErrorDesdeMethod_preparar'; 
-import { DialogModal } from 'client/imports/general/genericUIBootstrapModal/angularGenericModal'; 
 
 import { vacacPorAnoGenericas_schema } from '../../../../../../imports/collections/nomina/parametros.nomina.cantidadDiasVacacionesPorAno'; 
 import { vacacPorAnoParticulares_schema } from '../../../../../../imports/collections/nomina/parametros.nomina.cantidadDiasVacacionesPorAno';
@@ -14,11 +12,9 @@ import { vacacPorAnoParticulares_schema } from '../../../../../../imports/collec
 import { Companias } from '../../../../../../imports/collections/companias';
 import { CompaniaSeleccionada } from '../../../../../../imports/collections/companiaSeleccionada';
 
-import { Empleados } from '../../../../../../models/nomina/empleados'; 
-
 // Este controller (angular) se carga con la página primera del programa
-angular.module("contabm.nomina.catalogos").controller("catalogos_nomina_parametros_diasVacacionesPorAno_Controller",
-['$scope', '$modal', function ($scope, $modal) {
+angular.module("contabm.nomina.catalogos").
+        controller("catalogos_nomina_parametros_diasVacacionesPorAno_Controller", ['$scope', function ($scope) {
 
     $scope.showProgress = false;
 
@@ -39,13 +35,6 @@ angular.module("contabm.nomina.catalogos").controller("catalogos_nomina_parametr
             ciaContabSeleccionada = Companias.findOne({ _id: ciaSeleccionada.companiaID });
         }
     }
-
-    $scope.helpers({ 
-        empleados: () => { 
-            return Empleados.find({ cia: ciaContabSeleccionada && ciaContabSeleccionada.numero ? ciaContabSeleccionada.numero : -999 }, 
-                                  { fields: { empleado: 1, alias: 1 }, sort: { alias: true, }} ); 
-        }, 
-    })
 
     let vacacionesPorAno_genericos_ui_grid_api: any = null;
     let vacacionesPorAno_genericos_itemSeleccionado: any = null; 
@@ -435,7 +424,7 @@ angular.module("contabm.nomina.catalogos").controller("catalogos_nomina_parametr
         let isValid = false;
         let errores: string[] = [];
 
-        editedItems.forEach((item) => {
+        editedItems.forEach((item: any) => {
             if (item.docState != 3) {
                 isValid = vacacPorAnoGenericas_schema.namedContext().validate(item);
 
@@ -454,7 +443,7 @@ angular.module("contabm.nomina.catalogos").controller("catalogos_nomina_parametr
         // nótese como validamos cada item antes de intentar guardar (en el servidor)
         isValid = false;
 
-        editedItems2.forEach((item) => {
+        editedItems2.forEach((item: any) => {
             if (item.docState != 3) {
                 isValid = vacacPorAnoParticulares_schema.namedContext().validate(item);
 
@@ -571,49 +560,94 @@ angular.module("contabm.nomina.catalogos").controller("catalogos_nomina_parametr
     $scope.vacacionesPorAno_genericos = []; 
     $scope.vacacionesPorAno_empleado = []; 
 
-    Meteor.call('nomina.parametros.vacacionesPorAno.leerDesdeSqlServer', (err, result) => { 
+    leerListaEmpleados($scope.companiaSeleccionada.numero)
+        .then((result0: any) => {
+            // el resultado es un array; cada item tiene un array con items (año y cant de asientos) 
+            $scope.helpers({
+                empleados: () => {
+                    return result0.items;
+                },
+            })
 
-        if (err) { 
+            // ahora que tenemos la lista de empleados establecemos el ddl en el ui-grid 
+            $scope.vacacionesPorAno_empleado_ui_grid.columnDefs[2].editDropdownOptionsArray = $scope.empleados,
+
+            Meteor.call('nomina.parametros.vacacionesPorAno.leerDesdeSqlServer', (err, result) => { 
+
+                if (err) { 
+                    let errorMessage = mensajeErrorDesdeMethod_preparar(err);
+                    
+                    $scope.alerts.length = 0;
+                    $scope.alerts.push({
+                        type: 'danger',
+                        msg: errorMessage
+                    });
+                
+                    $scope.showProgress = false;
+                    $scope.$apply();
+        
+                    return; 
+                } 
+        
+                if (result.error) { 
+                    $scope.alerts.length = 0;
+                    $scope.alerts.push({
+                        type: 'danger',
+                        msg: result.message,
+                    });
+                
+                    $scope.showProgress = false;
+                    $scope.$apply(); 
+                } else { 
+                    $scope.alerts.length = 0;
+                    $scope.alerts.push({
+                        type: 'info',
+                        msg: result.message,
+                    });
+                    
+                    $scope.vacacionesPorAno_genericos = JSON.parse(result.vacacionesPorAno_genericos);
+                    $scope.vacacionesPorAno_empleado = JSON.parse(result.vacacionesPorAno_empleado); 
+                    
+                    $scope.vacacionesPorAno_genericos_ui_grid.data = $scope.vacacionesPorAno_genericos;
+                    $scope.vacacionesPorAno_empleado_ui_grid.data = $scope.vacacionesPorAno_empleado;
+        
+                    $scope.showProgress = false;
+                    $scope.$apply();
+                }
+            })
+        })
+        .catch((err) => {
             let errorMessage = mensajeErrorDesdeMethod_preparar(err);
-            
+
             $scope.alerts.length = 0;
             $scope.alerts.push({
                 type: 'danger',
                 msg: errorMessage
             });
-        
-            $scope.showProgress = false;
-            $scope.$apply();
-
-            return; 
-        } 
-
-        if (result.error) { 
-            $scope.alerts.length = 0;
-            $scope.alerts.push({
-                type: 'danger',
-                msg: result.message,
-            });
-        
-            $scope.showProgress = false;
-            $scope.$apply(); 
-        } else { 
-            $scope.alerts.length = 0;
-            $scope.alerts.push({
-                type: 'info',
-                msg: result.message,
-            });
-            
-            $scope.vacacionesPorAno_genericos = JSON.parse(result.vacacionesPorAno_genericos);
-            $scope.vacacionesPorAno_empleado = JSON.parse(result.vacacionesPorAno_empleado); 
-            
-            $scope.vacacionesPorAno_genericos_ui_grid.data = $scope.vacacionesPorAno_genericos;
-            $scope.vacacionesPorAno_empleado_ui_grid.data = $scope.vacacionesPorAno_empleado;
 
             $scope.showProgress = false;
             $scope.$apply();
-        }
+
+            return;
+        })
+}])
+
+
+const leerListaEmpleados = (ciaContabSeleccionadaID) => { 
+
+    return new Promise((resolve, reject) => { 
+
+        Meteor.call('empleados_lista_leerDesdeSql', ciaContabSeleccionadaID, (err, result) => {
+
+            if (err) {
+                reject(err); 
+            }
+    
+            if (result && result.error) { 
+                reject(result); 
+            }
+    
+            resolve(result)
+        })
     })
-
 }
-])

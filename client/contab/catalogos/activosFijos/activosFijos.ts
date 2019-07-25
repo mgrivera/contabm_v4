@@ -11,7 +11,6 @@ import { Companias } from '../../../../imports/collections/companias';
 import { CompaniaSeleccionada } from '../../../../imports/collections/companiaSeleccionada';
 import { Filtros } from '../../../../imports/collections/general/filtros'; 
 import { Temp_Consulta_Contab_ActivosFijos } from '../../../../imports/collections/contab/temp.contab.consulta.activosFijos'; 
-import { Empleados } from '../../../../models/nomina/empleados'; 
 
 import { ActivosFijos_SimpleSchema } from '../../../../imports/collections/contab/inventarioActivosFijos'; 
 
@@ -69,15 +68,6 @@ function ($stateParams, $state, $scope,  $modal, uiGridConstants, $interval) {
                                         } });
         },
     })
-
-    $scope.helpers({
-        empleados: () => {
-            return Empleados.find({ cia:  $scope.companiaSeleccionada ? $scope.companiaSeleccionada.numero : -999 },
-                                  { fields: { empleado: 1, alias: 1 },
-                                    sort: { alias: 1 }});
-        },
-    });
-
 
     $scope.refresh0 = function () {
         if ($scope.activoFijo && $scope.activoFijo.docState && $scope.activoFijo.docState === 1) { 
@@ -841,10 +831,44 @@ function ($stateParams, $state, $scope,  $modal, uiGridConstants, $interval) {
     })
     // ------------------------------------------------------------------------------------------------------
 
-    $scope.showProgress = true;
-    Meteor.call('contab.activosFijos.leerTablasCatalogosDesdeSqlServer', $scope.companiaSeleccionada.numero, (err, result) => {
 
-        if (err) {
+    $scope.showProgress = true;
+    leerListaEmpleados($scope.companiaSeleccionada.numero)
+        .then((result0: any) => {
+            // el resultado es un array; cada item tiene un array con items (año y cant de asientos) 
+            $scope.helpers({
+                empleados: () => {
+                    return result0.items;
+                },
+            })
+
+            Meteor.call('contab.activosFijos.leerTablasCatalogosDesdeSqlServer', $scope.companiaSeleccionada.numero, (err, result) => {
+
+                if (err) {
+                    let errorMessage = mensajeErrorDesdeMethod_preparar(err);
+        
+                    $scope.alerts.length = 0;
+                    $scope.alerts.push({
+                        type: 'danger',
+                        msg: errorMessage
+                    });
+        
+                    $scope.showProgress = false;
+                    $scope.$apply();
+                    return;
+                }
+        
+                let catalogos = JSON.parse(result);
+        
+                $scope.departamentos = catalogos.departamentos;
+                $scope.tiposProducto = catalogos.tiposProducto; 
+                $scope.proveedores = catalogos.proveedores; 
+        
+                $scope.showProgress = false;
+                $scope.$apply();
+            })
+        })
+        .catch((err) => {
             let errorMessage = mensajeErrorDesdeMethod_preparar(err);
 
             $scope.alerts.length = 0;
@@ -855,18 +879,10 @@ function ($stateParams, $state, $scope,  $modal, uiGridConstants, $interval) {
 
             $scope.showProgress = false;
             $scope.$apply();
+
             return;
-        }
+        })
 
-        let catalogos = JSON.parse(result);
-
-        $scope.departamentos = catalogos.departamentos;
-        $scope.tiposProducto = catalogos.tiposProducto; 
-        $scope.proveedores = catalogos.proveedores; 
-
-        $scope.showProgress = false;
-        $scope.$apply();
-    })
 
     // ------------------------------------------------------------------------------------------------
     // cuando el usuario sale de la página, nos aseguramos de detener (ie: stop) el subscription,
@@ -1032,4 +1048,23 @@ function calcularDepreciacion(activoFijo) {
         error: false, 
         activoFijo: activoFijo, 
     }
+}
+
+const leerListaEmpleados = (ciaContabSeleccionadaID) => { 
+
+    return new Promise((resolve, reject) => { 
+
+        Meteor.call('empleados_lista_leerDesdeSql', ciaContabSeleccionadaID, (err, result) => {
+
+            if (err) {
+                reject(err); 
+            }
+    
+            if (result && result.error) { 
+                reject(result); 
+            }
+    
+            resolve(result)
+        })
+    })
 }

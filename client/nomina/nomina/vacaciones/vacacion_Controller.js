@@ -1,8 +1,6 @@
 
 
 import { DialogModal } from '/client/imports/general/genericUIBootstrapModal/angularGenericModal'; 
-// import { Empleados } from '/models/nomina/empleados'; 
-// import { GruposEmpleados } from '/models/nomina/catalogos'; 
 import { mensajeErrorDesdeMethod_preparar } from '/client/imports/clientGlobalMethods/mensajeErrorDesdeMethod_preparar'; 
 
 angular.module("contabm").controller("Nomina_Vacacion_Controller",
@@ -33,18 +31,18 @@ function ($scope, $stateParams, $state, $meteor, $modal) {
                 case 'salida': {
                     if ($scope.vacacion.salida && !$scope.vacacion.regreso) {
                         $scope.vacacion.regreso = $scope.vacacion.salida;
-                    };
+                    }
 
                     if ($scope.vacacion.salida && !$scope.vacacion.periodoPagoDesde) {
                         $scope.vacacion.periodoPagoDesde = $scope.vacacion.salida;
-                    };
+                    }
 
                     break;
                 }
                 case 'regreso': {
                     if ($scope.vacacion.regreso && !$scope.vacacion.periodoPagoHasta) {
                         $scope.vacacion.periodoPagoHasta = $scope.vacacion.regreso;
-                    };
+                    }
 
                     break;
                 }
@@ -310,21 +308,47 @@ function ($scope, $stateParams, $state, $meteor, $modal) {
     function leerVacacion(id) {
         $scope.subscribe("vacaciones", () => [{ _id: id }], {
             onReady: function () {
+
                 $scope.helpers({
                     vacacion: () => {
                         return Vacaciones.findOne(id);
                     },
-                });
-
+                })
 
                 if ($scope.vacacion) {
                     $scope.helpers({
                         empleado: () => {
-                            const empleadoID = $scope.vacacion && $scope.vacacion.empleado ? $scope.vacacion.empleado : -999;
+                            
                             return $scope.empleados.find(x => x.empleado == empleadoID);
                         },
                     });
-                };
+                }
+
+                const empleadoID = $scope.vacacion && $scope.vacacion.empleado ? $scope.vacacion.empleado : -999;
+
+                leerEmpleadoDesdeSql(empleadoID)
+                    .then((result) => {
+
+                        $scope.helpers({
+                            empleado: () => {
+                                return result;
+                            },
+                        })
+                    })
+                    .catch((err) => {
+                        let errorMessage = mensajeErrorDesdeMethod_preparar(err);
+
+                        $scope.alerts.length = 0;
+                        $scope.alerts.push({
+                            type: 'danger',
+                            msg: errorMessage
+                        });
+
+                        $scope.showProgress = false;
+                        $scope.$apply();
+
+                        return;
+                    })
 
                 // en este momento tenemos la vacación y el empleado ...
                 $scope.showProgress = false;
@@ -408,3 +432,22 @@ function ($scope, $stateParams, $state, $meteor, $modal) {
             });
     }
 }])
+
+const leerEmpleadoDesdeSql = (pk) => {
+
+    return new Promise((resolve, reject) => {
+
+        Meteor.call('empleados_leerByID_desdeSql', pk, (err, result) => {
+
+            if (err) {
+                reject(err);
+            }
+
+            if (result && result.error) {
+                reject(result);
+            }
+
+            resolve(JSON.parse(result));
+        })
+    })
+}

@@ -1,9 +1,12 @@
 
+
 import { sequelize } from '/server/sqlModels/_globals/_loadThisFirst/_globals';
 import lodash from 'lodash';
 import moment from 'moment';
 import numeral from 'numeral'; 
 import { TimeOffset } from '/globals/globals'; 
+
+import { Temp_Consulta_Empleados } from '/imports/collections/temp/tempConsultaEmpleados'; 
 
 Meteor.methods(
 {
@@ -185,7 +188,6 @@ Meteor.methods(
         // eliminamos los asientos que el usuario pueda haber registrado antes ...
         Temp_Consulta_Empleados.remove({ user: this.userId });
 
-
         if (response.result.length == 0) {
             return "Cero registros han sido leídos desde sql server.";
         }
@@ -204,7 +206,6 @@ Meteor.methods(
         response.result.forEach((item) => {
 
             // nótese como los 'registros' en sql y mongo son idénticos, salvo algunos fields adicionales que existen en mongo ...
-
             let empleado = lodash.clone(item);
 
             empleado._id = new Mongo.ObjectID()._str;
@@ -213,7 +214,6 @@ Meteor.methods(
             // al leer de sql, debemos sumar 4:30, para compensar la conversión que intenta hacer sequelize
             // (desde utc a local);
             // ahora tenemos una variable 'global' que sirve de 'offset' ...
-
             empleado.fechaIngreso = empleado.fechaIngreso ? moment(empleado.fechaIngreso).add(TimeOffset, 'hours').toDate() : null;
             empleado.fechaRetiro = empleado.fechaRetiro ? moment(empleado.fechaRetiro).add(TimeOffset, 'hours').toDate() : null;
 
@@ -232,7 +232,7 @@ Meteor.methods(
                     break;
                 default:
                     empleado.situacionActual = 'Indefinido';
-            };
+            }
 
             switch(empleado.status) {
                 case 'A':
@@ -243,7 +243,7 @@ Meteor.methods(
                     break;
                 default:
                     empleado.status = 'Indefinido';
-            };
+            }
 
             switch(empleado.tipoNomina) {
                 case 1:
@@ -257,14 +257,9 @@ Meteor.methods(
                     break;
                 default:
                     empleado.tipoNomina = 'Indefinido';
-            };
+            }
 
             Temp_Consulta_Empleados.insert(empleado);
-
-            // Temp_Consulta_Empleados.insert(empleado, function (error, result) {
-            //     if (error)
-            //         throw new Meteor.Error("validationErrors", error.invalidKeys.toString());
-            // });
 
             // -------------------------------------------------------------------------------------------------------
             // vamos a reportar progreso al cliente; solo 20 veces ...
@@ -282,7 +277,7 @@ Meteor.methods(
                                         { myuserId: this.userId, app: 'nomina', process: 'leerNominaEmpleadosDesdeSqlServer' },
                                         { current: 1, max: 1, progress: numeral(cantidadRecs / numberOfItems).format("0 %") });
                     reportar = 0;
-                };
+                }
             }
             // -------------------------------------------------------------------------------------------------------
         })
