@@ -1,4 +1,5 @@
 
+
 import lodash from 'lodash';
 import saveAs from 'save-as'
 import { Monedas } from '/imports/collections/monedas';
@@ -277,7 +278,38 @@ function ($scope, $stateParams, $state, $meteor, $modal, uiGridConstants) {
         };
     }
 
-    $scope.importarAsientoContable = () => {
+    $scope.importarAsientoContable = function() {
+        DialogModal($modal,
+            "<em>Asientos contables - Importar</em>",
+            `Ud. puede importar un asiento contable sobre un asiento nuevo, o sobre uno que ya exista.<br /><br />  
+                 Si lo hace sobre un asiento nuevo, se importarán <em>todos</em> los datos del asiento, menos la fecha.<br />
+                 Si lo hace sobre un asiento que ya existe, <em>solo</em> se importarán sus partidas y, además, se agregarán 
+                 a las que ya existan, de existir algunas. 
+                `,
+            true).then(
+                function (resolve) {
+                    importarAsientoContable1();
+                },
+                function (err) {
+                    return true;
+                })
+    }
+
+    function importarAsientoContable1 () {
+        if ($scope.asientoContable && $scope.asientoContable.docState && $scope.asientoContable.docState != 1) {
+            DialogModal($modal, "<em>Asientos contables - Importar</em>",
+                                `El asiento será importado sobre un asiento que <em>ya existe</em>.<br /><br /> 
+                                 Sin embargo, el asiento ha sido editado y aún no se ha grabado.<br /> 
+                                 Ud. debe grabar los cambios hechos al asiento, antes de intentar ejecutar esta función.
+                                `,
+                                false).then();
+            return;
+        } else { 
+            importarAsientoContable2(); 
+        }
+    }
+
+    function importarAsientoContable2 () {
         // permitimos al usuario leer, en un nuevo asiento contable, alguno que se haya exportado a un text file ...
         let inputFile = angular.element("#fileInput");
         if (inputFile) { 
@@ -285,23 +317,7 @@ function ($scope, $stateParams, $state, $meteor, $modal, uiGridConstants) {
         }
     }
 
-    $scope.uploadFile = function(files) {
-
-        if (!$scope.asientoContable || !$scope.asientoContable.docState || $scope.asientoContable.docState != 1) {
-            DialogModal($modal, "<em>Asientos contables</em>",
-                                `Aparentemente, el asiento que <em>recibirá la copia</em> no es nuevo (ya existía).<br /> 
-                                 Ud. debe importar un asiento siempre en un asiento <b>nuevo</b>; es decir, no en uno que ya exista.
-                                `,
-                                false).then();
-
-            let inputFile = angular.element("#fileInput");
-            if (inputFile && inputFile[0] && inputFile[0].value) { 
-                // para que el input type file "limpie" el file indicado por el usuario
-                inputFile[0].value = null;
-            }
-                
-            return;
-        }
+    $scope.uploadFile = function (files) {
 
         let userSelectedFile = files[0];
 
@@ -320,6 +336,11 @@ function ($scope, $stateParams, $state, $meteor, $modal, uiGridConstants) {
             return;
         }
 
+        let asientoContableNuevo = false; 
+        if ($scope.asientoContable && $scope.asientoContable.docState || $scope.asientoContable.docState == 1) {
+            asientoContableNuevo = true; 
+        }
+
         var reader = new FileReader();
         let message = "";
 
@@ -328,46 +349,49 @@ function ($scope, $stateParams, $state, $meteor, $modal, uiGridConstants) {
                 var content = e.target.result;
                 let asientoContable = JSON.parse(content);
 
-                if (asientoContable.tipo) { 
-                    $scope.asientoContable.tipo = asientoContable.tipo;
-                }
-                
-                $scope.asientoContable.descripcion = "";
-
-                if (asientoContable.descripcion) { 
-                    $scope.asientoContable.descripcion = asientoContable.descripcion > 250 ?
-                                                     asientoContable.descripcion.substr(0, 250) :
-                                                     asientoContable.descripcion; 
-                }
-                
-                $scope.asientoContable.moneda = asientoContable.moneda ? asientoContable.moneda : 0;
-                $scope.asientoContable.monedaOriginal = asientoContable.monedaOriginal ? asientoContable.monedaOriginal : 0;
-                $scope.asientoContable.factorDeCambio = asientoContable.factorDeCambio ? asientoContable.factorDeCambio : 0;
-
-                // si no viene la moneda, puede venir su simbolo (scrwebm)
-                if (!$scope.asientoContable.moneda && asientoContable.monedaSimbolo) {
-                    let moneda = Monedas.findOne({ simbolo: asientoContable.monedaSimbolo });
-                    if (moneda) {
-                        $scope.asientoContable.moneda = moneda.moneda;
+                if (asientoContableNuevo) { 
+                    if (asientoContable.tipo) { 
+                        $scope.asientoContable.tipo = asientoContable.tipo;
+                    }
+                    
+                    $scope.asientoContable.descripcion = "";
+    
+                    if (asientoContable.descripcion) { 
+                        $scope.asientoContable.descripcion = asientoContable.descripcion > 250 ?
+                                                         asientoContable.descripcion.substr(0, 250) :
+                                                         asientoContable.descripcion; 
+                    }
+                    
+                    $scope.asientoContable.moneda = asientoContable.moneda ? asientoContable.moneda : 0;
+                    $scope.asientoContable.monedaOriginal = asientoContable.monedaOriginal ? asientoContable.monedaOriginal : 0;
+                    $scope.asientoContable.factorDeCambio = asientoContable.factorDeCambio ? asientoContable.factorDeCambio : 0;
+    
+                    // si no viene la moneda, puede venir su simbolo (scrwebm)
+                    if (!$scope.asientoContable.moneda && asientoContable.monedaSimbolo) {
+                        let moneda = Monedas.findOne({ simbolo: asientoContable.monedaSimbolo });
+                        if (moneda) {
+                            $scope.asientoContable.moneda = moneda.moneda;
+                        }
+                    }
+    
+                    if (!$scope.asientoContable.monedaOriginal && asientoContable.monedaOriginalSimbolo) {
+                        let monedaOriginal = Monedas.findOne({ simbolo: asientoContable.monedaOriginalSimbolo });
+                        if (monedaOriginal) {
+                            $scope.asientoContable.monedaOriginal = monedaOriginal.moneda;
+                        }
                     }
                 }
 
-                if (!$scope.asientoContable.monedaOriginal && asientoContable.monedaOriginalSimbolo) {
-                    let monedaOriginal = Monedas.findOne({ simbolo: asientoContable.monedaOriginalSimbolo });
-                    if (monedaOriginal) {
-                        $scope.asientoContable.monedaOriginal = monedaOriginal.moneda;
-                    }
-                }
+                if (Array.isArray(asientoContable.partidas)) {
 
-                if (lodash.isArray(asientoContable.partidas)) {
-
-                    if (!lodash.isArray($scope.asientoContable.partidas)) { 
+                    if (!Array.isArray($scope.asientoContable.partidas)) { 
                         $scope.asientoContable.partidas = [];
                     }
 
                     // si existe una partida tipo 0 (docState == 0), la eliminamos y la agregamos al final. Este row está listo
                     // para que el usuario agregue una partida sin siquiera hacer un click en Nuevo. La idea es que, cada vez que 
-                    // el usuario usa un row del tipo 0, se agrega uno en forma automática. Al Grabar, este row (no usado) es ignorado ... 
+                    // el usuario usa un row del tipo 0, se agrega uno en forma automática. 
+                    // Al Grabar, este row (no usado) es ignorado ... 
                     lodash.remove($scope.asientoContable.partidas, (x) => { return x.docState === 0; }); 
                         
                     asientoContable.partidas.forEach((p) => {
@@ -386,9 +410,6 @@ function ($scope, $stateParams, $state, $meteor, $modal, uiGridConstants) {
                         if (ultimaPartida && !lodash.isEmpty(ultimaPartida)) {
                             partida.partida = ultimaPartida.partida + 10;
                         }
-
-                        // TODO: modificar para que, si el valor cuentaContableID no viene con la partida, y si viene
-                        // cuentaContable, buscar el id de la cuenta en el catálogo de cuenta y resolver.
 
                         // la idea es resolver: el asiento que viene desde scrwebm no trae una cuentaContableID (ej: 2500) sino,
                         // más bien, la cuenta contable (ej: cuentaContable: '1 001 001 01')
@@ -417,7 +438,8 @@ function ($scope, $stateParams, $state, $meteor, $modal, uiGridConstants) {
                         partida.centroCosto = p.centroCosto ? p.centroCosto : null;
                         partida.docState = 1;
 
-                        // puede venir el código de la cuenta (scrwebm)
+                        // puede venir el código de la cuenta (scrwebm); cuando el asiento viene desde otra aplicación, 
+                        // como scrwebm, vendrá el código de la cuenta y no su id (pk en sql server) 
                         if (!partida.cuentaContableID && p.cuentaContable) {
                             let codigoCuenta = p.cuentaContable.trim();
                             codigoCuenta = codigoCuenta.replace(/ /g, '');
@@ -431,8 +453,8 @@ function ($scope, $stateParams, $state, $meteor, $modal, uiGridConstants) {
                         $scope.asientoContable.partidas.push(partida);
                     })
 
-                    // cuando ya hemos agregado todas las partidas que vienen en el archivo, agregamos una partida tipo 0, para que esté 
-                    // disponible al usuario para agregar una nueva, sin siquiera hacer un click en Nuevo ... 
+                    // cuando ya hemos agregado todas las partidas que vienen en el archivo, agregamos una partida tipo 0, 
+                    // para que esté disponible al usuario para agregar una nueva, sin siquiera hacer un click en Nuevo ... 
                     $scope.agregarPartida(); 
                 }
             }
@@ -448,7 +470,7 @@ function ($scope, $stateParams, $state, $meteor, $modal, uiGridConstants) {
                 }
                 else {
                     $scope.partidas_ui_grid.data = [];
-                    if (lodash.isArray($scope.asientoContable.partidas))
+                    if (Array.isArray($scope.asientoContable.partidas))
                         $scope.partidas_ui_grid.data = $scope.asientoContable.partidas;
                 }
 
@@ -458,14 +480,23 @@ function ($scope, $stateParams, $state, $meteor, $modal, uiGridConstants) {
                     inputFile[0].value = null;
                 }
 
-                DialogModal($modal, "<em>Asientos contables - Importar asiento</em>",
-                            `Ok, el asiento contable ha sido importado en un asiento nuevo. 
-                             Ud. puede hacer modificaciones y <em>Grabar</em>.<br /> 
+                if (asientoContableNuevo) { 
+                    DialogModal($modal, "<em>Asientos contables - Importar asiento</em>",
+                            `Ok, el asiento contable ha sido importado en un <em>asiento nuevo</em>. 
+                             Ud. puede hacer modificaciones y <em>Grabar</em>.<br /><br /> 
                              La fecha del asiento, sin embargo, no ha sido inicializada. 
                              Ud. debe indicar una y <em>salir del campo</em>, 
                              para que el programa lea y asigne el <em>factor de cambio</em> más reciente.`,
                             false).then();
-                    
+                } else { 
+                    DialogModal($modal, "<em>Asientos contables - Importar asiento</em>",
+                            `Ok, el asiento contable ha sido importado en un asiento <em>que ya existía</em>. <br /><br /> 
+                             <b>Solo</b> las partidas del asiento han sido importadas y agregadas a las que ya existían.<br /> 
+                             Ud. puede revisar los cambios, hacer otras modificaciones y <em>Grabar</em> el asiento.
+                             `,
+                            false).then();
+                }
+                  
                 $scope.$apply();
             }
         }
