@@ -1,6 +1,7 @@
 
 
-import { sequelize } from 'server/sqlModels/_globals/_loadThisFirst/_globals';
+// import { sequelize } from 'server/sqlModels/_globals/_loadThisFirst/_globals';
+import { sequelize } from '../../../sqlModels/_globals/_loadThisFirst/_globals'; 
 import * as Sequelize from 'sequelize';
 
 export const NominaHeaders_sql = sequelize.define('bancos', {
