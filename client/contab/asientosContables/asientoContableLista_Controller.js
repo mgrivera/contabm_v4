@@ -1,6 +1,5 @@
 
 
-
 import lodash from 'lodash'; 
 
 import { Companias } from '/imports/collections/companias';
@@ -9,9 +8,9 @@ import { DialogModal } from '/client/imports/general/genericUIBootstrapModal/ang
 
 import { mensajeErrorDesdeMethod_preparar } from '/client/imports/clientGlobalMethods/mensajeErrorDesdeMethod_preparar'; 
 
-angular.module("contabm").controller("Contab_AsientoContableLista_Controller",
-['$scope', '$stateParams', '$state', '$meteor', '$modal', 'uiGridConstants', 
-function ($scope, $stateParams, $state, $meteor, $modal, uiGridConstants) {
+angular.module("contabm")
+       .controller("Contab_AsientoContableLista_Controller",
+       ['$scope', '$stateParams', '$state', '$modal', function ($scope, $stateParams, $state, $modal) {
 
     $scope.origen = $stateParams.origen;
     var pageNumber = $stateParams.pageNumber;
@@ -155,7 +154,8 @@ function ($scope, $stateParams, $state, $meteor, $modal, uiGridConstants) {
                     asientoContableSeleccionado = row.entity;
 
                     if (itemSeleccionadoParaSerEliminado) {
-                        // cuando el usuario hace un click en 'x' para eliminar el item en la lista, no lo mostramos en el tab que sigue
+                        // cuando el usuario hace un click en 'x' para eliminar el item en la lista, 
+                        // no lo mostramos en el tab que sigue
                         itemSeleccionadoParaSerEliminado = false;
                         return;
                     }

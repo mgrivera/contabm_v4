@@ -19,15 +19,16 @@ Meteor.publish("proveedores", function (proveedorID) {
         ];
     } else {
         return [
-            Proveedores.find(),
+            // dejamos de regresar proveedores; ahora los proveedores se leen desde la factura con select2 
+            // Proveedores.find(),
             CompaniaSeleccionada.find({ userID: this.userId }),
             Companias.find(ciaContabSeleccionada.companiaID,
                            { fields: { _id: 1, numero: 1, nombre: 1, nombreCorto: 1, }}),
         ];
     }
-});
+})
 
 
 Meteor.publish("proveedoresLista", function () {
     return Proveedores.find({}, { fields: { proveedor: 1, nombre: 1, }});
-});
+})

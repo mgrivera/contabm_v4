@@ -1,4 +1,6 @@
 
+
+import { sequelize } from '/server/sqlModels/_globals/_loadThisFirst/_globals';
 import moment from 'moment';
 import lodash from 'lodash';
 import SimpleSchema from 'simpl-schema';
@@ -10,7 +12,6 @@ Meteor.methods(
 {
     'movimientoBancario.leerByID.desdeSql': function (pk) {
 
-        // debugger;
         new SimpleSchema({
             pk: { type: SimpleSchema.Integer, }
           }).validate({ pk });
@@ -21,15 +22,16 @@ Meteor.methods(
                 .then(function(result) { done(null, result); })
                 .catch(function (err) { done(err, null); })
                 .done();
-        });
+        })
 
-        if (response.error)
+        if (response.error) { 
             throw new Meteor.Error(response.error && response.error.message ? response.error.message : response.error.toString());
+        }
 
         // cuando el registro es eliminado, simplemente no existe. Regresamos de inmediato ...
         if (!response.result.length) {
             return null;
-        };
+        }
 
         let movimientoBancario = response.result[0];
 
@@ -43,11 +45,10 @@ Meteor.methods(
             let transaccion =  +movimientoBancario.transaccion;             // convierte el string a Number
             if (lodash.isInteger(transaccion)) {
                 movimientoBancario.transaccion = transaccion;
-            };
-        };
+            }
+        }
+
         // -------------------------------------------------------------------------------------------------
-
-
         // ajustamos las fechas para revertir la conversión que ocurre, para intentar convertir desde utc a local
         movimientoBancario.fecha = movimientoBancario.fecha ? moment(movimientoBancario.fecha).add(TimeOffset, 'hours').toDate() : null;
         movimientoBancario.fechaEntregado = movimientoBancario.fechaEntregado ? moment(movimientoBancario.fechaEntregado).add(TimeOffset, 'hours').toDate() : null;
@@ -58,11 +59,35 @@ Meteor.methods(
         // corresponde a la chequera; hay una relación entre el movimiento bancario y su chequera que se llama,
         // justamente, ClaveUnicaChequera. Aunque aquí no intentamos leer la chequera del movimiento,
         // sequelize agrega esta propiedad con el valor del id de la chequera; la eliminamos ...
-
         delete movimientoBancario.ClaveUnicaChequera;
 
-        // regresamos un object, pues luego debemos agregar las faltas y el salario; éstos están en tablas diferentes ...
-        // TODO: mejor! vamos a leer como una relación y enviar, aunque como string, en un solo objeto ...
-        return JSON.stringify(movimientoBancario);
+        // -------------------------------------------------------------------------------------------------
+        // ahora leemos el proveedor asociado al movimiento bancario; también puede no haber uno asociado ... 
+        const query = `Select Proveedor as proveedor, Nombre as nombre From Proveedores Where Proveedor = ?`;
+
+        response = null;
+        response = Async.runSync(function(done) {
+            sequelize.query(query,
+                {
+                    replacements: [ (movimientoBancario.provClte ? movimientoBancario.provClte : -999), ],
+                    type: sequelize.QueryTypes.SELECT
+                })
+                .then(function(result) { done(null, result); })
+                .catch(function (err) { done(err, null); })
+                .done();
+        })
+
+        if (response.error) {
+            throw new Meteor.Error(response.error && response.error.message ? response.error.message : response.error.toString());
+        }
+
+        const proveedor = response.result && response.result[0] ? response.result[0] : {};
+
+        return { 
+            error: false, 
+            message: '', 
+            movimientoBancario: JSON.stringify(movimientoBancario), 
+            proveedor: JSON.stringify(proveedor), 
+        }
     }
-});
+})

@@ -167,6 +167,18 @@ function ($scope, $stateParams, $state, $meteor, $modal) {
             type: 'string'
         },
         {
+            name: 'proveedor',
+            field: 'proveedor',
+            displayName: 'Compañía',
+            width: '80',
+            headerCellClass: 'ui-grid-leftCell',
+            cellClass: 'ui-grid-leftCell',
+            enableFiltering: true,
+            enableColumnMenu: false,
+            enableSorting: true,
+            type: 'string'
+        },
+        {
             name: 'beneficiario',
             field: 'beneficiario',
             displayName: 'Beneficiario',

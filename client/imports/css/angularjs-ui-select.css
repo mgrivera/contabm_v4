@@ -1,0 +1,8 @@
+
+
+/* para que ui-select se alinee en forma vertical junto con otros controles en el bootstrap form  */
+.form-group-sm .ui-select-container {
+    display: inline-block;
+    vertical-align: middle;
+    width: auto;
+}

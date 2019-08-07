@@ -14,18 +14,19 @@ Meteor.methods(
             new SimpleSchema({
                 ciaContab: { type: Number, optional: false, },
             }).validate({ ciaContab, });
-    
+
             // tDepartamentos
             let response: any = null;
-            response = Async.runSync(function(done) {
-                Departamentos_sql.findAll({ 
-                    order: [ ['descripcion', 'ASC'] ], 
-                    raw: true, })
-                    .then(function(result) { done(null, result); })
+            response = Async.runSync(function (done) {
+                Departamentos_sql.findAll({
+                    order: [['descripcion', 'ASC']],
+                    raw: true,
+                })
+                    .then(function (result) { done(null, result); })
                     .catch(function (err) { done(err, null); })
                     .done();
             })
-    
+
             if (response.error) {
                 throw new Meteor.Error(response.error && response.error.message ? response.error.message : response.error.toString());
             }
@@ -34,43 +35,25 @@ Meteor.methods(
 
             // TiposDeProducto
             response = null;
-            response = Async.runSync(function(done) {
-                TiposDeProducto_sql.findAll({ 
-                    order: [ ['descripcion', 'ASC'] ], 
-                    raw: true, })
-                    .then(function(result) { done(null, result); })
+            response = Async.runSync(function (done) {
+                TiposDeProducto_sql.findAll({
+                    order: [['descripcion', 'ASC']],
+                    raw: true,
+                })
+                    .then(function (result) { done(null, result); })
                     .catch(function (err) { done(err, null); })
                     .done();
             })
-    
-            if (response.error) {
-                throw new Meteor.Error(response.error && response.error.message ? response.error.message : response.error.toString());
-            }
-            
-            let tiposProducto = response.result; 
 
-            // proveedores
-            response = null;
-            response = Async.runSync(function(done) {
-                Proveedores_sql.findAll({ 
-                    attributes: [ 'proveedor', 'abreviatura' ], 
-                    order: [ ['abreviatura', 'ASC'] ], 
-                    raw: true, })
-                    .then(function(result) { done(null, result); })
-                    .catch(function (err) { done(err, null); })
-                    .done();
-            })
-    
             if (response.error) {
                 throw new Meteor.Error(response.error && response.error.message ? response.error.message : response.error.toString());
             }
-            
-            let proveedores = response.result; 
-    
+
+            let tiposProducto = response.result;
+
             return JSON.stringify({
                 departamentos: departamentos,
-                tiposProducto: tiposProducto, 
-                proveedores: proveedores, 
+                tiposProducto: tiposProducto,
             });
         }
-    });
+})

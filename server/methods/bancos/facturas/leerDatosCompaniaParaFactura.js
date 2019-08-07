@@ -14,8 +14,9 @@ Meteor.methods(
             companiaSeleccionadaID: { type: Number, optional: false }, 
           }).validate({ pk, companiaSeleccionadaID });
 
-        let query = `Select Ciudad as ciudad, AplicaIvaFlag as aplicaIvaFlag, ContribuyenteEspecialFlag as contribuyenteEspecialFlag,
-                     Abreviatura as abreviatura, 
+        let query = `Select Proveedor as proveedor, Ciudad as ciudad, AplicaIvaFlag as aplicaIvaFlag, 
+                     ContribuyenteEspecialFlag as contribuyenteEspecialFlag,
+                     Abreviatura as abreviatura, Nombre as nombre, 
                      SujetoARetencionFlag as sujetoARetencionFlag, NuestraRetencionSobreIvaPorc as nuestraRetencionSobreIvaPorc, 
                      RetencionSobreIvaPorc as retencionSobreIvaPorc From Proveedores Where Proveedor = ?`;
 

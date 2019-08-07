@@ -1,5 +1,6 @@
 
 
+import { sequelize } from 'server/sqlModels/_globals/_loadThisFirst/_globals';
 import * as moment from 'moment';
 import { TimeOffset } from '../../../../globals/globals'; 
 import SimpleSchema from 'simpl-schema';
@@ -21,7 +22,7 @@ Meteor.methods(
                 .then(function(result) { done(null, result); })
                 .catch(function (err) { done(err, null); })
                 .done();
-        });
+        })
 
         if (response.error) { 
             throw new Meteor.Error(response.error && response.error.message ? response.error.message : response.error.toString());
@@ -39,6 +40,33 @@ Meteor.methods(
             activoFijo.ultAct = activoFijo.ultAct ? moment(activoFijo.ultAct).add(TimeOffset, 'hours').toDate() : null;
         }
 
-        return JSON.stringify(activoFijo);
+        // -------------------------------------------------------------------------------------------------
+        // ahora leemos el proveedor asociado al activo fijo; también puede no haber uno asociado ... 
+        const query = `Select Proveedor as proveedor, Nombre as nombre From Proveedores Where Proveedor = ?`;
+
+        response = null;
+        response = Async.runSync(function(done) {
+            sequelize.query(query,
+                {
+                    replacements: [ (activoFijo.proveedor ? activoFijo.proveedor : -999), ],
+                    type: sequelize.QueryTypes.SELECT
+                })
+                .then(function(result) { done(null, result); })
+                .catch(function (err) { done(err, null); })
+                .done();
+        })
+
+        if (response.error) {
+            throw new Meteor.Error(response.error && response.error.message ? response.error.message : response.error.toString());
+        }
+
+        const proveedor = response.result && response.result[0] ? response.result[0] : {};
+
+        return { 
+            error: false, 
+            message: '', 
+            activoFijo: JSON.stringify(activoFijo), 
+            proveedor: JSON.stringify(proveedor), 
+        }
     }
 })

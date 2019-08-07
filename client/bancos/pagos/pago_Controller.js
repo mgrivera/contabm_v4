@@ -5,205 +5,244 @@ import { DialogModal } from '/client/imports/general/genericUIBootstrapModal/ang
 
 import { Companias } from '/imports/collections/companias';
 import { CompaniaSeleccionada } from '/imports/collections/companiaSeleccionada';
-import { Proveedores } from '/imports/collections/bancos/proveedoresClientes'; 
 
 import { mensajeErrorDesdeMethod_preparar } from '/client/imports/clientGlobalMethods/mensajeErrorDesdeMethod_preparar'; 
+import "/client/imports/css/angularjs-ui-select.css"; 
 
 angular.module("contabm").controller("Bancos_Pagos_Pago_Controller",
 ['$scope', '$stateParams', '$state', '$meteor', '$modal', 'uiGridConstants',
 function ($scope, $stateParams, $state, $meteor, $modal, uiGridConstants) {
 
-      $scope.showProgress = false;
+    $scope.showProgress = false;
 
-      // ui-bootstrap alerts ...
-      $scope.alerts = [];
+    // ui-bootstrap alerts ...
+    $scope.alerts = [];
 
-      $scope.closeAlert = function (index) {
-          $scope.alerts.splice(index, 1);
-      };
-
-
-      $scope.helpers({
-          companiaSeleccionada: () => {
-              let ciaContabSeleccionada = CompaniaSeleccionada.findOne({ userID: Meteor.userId() });
-              return Companias.findOne(ciaContabSeleccionada &&
-                                       ciaContabSeleccionada.companiaID ?
-                                       ciaContabSeleccionada.companiaID :
-                                       -999,
-                                       { fields: { numero: 1, nombre: 1, nombreCorto: 1 } });
-          },
-      });
+    $scope.closeAlert = function (index) {
+        $scope.alerts.splice(index, 1);
+    };
 
 
-      $scope.miSu_List = $scope.$parent.miSu_List;
+    $scope.helpers({
+        companiaSeleccionada: () => {
+            let ciaContabSeleccionada = CompaniaSeleccionada.findOne({ userID: Meteor.userId() });
+            return Companias.findOne(ciaContabSeleccionada &&
+                                    ciaContabSeleccionada.companiaID ?
+                                    ciaContabSeleccionada.companiaID :
+                                    -999,
+                                    { fields: { numero: 1, nombre: 1, nombreCorto: 1 } });
+        },
+    });
 
-      // la lista de compañías viene desde el parent state; allí hacemos el subscribe ...
-      $scope.helpers({
-          proveedores: () => {
-              return Proveedores.find({ },
-                                      {
-                                          fields:
-                                          {
-                                              proveedor: 1,
-                                              nombre: 1,
-                                              proveedorClienteFlag: 1,
-                                              monedaDefault: 1,
-                                              concepto: 1,
-                                          }, });
-          },
-          monedas: () => {
-              return Monedas.find({ }, { fields: { moneda: 1, descripcion: 1, }, });
-          },
-      });
 
-      $scope.origen = $stateParams.origen;
-      $scope.id = $stateParams.id;
-      $scope.limit = parseInt($stateParams.limit);
-      // convertirmos desde 'true' a true
-      $scope.vieneDeAfuera = String($stateParams.vieneDeAfuera).toLowerCase() === 'true';
+    $scope.miSu_List = $scope.$parent.miSu_List;
 
-      // para validar las fechas originales cuando el usuario modifica el pago
-      $scope.fechaOriginal = null;
+    // la lista de compañías viene desde el parent state; allí hacemos el subscribe ...
+    $scope.helpers({
+        proveedores: () => {
+            return []; 
+        },
+        monedas: () => {
+            return Monedas.find({ }, { fields: { moneda: 1, descripcion: 1, }, });
+        },
+    });
 
-      $scope.setIsEdited = function (value) {
+    $scope.origen = $stateParams.origen;
+    $scope.id = $stateParams.id;
+    $scope.limit = parseInt($stateParams.limit);
+    // convertirmos desde 'true' a true
+    $scope.vieneDeAfuera = String($stateParams.vieneDeAfuera).toLowerCase() === 'true';
 
-          if (value === 'compania' && $scope.pago.proveedor) {
-              // leemos la compañía para intentar inicializar el valor miSuFlag
+    // para validar las fechas originales cuando el usuario modifica el pago
+    $scope.fechaOriginal = null;
 
-              let compania = _.find($scope.proveedores, (x) => { return x.proveedor === $scope.pago.proveedor; });
-              if (compania && compania.proveedorClienteFlag) {
-                  switch (compania.proveedorClienteFlag) {
-                      case 1:       // proveedor
-                          $scope.pago.miSuFlag = 1;
-                          break;
-                      case 2:       // cliente
-                          $scope.pago.miSuFlag = 2;
-                          break;
-                      default:
-                  }
-              }
+    $scope.setIsEdited = function (value) {
 
-              if (compania && compania.monedaDefault) {
-                  $scope.pago.moneda = compania.monedaDefault;
-              }
+        if (value === 'compania' && $scope.pago.proveedor) {
+            // leemos la compañía para intentar inicializar el valor miSuFlag
 
-              if (compania && compania.concepto) {
-                  $scope.pago.concepto = compania.concepto;
-              }
-          }
+            let compania = _.find($scope.proveedores, (x) => { return x.proveedor === $scope.pago.proveedor; });
+            if (compania && compania.proveedorClienteFlag) {
+                switch (compania.proveedorClienteFlag) {
+                    case 1:       // proveedor
+                        $scope.pago.miSuFlag = 1;
+                        break;
+                    case 2:       // cliente
+                        $scope.pago.miSuFlag = 2;
+                        break;
+                    default:
+                }
+            }
 
-          if ($scope.pago.docState)
-              return;
+            if (compania && compania.monedaDefault) {
+                $scope.pago.moneda = compania.monedaDefault;
+            }
 
-          $scope.pago.docState = 2;
-      };
+            if (compania && compania.concepto) {
+                $scope.pago.concepto = compania.concepto;
+            }
+        }
 
-      $scope.windowClose = () => {
-          window.close();
-      }
+        if ($scope.pago.docState)
+            return;
 
-      $scope.regresarALista = function (value) {
+        $scope.pago.docState = 2;
+    }
 
-          if ($scope.pago && $scope.pago.docState && $scope.origen == 'edicion') {
-              var promise = DialogModal($modal,
-                                        "<em>Bancos - Pagos</em>",
-                                        "Aparentemente, Ud. ha efectuado cambios; aún así, desea <em>regresar</em> y perder los cambios?",
-                                        true);
+    $scope.getItemsFromServerForSelectProveedores = (search) => { 
 
-              promise.then(
-                  function (resolve) {
-                      $state.go('bancos.pagos.lista', { origen: $scope.origen, limit: $scope.limit });
-                  },
-                  function (err) {
-                      return true;
-                  });
+        $scope.showProgress = true; 
+        const where = `Proveedores.Nombre Like '%${search}%'`; 
 
-              return;
-          }
-          else
-              $state.go('bancos.pagos.lista', { origen: $scope.origen, limit: $scope.limit });
-      };
+        Meteor.call('bancos.getProveedoresParaSelect2', where, (err, result) => {
 
-      $scope.mostrarFacturasAsociadas = () => {
-          var modalInstance = $modal.open({
-              templateUrl: 'client/bancos/pagos/mostrarFacturasAsociadasModal.html',
-              controller: 'MostrarFacturasAsociadasModal_Controller',
-              size: 'lg',
-              resolve: {
-                  companiaContabSeleccionada: () => {
-                      return $scope.companiaSeleccionada;
-                  },
-                  pago: () => {
-                      return $scope.pago;
-                  },
-                  origen: () => {
-                      return $scope.origen;
-                  },
-              },
-          }).result.then(
+            if (err) {
+                let errorMessage = mensajeErrorDesdeMethod_preparar(err);
+
+                $scope.alerts.length = 0;
+                $scope.alerts.push({
+                    type: 'danger',
+                    msg: errorMessage
+                });
+
+                $scope.showProgress = false; 
+                $scope.$apply();
+
+                return;
+            }
+
+            if (result.error) {
+                // el método que intenta grabar los cambis puede regresar un error cuando,
+                // por ejemplo, la fecha corresponde a un mes ya cerrado en Bancos ...
+                $scope.alerts.length = 0;
+                $scope.alerts.push({
+                    type: 'danger',
+                    msg: result.message
+                });
+
+                
+                $scope.showProgress = false; 
+                $scope.$apply();
+            } else {
+                
+                $scope.helpers({
+                    proveedores: () => {
+                        return result.items;
+                    },
+                });
+
+                $scope.showProgress = false; 
+                $scope.$apply();
+            }
+        })
+    }
+
+    $scope.windowClose = () => {
+        window.close();
+    }
+
+    $scope.regresarALista = function (value) {
+
+        if ($scope.pago && $scope.pago.docState && $scope.origen == 'edicion') {
+            var promise = DialogModal($modal,
+                                    "<em>Bancos - Pagos</em>",
+                                    "Aparentemente, Ud. ha efectuado cambios; aún así, desea <em>regresar</em> y perder los cambios?",
+                                    true);
+
+            promise.then(
                 function (resolve) {
-                    return true;
+                    $state.go('bancos.pagos.lista', { origen: $scope.origen, limit: $scope.limit });
                 },
-                function (cancel) {
+                function (err) {
                     return true;
                 });
-      }
 
+            return;
+        }
+        else
+            $state.go('bancos.pagos.lista', { origen: $scope.origen, limit: $scope.limit });
+    }
 
-      $scope.movimientoBancario = () => {
-
-          if (!$scope.pago || !$scope.pago.claveUnica || !$scope.pago.proveedor) {
-              DialogModal($modal, "<em>Bancos - Pagos</em>",
-                                  `Aparentemente, el pago no está completo aún; es decir, no tiene todos sus datos.<br />
-                                   Ud. debe completar el pago y grabarlo antes de intentar ejecutar esta función.
-                                  `,
-                                  false).then();
-
-              return;
-          };
-
-          var modalInstance = $modal.open({
-              templateUrl: 'client/bancos/pagos/movimientosBancariosAsociadosModal.html',
-              controller: 'Pagos_MovimientoBancarioAsociado_Controller',
-              size: 'lg',
-              resolve: {
-                  pagoID: () => {
-                      return $scope.pago.claveUnica;
-                  },
-                  proveedorID: () => {
-                      return $scope.pago.proveedor;
-                  },
-                  ciaSeleccionada: () => {
-                      return $scope.companiaSeleccionada;
-                  },
-                  origen: () => {
-                      return $scope.origen;
-                  },
-              },
-          }).result.then(
-                function (resolve) {
-                    return true;
+    $scope.mostrarFacturasAsociadas = () => {
+        var modalInstance = $modal.open({
+            templateUrl: 'client/bancos/pagos/mostrarFacturasAsociadasModal.html',
+            controller: 'MostrarFacturasAsociadasModal_Controller',
+            size: 'lg',
+            resolve: {
+                companiaContabSeleccionada: () => {
+                    return $scope.companiaSeleccionada;
                 },
-                function (cancel) {
-                    return true;
-                });
-      }
+                pago: () => {
+                    return $scope.pago;
+                },
+                origen: () => {
+                    return $scope.origen;
+                },
+            },
+        }).result.then(
+            function (resolve) {
+                return true;
+            },
+            function (cancel) {
+                return true;
+            })
+    }
 
-      $scope.eliminar = function () {
 
-          if ($scope.pago && $scope.pago.docState && $scope.pago.docState == 1) {
-              DialogModal($modal, "<em>Bancos - Pagos</em>",
-                                  `El registro es nuevo (no existe en la base de datos); para eliminar, simplemente
-                                   haga un click en <em>Refresh</em> o <em>Regrese</em> a la lista.
-                                  `,
-                                  false).then();
+    $scope.movimientoBancario = () => {
 
-              return;
-          };
+        if (!$scope.pago || !$scope.pago.claveUnica || !$scope.pago.proveedor) {
+            DialogModal($modal, "<em>Bancos - Pagos</em>",
+                                `Aparentemente, el pago no está completo aún; es decir, no tiene todos sus datos.<br />
+                                Ud. debe completar el pago y grabarlo antes de intentar ejecutar esta función.
+                                `,
+                                false).then();
 
-          // simplemente, ponemos el docState en 3 para que se elimine al Grabar ...
-          $scope.pago.docState = 3;
-      };
+            return;
+        }
+
+        var modalInstance = $modal.open({
+            templateUrl: 'client/bancos/pagos/movimientosBancariosAsociadosModal.html',
+            controller: 'Pagos_MovimientoBancarioAsociado_Controller',
+            size: 'lg',
+            resolve: {
+                pagoID: () => {
+                    return $scope.pago.claveUnica;
+                },
+                proveedorID: () => {
+                    return $scope.pago.proveedor;
+                },
+                ciaSeleccionada: () => {
+                    return $scope.companiaSeleccionada;
+                },
+                origen: () => {
+                    return $scope.origen;
+                },
+            },
+        }).result.then(
+            function (resolve) {
+                return true;
+            },
+            function (cancel) {
+                return true;
+            });
+    }
+
+    $scope.eliminar = function () {
+
+        if ($scope.pago && $scope.pago.docState && $scope.pago.docState == 1) {
+            DialogModal($modal, "<em>Bancos - Pagos</em>",
+                                `El registro es nuevo (no existe en la base de datos); para eliminar, simplemente
+                                haga un click en <em>Refresh</em> o <em>Regrese</em> a la lista.
+                                `,
+                                false).then();
+
+            return;
+        }
+
+        // simplemente, ponemos el docState en 3 para que se elimine al Grabar ...
+        $scope.pago.docState = 3;
+    }
 
     $scope.refresh0 = function () {
 
@@ -552,7 +591,7 @@ function ($scope, $stateParams, $state, $meteor, $modal, uiGridConstants) {
         Meteor.call('pago.leerByID.desdeSql', pk, (err, result) => {
 
             if (err) {
-            let errorMessage = mensajeErrorDesdeMethod_preparar(err);
+                let errorMessage = mensajeErrorDesdeMethod_preparar(err);
 
                 $scope.alerts.length = 0;
                 $scope.alerts.push({
@@ -565,8 +604,21 @@ function ($scope, $stateParams, $state, $meteor, $modal, uiGridConstants) {
                 return;
             }
 
+            if (result.error) {
+                $scope.alerts.length = 0;
+                $scope.alerts.push({
+                    type: 'danger',
+                    msg: result.message
+                });
+
+                $scope.showProgress = false;
+                $scope.$apply();
+                return;
+            }
+
             $scope.pago = {};
-            $scope.pago = JSON.parse(result);
+            $scope.pago = JSON.parse(result.pago);
+            const proveedor = JSON.parse(result.proveedor);
 
             if ($scope.pago == null) {
                 // el usuario eliminó el registro y, por eso, no pudo se leído desde sql
@@ -577,6 +629,19 @@ function ($scope, $stateParams, $state, $meteor, $modal, uiGridConstants) {
 
                 return;
             }
+
+            // agregamos el proveedor al array de proveedores; debe estar allí para que el ui-select 
+            // lo pueda mostrar 
+            $scope.helpers({
+                proveedores: () => {
+                    return [{ proveedor: proveedor.proveedor, 
+                              nombre: proveedor.nombre, 
+                              proveedorClienteFlag: proveedor.proveedorClienteFlag, 
+                              monedaDefault: proveedor.monedaDefault, 
+                              concepto: proveedor.concepto 
+                            }];
+                },
+            })
 
             // las fechas vienen serializadas como strings; convertimos nuevamente a dates
             $scope.pago.fecha = $scope.pago.fecha ? moment($scope.pago.fecha).toDate() : null;

@@ -78,7 +78,7 @@
                             <div class="col-sm-4 col-centered">
                                 <div class="form-group">
                                     <label for="tipo">Tipo</label>
-                                    <select class="form-control"
+                                    <select class="form-control input-sm"
                                             name="tipo"
                                             id="tipo"
                                             ng-model="movimientoBancario.tipo"
@@ -106,7 +106,7 @@
                                     <input type="date"
                                            name="fecha"
                                            id="fecha"
-                                           class="form-control"
+                                           class="form-control input-sm"
                                            ng-model="movimientoBancario.fecha"
                                            ng-change="setIsEdited('fecha')"
                                            ng-required="true"
@@ -120,7 +120,7 @@
                             <div class="col-sm-4 col-centered">
                                 <div class="form-group">
                                     <label for="claveUnicaChequera">Chequera</label>
-                                    <select class="form-control"
+                                    <select class="form-control input-sm"
                                             name="claveUnicaChequera"
                                             id="claveUnicaChequera"
                                             ng-model="movimientoBancario.claveUnicaChequera"
@@ -136,20 +136,31 @@
 
                             <!-- provClte -->
                             <div class="col-sm-4 col-centered">
-                                <div class="form-group">
-                                    <label for="provClte">Compañía</label>
-                                    <select class="form-control"
-                                            name="provClte"
-                                            id="provClte"
-                                            ng-model="movimientoBancario.provClte"
-                                            ng-change="setIsEdited('provClte')"
-                                            ng-options="item.proveedor as item.nombre for item in proveedores | orderBy:'nombre'"
-                                            ng-model-options="{ updateOn: 'blur' }"
-                                            required></select>
+                                <div class="form-group-sm">
+                                    <label>Compañía</label>
+                                    <ui-select ng-model="movimientoBancario.provClte" 
+                                               name="provClte"
+                                               id="provClte"
+                                               theme="bootstrap" 
+                                               ng-disabled="false" 
+                                               skip-focusser="true"
+                                               on-select="setIsEdited('provClte')" 
+                                               spinner-enabled="true"
+                                               spinner-class="original glyphicon-refresh ui-select-spin"
+                                               style="width: 100%; font-size: 12px !important; ">
+                                        <ui-select-match placeholder="Seleccione una compañía ...">
+                                            <span ng-bind="$select.selected.nombre"></span>
+                                        </ui-select-match>
+                                        <ui-select-choices
+                                            repeat="value.proveedor as value in (proveedores | filter: $select.search | orderBy: 'nombre') track by value.proveedor"
+                                            refresh="getItemsFromServerForSelectProveedores($select.search)" minimum-input-length="3"
+                                            refresh-delay="500">
+                                            <span ng-bind="value.nombre"></span>
+                                        </ui-select-choices>
+                                    </ui-select>
                                 </div>
                             </div>
                         </div>
-
 
                         <div class="row row-centered">
                             <!-- transaccion -->
@@ -159,7 +170,7 @@
                                     <input type="number"
                                             name="transaccion"
                                             id="transaccion"
-                                            class="form-control"
+                                            class="form-control input-sm"
                                             ng-model="movimientoBancario.transaccion"
                                             ng-change="setIsEdited('transaccion')"
                                             ng-required="true"
@@ -174,7 +185,7 @@
                             <div class="col-sm-4 col-centered">
                                 <div class="form-group">
                                     <label for="signo">Signo</label>
-                                    <select class="form-control"
+                                    <select class="form-control input-sm"
                                             name="signo"
                                             id="signo"
                                             ng-model="movimientoBancario.signo"
@@ -195,7 +206,7 @@
                                     <label for="beneficiario">Beneficiario</label>
                                     <textarea name="beneficiario"
                                            id="beneficiario"
-                                           class="form-control"
+                                           class="form-control input-sm"
                                            ng-model="movimientoBancario.beneficiario"
                                            ng-change="setIsEdited('beneficiario')"
                                            ng-model-options="{ updateOn: 'blur' }"
@@ -211,7 +222,7 @@
                             <div class="col-sm-9 col-centered">
                                 <div class="form-group">
                                     <label for="concepto">Concepto</label>
-                                    <textarea name="concepto"
+                                    <textarea name="concepto input-sm"
                                            id="concepto"
                                            class="form-control"
                                            ng-model="movimientoBancario.concepto"
@@ -232,7 +243,7 @@
                                     <input type="number"
                                            name="montoBase"
                                            id="montoBase"
-                                           class="form-control"
+                                           class="form-control input-sm"
                                            ng-model="movimientoBancario.montoBase"
                                            ng-change="setIsEdited('montoBase')"
                                            ng-required="true"
@@ -247,7 +258,7 @@
                                     <input type="number"
                                            name="comision"
                                            id="comision"
-                                           class="form-control"
+                                           class="form-control input-sm"
                                            ng-model="movimientoBancario.comision"
                                            ng-change="setIsEdited('comision')"
                                            ng-required="true"
@@ -262,7 +273,7 @@
                                     <input type="number"
                                            name="impuestos"
                                            id="impuestos"
-                                           class="form-control"
+                                           class="form-control input-sm"
                                            ng-model="movimientoBancario.impuestos"
                                            ng-change="setIsEdited('impuestos')"
                                            ng-required="true"
@@ -280,7 +291,7 @@
                                     <input type="date"
                                            name="fechaEntregado"
                                            id="fechaEntregado"
-                                           class="form-control"
+                                           class="form-control input-sm"
                                            ng-model="movimientoBancario.fechaEntregado"
                                            ng-change="setIsEdited('fechaEntregado')"
                                            ng-required="true"
@@ -298,7 +309,7 @@
                                     <input type="number"
                                            name="monto"
                                            id="monto"
-                                           class="form-control"
+                                           class="form-control input-sm"
                                            ng-model="movimientoBancario.monto"
                                            ng-change="setIsEdited('monto')"
                                            ng-required="true"

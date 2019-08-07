@@ -12,9 +12,11 @@ import { DialogModal } from '/client/imports/general/genericUIBootstrapModal/ang
 import { mensajeErrorDesdeMethod_preparar } from '/client/imports/clientGlobalMethods/mensajeErrorDesdeMethod_preparar'; 
 import { TiposProveedor, FormasDePago } from '/imports/collections/bancos/catalogos'; 
 
+import "/client/imports/css/angularjs-ui-select.css"; 
+
 angular.module("contabm").controller("Bancos_Facturas_Factura_Controller",
-['$scope', '$stateParams', '$state', '$meteor', '$modal', 'uiGridConstants', 'leerTablasImpuestosRetenciones', 'tablasImpuestosRetenciones',
-function ($scope, $stateParams, $state, $meteor, $modal, uiGridConstants, leerTablasImpuestosRetenciones, tablasImpuestosRetenciones) {
+['$scope', '$stateParams', '$state', '$modal', 'tablasImpuestosRetenciones',
+function ($scope, $stateParams, $state, $modal, tablasImpuestosRetenciones) {
 
     // nótese como injectamos el resolve del parent state y de éste state; la idea es que el resolve del parent
     // state se ejecute (resuelva) en forma completa y anterior, y *solo luego* se resuelva el resolve del child state
@@ -47,9 +49,9 @@ function ($scope, $stateParams, $state, $meteor, $modal, uiGridConstants, leerTa
 
     // la lista de compañías viene desde el parent state; allí hacemos el subscribe ...
     $scope.helpers({
-        proveedores: () => {
-            return Proveedores.find({ }, { fields: { proveedor: 1, nombre: 1, }, });
-        },
+        proveedores: () => { 
+            return []; 
+        }, 
         monedas: () => {
             return Monedas.find({ }, { fields: { moneda: 1, descripcion: 1, }, });
         },
@@ -75,6 +77,8 @@ function ($scope, $stateParams, $state, $meteor, $modal, uiGridConstants, leerTa
     $scope.pagosAnticipoSeleccionados_array = []; 
 
     $scope.setIsEdited = function (value) {
+
+        $scope.showProgress = true; 
 
         // cuando el usuario indica la compañía (prov o cliente), leemos sus datos en sql ...
         if (value === 'compania' && $scope.factura.proveedor) {
@@ -200,10 +204,62 @@ function ($scope, $stateParams, $state, $meteor, $modal, uiGridConstants, leerTa
         }
 
         if ($scope.factura.docState) { 
+            $scope.showProgress = false; 
             return;
         }
             
+        $scope.showProgress = false; 
         $scope.factura.docState = 2;
+    }
+
+    $scope.showProgress = false; 
+
+    $scope.getItemsFromServerForSelectProveedores = (search) => { 
+
+        $scope.showProgress = true; 
+        const where = `Proveedores.Nombre Like '%${search}%'`; 
+
+        Meteor.call('bancos.getProveedoresParaSelect2', where, (err, result) => {
+
+            if (err) {
+                let errorMessage = mensajeErrorDesdeMethod_preparar(err);
+
+                $scope.alerts.length = 0;
+                $scope.alerts.push({
+                    type: 'danger',
+                    msg: errorMessage
+                });
+
+                $scope.showProgress = false; 
+                $scope.$apply();
+
+                return;
+            }
+
+            if (result.error) {
+                // el método que intenta grabar los cambis puede regresar un error cuando,
+                // por ejemplo, la fecha corresponde a un mes ya cerrado en Bancos ...
+                $scope.alerts.length = 0;
+                $scope.alerts.push({
+                    type: 'danger',
+                    msg: result.message
+                });
+
+                
+                $scope.showProgress = false; 
+                $scope.$apply();
+            } else {
+                
+                $scope.helpers({
+                    proveedores: () => {
+                        return result.items;
+                    },
+                });
+
+                $scope.showProgress = false; 
+                $scope.$apply();
+            }
+        })
     }
 
     $scope.windowClose = () => {
@@ -324,7 +380,6 @@ function ($scope, $stateParams, $state, $meteor, $modal, uiGridConstants, leerTa
             });
     }
 
-
     $scope.mostrarCuotas = () => {
 
         if (!$scope.factura || !_.isArray($scope.factura.cuotasFactura) || !$scope.factura.cuotasFactura.length) {
@@ -386,8 +441,6 @@ function ($scope, $stateParams, $state, $meteor, $modal, uiGridConstants, leerTa
                 return true;
             });
     }
-
-
 
     $scope.asientoContable = function() {
 
@@ -1455,7 +1508,7 @@ function ($scope, $stateParams, $state, $meteor, $modal, uiGridConstants, leerTa
 
 
     $scope.redondearFactura = () => {
-
+        
         // la idea de esta funcion es redondear los montos de la factura a 2 decimales
         // esto es necesario cuando algún impuesto o retención, al calcularse, produce
         // más de 2 decimales; entonces, el resultado final de la factura puede tener
@@ -1834,7 +1887,6 @@ function ($scope, $stateParams, $state, $meteor, $modal, uiGridConstants, leerTa
     function factura_leerByID_desdeSql(pk) { 
         return new Promise(function(resolve, reject) { 
 
-            // ejecutamos un método para leer el asiento contable en sql server y grabarlo a mongo (para el current user)
             let facturaID = parseInt($scope.id);
             Meteor.call('factura.leerByID.desdeSql', facturaID, (err, result) => {
 
@@ -1908,6 +1960,14 @@ function ($scope, $stateParams, $state, $meteor, $modal, uiGridConstants, leerTa
                             // solo cuando el usuario elimina la factura, este método no trae los datos de su proveedor 
                             let infoCompania = JSON.parse(result);
                             $scope.proveedor = infoCompania.datosProveedor; 
+
+                            // agregamos el proveedor al array de proveedores; debe estar allí para que el ui-select 
+                            // lo pueda mostrar 
+                            $scope.helpers({
+                                proveedores: () => { 
+                                    return [ { proveedor: $scope.proveedor.proveedor, nombre: $scope.proveedor.nombre, } ]; 
+                                }, 
+                            })
                         }
                         
                         resolve(); 

@@ -63,8 +63,8 @@ Meteor.methods(
                 i._id = new Mongo.ObjectID()._str,
                 i.fechaRecepcionPlanilla = i.fechaRecepcionPlanilla ? moment(i.fechaRecepcionPlanilla).add(TimeOffset, 'hours').toDate() : null;
                 factura.impuestosRetenciones.push(i);
-            });
-        };
+            })
+        }
 
 
         // -------------------------------------------------------------------------------------------------
@@ -79,11 +79,12 @@ Meteor.methods(
                 .then(function(result) { done(null, result); })
                 .catch(function (err) { done(err, null); })
                 .done();
-        });
+        })
 
-        if (response.error)
+        if (response.error) { 
             throw new Meteor.Error(response.error && response.error.message ? response.error.message : response.error.toString());
-
+        }
+            
         factura.cuotasFactura = [];
 
         if (response.result.count) {
@@ -95,8 +96,8 @@ Meteor.methods(
                 cuota._id = new Mongo.ObjectID()._str,
                 cuota.fechaVencimiento = cuota.fechaVencimiento ? moment(cuota.fechaVencimiento).add(TimeOffset, 'hours').toDate() : null;
                 factura.cuotasFactura.push(cuota);
-            });
-        };
+            })
+        }
         // -------------------------------------------------------------------------------------------------
 
 

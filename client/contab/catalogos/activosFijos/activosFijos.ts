@@ -18,9 +18,10 @@ import { DialogModal } from '../../../imports/general/genericUIBootstrapModal/an
 
 import { mensajeErrorDesdeMethod_preparar } from '../../../imports/clientGlobalMethods/mensajeErrorDesdeMethod_preparar'; 
 
+import * as select2_styles from "client/imports/css/angularjs-ui-select.css"; 
+
 angular.module("contabm").controller("Catalogos_ActivosFijos_Controller",
-['$stateParams', '$state', '$scope', '$modal', 'uiGridConstants', '$interval', 
-function ($stateParams, $state, $scope,  $modal, uiGridConstants, $interval) {
+['$stateParams', '$scope', '$modal', '$interval', function ($stateParams, $scope,  $modal, $interval) {
 
     $scope.showProgress = false;
 
@@ -68,6 +69,55 @@ function ($stateParams, $state, $scope,  $modal, uiGridConstants, $interval) {
                                         } });
         },
     })
+
+    
+    $scope.getItemsFromServerForSelectProveedores = (search: any) => {
+
+        $scope.showProgress = true;
+        const where = `Proveedores.Nombre Like '%${search}%'`;
+
+        Meteor.call('bancos.getProveedoresParaSelect2', where, (err, result) => {
+
+            if (err) {
+                let errorMessage = mensajeErrorDesdeMethod_preparar(err);
+
+                $scope.alerts.length = 0;
+                $scope.alerts.push({
+                    type: 'danger',
+                    msg: errorMessage
+                });
+
+                $scope.showProgress = false;
+                $scope.$apply();
+
+                return;
+            }
+
+            if (result.error) {
+                // el método que intenta grabar los cambis puede regresar un error cuando,
+                // por ejemplo, la fecha corresponde a un mes ya cerrado en Bancos ...
+                $scope.alerts.length = 0;
+                $scope.alerts.push({
+                    type: 'danger',
+                    msg: result.message
+                });
+
+
+                $scope.showProgress = false;
+                $scope.$apply();
+            } else {
+
+                $scope.helpers({
+                    proveedores: () => {
+                        return result.items;
+                    },
+                });
+
+                $scope.showProgress = false;
+                $scope.$apply();
+            }
+        })
+    }
 
     $scope.refresh0 = function () {
         if ($scope.activoFijo && $scope.activoFijo.docState && $scope.activoFijo.docState === 1) { 
@@ -165,8 +215,9 @@ function ($stateParams, $state, $scope,  $modal, uiGridConstants, $interval) {
                         // aquí podemos hacer algo con el item que se ha leído desde sql server ... 
                     })
                 }
-                else
+                else { 
                     return;
+                } 
             }), 
 
             // -----------------------------------------------------------------------------------------------------
@@ -402,15 +453,15 @@ function ($stateParams, $state, $scope,  $modal, uiGridConstants, $interval) {
         },
     ]
 
-    $scope.deleteItem = function (item) {
+    $scope.deleteItem = function (item: any) {
         // nótese como  indicamos que el usuario no quiere seleccionar el item en la lista, solo marcarlo para ser eliminado;
         // la idea es que el item se marque para ser eliminado, pero no se muestre (sus detalles) en el tab que sigue ...
 
-        if (item.docState === 3) {
-            delete $scope.activosFijos.find(x => x.claveUnica === item.claveUnica).docState; 
+        if (item.docState == 3) {
+            delete $scope.activosFijos.find((x: any) => x.claveUnica === item.claveUnica).docState; 
         }
         else { 
-            $scope.activosFijos.find(x => x.claveUnica === item.claveUnica).docState = 3;
+            $scope.activosFijos.find((x: any) => x.claveUnica === item.claveUnica).docState = 3;
         }
 
         itemSeleccionadoParaSerEliminado = true;
@@ -418,25 +469,26 @@ function ($stateParams, $state, $scope,  $modal, uiGridConstants, $interval) {
 
     $scope.eliminar = function () {
 
-        if ($scope.reposicion && $scope.reposicion.docState && $scope.reposicion.docState === 1) {
+        if ($scope.activoFijo && $scope.activoFijo.docState && $scope.activoFijo.docState === 1) {
             // eliminamos '//'; parece que ts lo agrega cuando encuentra un string con algunos caracteres especiales, como new line ... 
-            let message = `La reposición de caja chica que Ud. intenta eliminar es <em>nueva</em>. No hay nada que 
+            let message = `La registro que Ud. intenta eliminar es <em>nuevo</em>. No hay nada que 
                            eliminar (pues no se ha grabado aún).<br />
-                           Ud. puede <em>revertir</em> la creación del registro si ejecuta cualquier otra acción e indica que desea 
-                           <em>perder los cambios</em> que ha registrado hasta ahora, para el registro nuevo.`;  
+                           Ud. puede <em>revertir</em> la creación del registro si ejecuta cualquier otra acción 
+                           e indica que desea <em>perder los cambios</em> que ha registrado hasta ahora, 
+                           para el registro nuevo.`;  
             
             // eliminamos '//'; parece que ts lo agrega cuando encuentra un string con algunos caracteres especiales, como new line ...                `
             message = message.replace(/\/\//gi, "");
 
-            DialogModal($modal, "<em>Bancos - Caja chica - Reposiciones</em>", message, false).then();
+            DialogModal($modal, "<em>Contab - Inventario de activos fijos</em>", message, false).then();
             return;
         }
 
-        $scope.reposicion.docState = 3;
+        $scope.activoFijo.docState = 3;
     }
 
     $scope.nuevo = function () {
-        if ($scope.reposicion && $scope.reposicion.docState) {
+        if ($scope.activoFijo && $scope.activoFijo.docState) {
             DialogModal($modal, "<em>Contab - Activos fijos</em>",
                                 `Aparentemente, Ud. ha efectuado cambios; aún así, desea <em>agregar un nuevo registro</em> y perder los cambios?`,
                                 true).then(
@@ -467,7 +519,7 @@ function ($stateParams, $state, $scope,  $modal, uiGridConstants, $interval) {
     // solo para eliminar los registros que el usuario 'marca' en la lista
     $scope.grabarEliminaciones = () => {
 
-        if (!$scope.activosFijos.find((x: any) => x.docState && x.docState === 3)) {
+        if (!$scope.activosFijos.find((x: any) => x.docState && x.docState == 3)) {
             let message = `Aparentemente, <em>Ud. no ha marcado</em> registros en la lista para ser eliminados.<br />.<br />
                            Recuerde que mediante esta función Ud. puede eliminar los registros que se hayan <em>marcado</em> (
                            haciendo un <em>click</em> en la x roja al final de cada registro) para ello en la lista.`; 
@@ -485,9 +537,9 @@ function ($stateParams, $state, $scope,  $modal, uiGridConstants, $interval) {
     let grabarEliminaciones2 = function() {
 
         $scope.showProgress = true;
-        let registrosAEliminar = $scope.activosFijos.filter((x) => x.docState && x.docState === 3);
+        let registrosAEliminar = $scope.activosFijos.filter((x: any) => x.docState && x.docState == 3);
 
-        Meteor.call('contab.activosFijos.eliminar', registrosAEliminar, (err, resolve) => {
+        Meteor.call('contab.activosFijos.eliminar', registrosAEliminar, (err: any, resolve: any) => {
 
             if (err) {
                 let errorMessage = mensajeErrorDesdeMethod_preparar(err);
@@ -535,8 +587,9 @@ function ($stateParams, $state, $scope,  $modal, uiGridConstants, $interval) {
     $scope.aplicarFiltro = function () {
         $scope.showProgress = true;
 
-        Meteor.call('contab.activosFijos.LeerDesdeSql', JSON.stringify($scope.filtro), $scope.companiaSeleccionada.numero, (err, result) => {
-
+        Meteor.call('contab.activosFijos.LeerDesdeSql', JSON.stringify($scope.filtro), 
+                                                        $scope.companiaSeleccionada.numero, 
+                                                        (err: any, result: any) => {
             if (err) {
                 let errorMessage = mensajeErrorDesdeMethod_preparar(err);
 
@@ -548,6 +601,7 @@ function ($stateParams, $state, $scope,  $modal, uiGridConstants, $interval) {
 
                 $scope.showProgress = false;
                 $scope.$apply();
+
                 return;
             }
 
@@ -676,8 +730,6 @@ function ($stateParams, $state, $scope,  $modal, uiGridConstants, $interval) {
         limit = recordCount;
         $scope.leerRegistrosDesdeServer(limit);     // cada vez se leen 50 más ...
     }
-
-
 
     // -------------------------------------------------------------------------
     // Grabar las modificaciones hechas al registro
@@ -862,7 +914,7 @@ function ($stateParams, $state, $scope,  $modal, uiGridConstants, $interval) {
         
                 $scope.departamentos = catalogos.departamentos;
                 $scope.tiposProducto = catalogos.tiposProducto; 
-                $scope.proveedores = catalogos.proveedores; 
+                $scope.proveedores = []; 
         
                 $scope.showProgress = false;
                 $scope.$apply();
@@ -901,7 +953,7 @@ function inicializarItem(itemID, $scope) {
     return new Promise(function(resolve:any, reject:any) { 
         if (itemID == 0) {
             $scope.showProgress = true;
-            $scope.reposicion = {};
+            $scope.activoFijo = {};
             let usuario: any =  Meteor.user();
     
             $scope.activoFijo = {
@@ -929,9 +981,9 @@ function inicializarItem(itemID, $scope) {
             // nótese que ejecutamos un promise que lee el item en la base de datos (server) y lo regresa 
             item_leerByID_desdeSql(itemID, $scope).then( 
     
-                function (result:any) { 
+                function (result: any) { 
                     $scope.activoFijo = {};
-                    $scope.activoFijo = JSON.parse(result);
+                    $scope.activoFijo = JSON.parse(result.activoFijo);
     
                     if (!$scope.activoFijo || ($scope.activoFijo && lodash.isEmpty($scope.activoFijo))) {
                         // el usuario eliminó el registro y, por eso, no pudo se leído desde sql
@@ -950,13 +1002,21 @@ function inicializarItem(itemID, $scope) {
 
                     // nótese como establecemos el tab 'activo' en ui-bootstrap; ver nota arriba acerca de ésto ...
                     $scope.activeTab = { tab1: false, tab2: false, tab3: true, };
+
+                    const proveedor = JSON.parse(result.proveedor);
+
+                    $scope.helpers({
+                        proveedores: () => {
+                            return [ { proveedor: proveedor.proveedor, nombre: proveedor.nombre } ]; 
+                        },
+                    })
     
                     $scope.showProgress = false;
                     $scope.$apply();
 
                     resolve($scope.activoFijo); 
     
-                }).catch(function(err) { 
+                }).catch(function(err: {}) { 
     
                     let errorMessage = mensajeErrorDesdeMethod_preparar(err);
     
@@ -976,10 +1036,10 @@ function inicializarItem(itemID, $scope) {
 }
 
 
-function item_leerByID_desdeSql(pk, $scope) {
+function item_leerByID_desdeSql(pk: number, $scope: {}) {
     return new Promise(function(resolve, reject) { 
         // ejecutamos un método para leer el asiento contable en sql server y grabarlo a mongo (para el current user)
-        Meteor.call('contab.activosFijos.leerByID.desdeSql', pk, (err, result) => {
+        Meteor.call('contab.activosFijos.leerByID.desdeSql', pk, (err: {}, result: {}) => {
 
             if (err) {
                 reject(err); 
@@ -991,7 +1051,7 @@ function item_leerByID_desdeSql(pk, $scope) {
 }
 
 
-function calcularDepreciacion(activoFijo) { 
+function calcularDepreciacion(activoFijo: any) { 
 
     if (!activoFijo.fechaCompra || !activoFijo.montoADepreciar || !activoFijo.numeroDeAnos) { 
         return { 

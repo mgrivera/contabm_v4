@@ -117,7 +117,23 @@
                                 </div>
                             </div>
                         </div>
-                        
+
+                        <div class="row">
+
+                                <div class="col-sm-6">
+                                    <div class="col-sm-5 col-sm-offset-1">
+                                        <div class="form-group">
+                                            <label class="control-label input-label">Proveedor: </label>
+                                            <input type="text"
+                                                    class="form-control input-sm myinput-sm"
+                                                    ng-model="filtro.nombreProveedor" />
+                                        </div>
+                                    </div>
+                                </div>
+    
+                                <div class="col-sm-6">
+                                </div>
+                            </div> 
                     </div>
                 </form>
             </div>
@@ -265,7 +281,7 @@
             
                                 <div class="row row-centered">
                                     <div class="col-sm-4 col-centered">
-                                        <div class="form-group">
+                                        <!-- <div class="form-group">
                                             <label>Proveedor </label>
                                             <select class="form-control input-sm myinput-sm"
                                                     ng-model="activoFijo.proveedor"
@@ -273,8 +289,31 @@
                                                     ng-change="setIsEdited()"
                                                     ng-model-options="{ updateOn: 'blur' }">
                                             </select>
+                                        </div> -->
+
+                                        <div class="form-group-sm">
+                                            <label>Compañía</label>
+                                            <ui-select ng-model="activoFijo.proveedor" 
+                                                       theme="bootstrap" 
+                                                       ng-disabled="false" 
+                                                       skip-focusser="true"
+                                                       on-select="setIsEdited()" 
+                                                       spinner-enabled="true"
+                                                       spinner-class="original glyphicon-refresh ui-select-spin"
+                                                       style="width: 100%; font-size: 12px !important; ">
+                                                <ui-select-match placeholder="Seleccione una compañía ...">
+                                                    <span ng-bind="$select.selected.nombre"></span>
+                                                </ui-select-match>
+                                                <ui-select-choices
+                                                    repeat="value.proveedor as value in (proveedores | filter: $select.search | orderBy: 'nombre') track by value.proveedor"
+                                                    refresh="getItemsFromServerForSelectProveedores($select.search)" minimum-input-length="3"
+                                                    refresh-delay="500">
+                                                    <span ng-bind="value.nombre"></span>
+                                                </ui-select-choices>
+                                            </ui-select>
                                         </div>
                                     </div>
+
                                     <div class="col-sm-1 col-centered"></div>
                                     <div class="col-sm-4 col-centered">
                                         <div class="form-group">

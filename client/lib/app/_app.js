@@ -11,6 +11,10 @@
 
   import 'angular-ui-grid';
 
+  import ngSanitize from 'angular-sanitize'; 
+  import uiselect from 'ui-select';
+  import 'ui-select/dist/select.css';
+
   // nótese que importamos los assets de npm packages ...
   import 'angular-ui-grid/ui-grid.css';
 
@@ -22,6 +26,7 @@
   angular.module("contabm", [ angularMeteor, uiRouter, 'ui.bootstrap', 'accounts.ui',
                                 'ui.grid', 'ui.grid.edit', 'ui.grid.cellNav',
                                 'ui.grid.resizeColumns', 'ui.grid.selection',
-                                'ui.grid.pinning', 'contabm.contab', 'contabm.bancos', 
+                                'ui.grid.pinning', 'ngSanitize', 'ui.select', 
+                                'contabm.contab', 'contabm.bancos', 
                                 "contabm.nomina", ContabAdministracion.name, Generales.name, 
-                            ]);
+                            ])

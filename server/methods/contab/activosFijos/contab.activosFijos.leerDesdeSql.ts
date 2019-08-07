@@ -1,16 +1,15 @@
 
 
-
-import { sequelize } from '../../../../server/sqlModels/_globals/_loadThisFirst/_globals'; 
+import { sequelize } from 'server/sqlModels/_globals/_loadThisFirst/_globals';
 import * as numeral from 'numeral';
 import * as lodash from 'lodash';
 import * as moment from 'moment';
 import SimpleSchema from 'simpl-schema';
 
-import { TimeOffset } from '../../../../globals/globals';
-import '../../../../imports/globals/tsDeclares';
+import { TimeOffset } from 'globals/globals';
+import 'imports/globals/tsDeclares';
 
-import { Temp_Consulta_Contab_ActivosFijos } from '../../../../imports/collections/contab/temp.contab.consulta.activosFijos'; 
+import { Temp_Consulta_Contab_ActivosFijos } from 'imports/collections/contab/temp.contab.consulta.activosFijos'; 
 
 Meteor.methods(
 {
@@ -22,7 +21,6 @@ Meteor.methods(
             filtro2: { type: Object, blackbox: true, optional: false, },
             ciaContab: { type: Number, optional: false, },
         }).validate({ filtro2, ciaContab, });
-
 
         let where = "";
 
@@ -61,6 +59,22 @@ Meteor.methods(
             where += `(af.Descripcion Like '${criteria}')`;
         }
 
+        // nombreProveedor 
+        if (filtro2.nombreProveedor) {
+            if (where) { 
+                where += " And ";
+            }
+            else { 
+                where += "(1 = 1) And ";
+            }
+
+            // hacemos que la busqueda sea siempre genérica ... nótese como quitamos algunos '*' que el usuario haya agregado
+            let criteria = filtro2.nombreProveedor.replace(/\*/g, '');
+            criteria = `%${criteria}%`;
+
+            where += `(pr.Nombre Like '${criteria}')`;
+        }
+
         // modelo 
         if (filtro2.modelo) {
             if (where) { 
@@ -70,8 +84,7 @@ Meteor.methods(
                 where += "(1 = 1) And ";
             }
 
-            // hacemos que la busqueda sea siempre genérica ... nótese como quitamos algunos '*'
-            // que el usuario haya agregado
+            // hacemos que la busqueda sea siempre genérica ... nótese como quitamos algunos '*' que el usuario haya agregado
             let criteria = filtro2.modelo.replace(/\*/g, '');
             criteria = `%${criteria}%`;
 
@@ -87,8 +100,7 @@ Meteor.methods(
                 where += "(1 = 1) And ";
             }
 
-            // hacemos que la busqueda sea siempre genérica ... nótese como quitamos algunos '*'
-            // que el usuario haya agregado
+            // hacemos que la busqueda sea siempre genérica ... nótese como quitamos algunos '*' que el usuario haya agregado
             let criteria = filtro2.serial.replace(/\*/g, '');
             criteria = `%${criteria}%`;
 
@@ -104,15 +116,12 @@ Meteor.methods(
                 where += "(1 = 1) And ";
             }
 
-            // hacemos que la busqueda sea siempre genérica ... nótese como quitamos algunos '*'
-            // que el usuario haya agregado
+            // hacemos que la busqueda sea siempre genérica ... nótese como quitamos algunos '*' que el usuario haya agregado
             let criteria = filtro2.placa.replace(/\*/g, '');
             criteria = `%${criteria}%`;
 
             where += `(af.Placa Like '${criteria}')`;
         }
-
-
 
         if (where) { 
             where += " And ";
@@ -131,8 +140,7 @@ Meteor.methods(
                      af.Modelo as modelo, af.Placa as placa, af.CostoTotal as costoTotal, 
                      af.ValorResidual as valorResidual, af.MontoADepreciar as montoADepreciar, 
                      af.DesincorporadoFlag as desincorporadoFlag, af.FechaDesincorporacion as fechaDesincorporacion 
-                     From InventarioActivosFijos af Left Outer Join tDepartamentos d 
-                     On af.Departamento = d.Departamento  
+                     From InventarioActivosFijos af Left Outer Join tDepartamentos d On af.Departamento = d.Departamento  
                      Left Outer Join Proveedores pr On af.Proveedor = pr.Proveedor 
                      Left Outer Join TiposDeProducto tp On af.Tipo = tp.Tipo 
                      Where ${where} 
@@ -153,10 +161,8 @@ Meteor.methods(
             throw new Meteor.Error(response.error && response.error.message ? response.error.message : response.error.toString());
         }
 
-
         // eliminamos los registros que el usuario pueda haber registrado antes (en mongo) ...
         Temp_Consulta_Contab_ActivosFijos.remove({ user: this.userId });
-
 
         if (response.result.length == 0) {
             return "Cero registros han sido leídos desde la base de datos (sql server).";
