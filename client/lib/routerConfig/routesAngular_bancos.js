@@ -65,7 +65,7 @@ angular.module("contabm").config(['$urlRouterProvider', '$stateProvider', '$loca
         })
         .state('bancos.definicionCuentasContables', {
             url: '/definicionCuentasContables',
-            templateUrl: 'client/bancos/catalogos/definicionCuentasContables/definicionCuentasContables.html',
+            templateUrl: 'client/imports/bancos/catalogos/definicionCuentasContables/definicionCuentasContables.html',
             controller: 'Catalogos_Bancos_DefinicionCuentasContables_Controller',
             parent: 'bancos'
         })

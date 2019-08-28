@@ -135,5 +135,44 @@ Meteor.methods(
         })
 
         return "Ok, los proveedores y clientes han sido leídos desde sql server.";
+    }, 
+
+
+    'bancos.proveedores.searchDesdeSql': function (search) {
+
+        new SimpleSchema({
+            search: { type: String, optional: false, },
+        }).validate({ search, });
+
+        // hacemos que la busqueda sea siempre genérica ... nótese como quitamos algunos '*' que el usuario haya agregado
+        let criteria = search.replace(/\*/g, '');
+        criteria = `%${criteria}%`;
+
+        const where = `(p.Nombre Like '${criteria}')`;
+
+        // ---------------------------------------------------------------------------------------------------
+        // leemos los pagos desde sql server, que cumplan el criterio indicado
+        let query = `Select p.Proveedor as proveedor, p.Nombre as nombre 
+                     From Proveedores p
+                     Where ${where}
+                     Order By p.Nombre
+                    `;
+
+        response = null;
+        response = Async.runSync(function(done) {
+            sequelize.query(query, { type: sequelize.QueryTypes.SELECT })
+                .then(function(result) { done(null, result); })
+                .catch(function (err) { done(err, null); })
+                .done();
+        });
+
+        if (response.error) {
+            throw new Meteor.Error(response.error && response.error.message ? response.error.message : response.error.toString());
+        }
+
+        return { 
+            error: false, 
+            proveedores: response.result
+        }
     }
-});
+})

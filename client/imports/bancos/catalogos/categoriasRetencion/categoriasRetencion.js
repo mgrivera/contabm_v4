@@ -1,13 +1,13 @@
 
+
 import angular from 'angular';
-import angularMeteor from 'angular-meteor';
 import lodash from 'lodash';
 import moment from 'moment'; 
 
 import { CategoriasRetencion } from '/imports/models/bancos/catalogos/categoriasRetencion';
 import { mensajeErrorDesdeMethod_preparar } from '/client/imports/clientGlobalMethods/mensajeErrorDesdeMethod_preparar'; 
 
-export default angular.module("categoriasRetencion", [ angularMeteor ])
+export default angular.module("categoriasRetencion", [ ])
     .controller("Bancos_Catalogos_CategoriasRetencion_Controller", ['$scope', function ($scope) {
 
     $scope.showProgress = false;

@@ -29,7 +29,7 @@ Meteor.methods(
             criteria = `%${criteria}%`;
 
             where += `(t.Descripcion Like '${criteria}')`;
-        };
+        }
 
         if (filtro2.nombreProveedor) {
             if (where)
@@ -43,7 +43,7 @@ Meteor.methods(
             criteria = `%${criteria}%`;
 
             where += `(p.Nombre Like '${criteria}')`;
-        };
+        }
 
         if (filtro2.concepto) {
             if (where)
@@ -52,7 +52,7 @@ Meteor.methods(
                 where = "(1 = 1) And ";
 
             where += `(d.Concepto = ${filtro2.concepto})`;
-        };
+        }
 
         if (filtro2.cuentaContable) {
             if (where)
@@ -66,7 +66,7 @@ Meteor.methods(
             criteria = `%${criteria}%`;
 
             where += `(c.Cuenta Like '${criteria}')`;
-        };
+        }
 
         if (filtro2.cuentaContableDescripcion) {
             if (where)
@@ -80,7 +80,7 @@ Meteor.methods(
             criteria = `%${criteria}%`;
 
             where += `(c.Descripcion Like '${criteria}')`;
-        };
+        }
 
         if (where)
             where += " And ";
@@ -89,15 +89,17 @@ Meteor.methods(
 
         where += `(c.Cia = ${ciaContab.toString()})`;
 
-        if (!where)
+        if (!where) { 
             where = "1 = 1";            // esto nunca va a ocurrir aquí ...
-
-
+        }
+            
         // ---------------------------------------------------------------------------------------------------
         // leemos los registros desde sql server, que cumplan el criterio indicado
-        let query = `Select d.ClaveUnica as claveUnica, d.Rubro as rubro, d.Compania as compania,
+        let query = `Select d.ClaveUnica as claveUnica, d.Rubro as rubro, d.Compania as compania, 
+                     p.Nombre as nombreCompania, 
             	     d.Moneda as moneda, d.Concepto as concepto, d.Concepto2 as concepto2,
-            	     d.CuentaContableID as cuentaContableID
+                     d.CuentaContableID as cuentaContableID, 
+                     (c.Cuenta + ' ' + c.Descripcion) as descripcionCuentaContable 
                      From DefinicionCuentasContables d
                      Left Outer Join TiposProveedor t On d.Rubro = t.Tipo
                      Left Outer Join Proveedores p On d.Compania = p.Proveedor
@@ -111,17 +113,18 @@ Meteor.methods(
                 .then(function(result) { done(null, result); })
                 .catch(function (err) { done(err, null); })
                 .done();
-        });
+        })
 
-        if (response.error)
+        if (response.error) { 
             throw new Meteor.Error(response.error && response.error.message ? response.error.message : response.error.toString());
-
+        }
+            
         // eliminamos los registros que el usuario pueda haber registrado antes (en mongo) ...
         Temp_Consulta_Bancos_CuentasContables_Definicion.remove({ user: this.userId });
 
         if (response.result.length == 0) {
             return "Cero registros han sido leídos desde sql server.";
-        };
+        }
 
         // -------------------------------------------------------------------------------------------------------------
         // para reportar progreso solo 20 veces; si hay menos de 20 registros, reportamos siempre ...
@@ -137,7 +140,6 @@ Meteor.methods(
                             },
                             { current: 1, max: 1, progress: '0 %' });
         // -------------------------------------------------------------------------------------------------------------
-
         response.result.forEach((item) => {
 
             // nótese como los 'registros' en sql y mongo son idénticos, salvo algunos fields
@@ -148,7 +150,7 @@ Meteor.methods(
             cuentaContableDefinicion.user = Meteor.userId();
 
             Temp_Consulta_Bancos_CuentasContables_Definicion.insert(cuentaContableDefinicion);
-
+            
             // -------------------------------------------------------------------------------------------------------
             // vamos a reportar progreso al cliente; solo 20 veces ...
             cantidadRecs++;
@@ -173,11 +175,13 @@ Meteor.methods(
                                         },
                                         { current: 1, max: 1, progress: numeral(cantidadRecs / numberOfItems).format("0 %") });
                     reportar = 0;
-                };
-            };
+                }
+            }
             // -------------------------------------------------------------------------------------------------------
-        });
+        })
 
-        return "Ok, los rubros asignados han sido leídos desde sql server.";
+        return { 
+            error: false, 
+        }
     }
-});
+})

@@ -1,0 +1,38 @@
+
+
+<div class="modal-header">
+    <h5 class="modal-title">
+        <div class="row">
+            <div class="col-sm-11">
+                <span>Edite los datos en la lista y cierre este modal para grabar</span>
+            </div>
+
+            <div class="col-sm-1" style="text-align: right; ">
+                <button type="button" class="close" ng-click="cancel()">&times;</button>
+            </div>
+        </div>
+    </h5>
+</div>
+
+<div class="modal-body">
+    <div class="container-fluid">       
+
+        <div class="row">
+            <div class="col-sm-12 col-sm-offset-0">
+                <div class="col-sm-4 col-sm-offset-4">
+                    
+                </div>
+
+                <div class="col-sm-4" style="text-align: right; font-style: italic; ">
+                    <span style="color: dodgerblue">{{ companiaSeleccionada.nombreCorto }}</span>
+                </div>
+            </div>
+        </div>
+
+        <definicion-cuentas-contables item="item" 
+                                      cia-contab-seleccionada="companiaSeleccionada" 
+                                      function-ok="ok">
+        </definicion-cuentas-contables>
+
+    </div>
+</div>

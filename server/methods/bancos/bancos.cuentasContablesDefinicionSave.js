@@ -5,11 +5,11 @@ Meteor.methods(
 {
     'bancos.cuentasContablesDefinicionSave': function (items) {
 
-        if (!_.isArray(items) || items.length == 0) {
+        if (!lodash.isArray(items) || items.length == 0) {
             throw new Meteor.Error("Aparentemente, no se han editado los datos en la forma. No hay nada que actualizar.");
         }
 
-        var inserts = _.chain(items).
+        var inserts = lodash.chain(items).
                       filter(function (item) { return item.docState && item.docState == 1; }).
                       map(function (item) { delete item.docState; return item; }).
                       value();
@@ -20,6 +20,8 @@ Meteor.methods(
 
             let item_sql = lodash.clone(item);
 
+            delete item_sql.nombreCompania; 
+            delete item_sql.descripcionCuentaContable; 
             delete item_sql._id;
             delete item_sql.user;
 
@@ -40,11 +42,11 @@ Meteor.methods(
             Temp_Consulta_Bancos_CuentasContables_Definicion.insert(item, function (error, result) {
                 if (error)
                     throw new Meteor.Error("validationErrors", error.invalidKeys.toString());
-            });
-        });
+            })
+        })
 
 
-        var updates = _.chain(items).
+        var updates = lodash.chain(items).
                         filter(function (item) { return item.docState && item.docState == 2; }).
                         map(function (item) { delete item.docState; return item; }).                // eliminamos docState del objeto
                         map(function (item) { return { _id: item._id, object: item }; }).           // separamos el _id del objeto
@@ -56,6 +58,8 @@ Meteor.methods(
 
             let item_sql = lodash.clone(item.object);
 
+            delete item_sql.nombreCompania; 
+            delete item_sql.descripcionCuentaContable; 
             delete item_sql._id;
             delete item_sql.user;
 
@@ -64,7 +68,7 @@ Meteor.methods(
                     .then(function(result) { done(null, result); })
                     .catch(function (err) { done(err, null); })
                     .done();
-            });
+            })
 
             if (response.error)
                 throw new Meteor.Error(response.error && response.error.message ? response.error.message : response.error.toString());
@@ -74,8 +78,8 @@ Meteor.methods(
                 //The list of errors is available on `error.invalidKeys` or by calling Books.simpleSchema().namedContext().invalidKeys()
                 if (error)
                     throw new Meteor.Error("validationErrors", error.invalidKeys.toString());
-            });
-        });
+            })
+        })
 
 
         var removes = lodash(items).
@@ -90,14 +94,14 @@ Meteor.methods(
                     .then(function(result) { done(null, result); })
                     .catch(function (err) { done(err, null); })
                     .done();
-            });
+            })
 
             if (response.error)
                 throw new Meteor.Error(response.error && response.error.message ? response.error.message : response.error.toString());
 
             Temp_Consulta_Bancos_CuentasContables_Definicion.remove({ _id: item._id });
-        });
+        })
 
         return "Ok, los datos han sido actualizados en la base de datos.";
     }
-});
+})
