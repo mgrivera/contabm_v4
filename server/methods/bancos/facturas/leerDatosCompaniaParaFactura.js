@@ -15,10 +15,13 @@ Meteor.methods(
           }).validate({ pk, companiaSeleccionadaID });
 
         let query = `Select Proveedor as proveedor, Ciudad as ciudad, AplicaIvaFlag as aplicaIvaFlag, 
+                     MonedaDefault as monedaDefault, FormaDePagoDefault as formaDePagoDefault, 
+                     Tipo as tipo, ProveedorClienteFlag as proveedorClienteFlag, Concepto as concepto, 
                      ContribuyenteEspecialFlag as contribuyenteEspecialFlag,
                      Abreviatura as abreviatura, Nombre as nombre, 
                      SujetoARetencionFlag as sujetoARetencionFlag, NuestraRetencionSobreIvaPorc as nuestraRetencionSobreIvaPorc, 
-                     RetencionSobreIvaPorc as retencionSobreIvaPorc From Proveedores Where Proveedor = ?`;
+                     RetencionSobreIvaPorc as retencionSobreIvaPorc, MontoCheque as montoCheque  
+                     From Proveedores Where Proveedor = ?`;
 
         let response = null;
         response = Async.runSync(function(done) {
@@ -91,7 +94,10 @@ Meteor.methods(
             }
         }
 
-        return JSON.stringify({ datosProveedor: proveedor, 
-                                pagosAnticipo: pagosAnticipoArray }); 
+        return JSON.stringify({ 
+            error: false, 
+            datosProveedor: proveedor, 
+            pagosAnticipo: pagosAnticipoArray 
+        }); 
     }
 })

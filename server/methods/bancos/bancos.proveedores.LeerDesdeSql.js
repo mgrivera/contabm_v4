@@ -137,7 +137,6 @@ Meteor.methods(
         return "Ok, los proveedores y clientes han sido leídos desde sql server.";
     }, 
 
-
     'bancos.proveedores.searchDesdeSql': function (search) {
 
         new SimpleSchema({
@@ -173,6 +172,44 @@ Meteor.methods(
         return { 
             error: false, 
             proveedores: response.result
+        }
+    }, 
+
+    
+    'bancos.proveedores.leerDesdeSqlById': function (pk) {
+
+        new SimpleSchema({
+            pk: { type: Number, optional: false, },
+        }).validate({ pk, });
+
+        // leemos los pagos desde sql server, que cumplan el criterio indicado
+        const query = `Select p.Proveedor as proveedor, p.Nombre as nombre, p.Abreviatura as abreviatura,
+                     p.Rif as rif, p.Beneficiario as beneficiario, p.Concepto as concepto,
+                     p.MontoCheque as montoCheque, p.MonedaDefault as monedaDefault, 
+                     p.FormaDePagoDefault as formaDePagoDefault,
+                     p.Tipo as tipo, p.ProveedorClienteFlag as proveedorClienteFlag 
+                     From Proveedores p
+                     Where p.Proveedor = ? 
+                    `;
+
+        response = null;
+        response = Async.runSync(function(done) {
+            sequelize.query(query, { 
+                replacements: [ pk ], 
+                type: sequelize.QueryTypes.SELECT 
+            })
+                .then(function(result) { done(null, result); })
+                .catch(function (err) { done(err, null); })
+                .done();
+        });
+
+        if (response.error) {
+            throw new Meteor.Error(response.error && response.error.message ? response.error.message : response.error.toString());
+        }
+
+        return { 
+            error: false, 
+            proveedor: response.result && response.result.length ? response.result[0] : [], 
         }
     }
 })

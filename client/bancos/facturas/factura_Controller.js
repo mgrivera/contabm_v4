@@ -6,7 +6,6 @@ import { Monedas } from '/imports/collections/monedas.js';
 
 import { Companias } from '/imports/collections/companias';
 import { CompaniaSeleccionada } from '/imports/collections/companiaSeleccionada';
-import { Proveedores } from '/imports/collections/bancos/proveedoresClientes'; 
 
 import { DialogModal } from '/client/imports/general/genericUIBootstrapModal/angularGenericModal'; 
 import { mensajeErrorDesdeMethod_preparar } from '/client/imports/clientGlobalMethods/mensajeErrorDesdeMethod_preparar'; 
@@ -129,19 +128,17 @@ function ($scope, $stateParams, $state, $modal, tablasImpuestosRetenciones) {
 
                     $scope.proveedor = infoProveedor.datosProveedor; 
 
-                    // leemos el proveedor en mongo para inicializar algunos 'defaults'
-                    let proveedorCliente = Proveedores.findOne({ proveedor: $scope.factura.proveedor });
-                    if (proveedorCliente) {
-                        $scope.factura.moneda = proveedorCliente.monedaDefault;
-                        $scope.factura.condicionesDePago = proveedorCliente.formaDePagoDefault;
-                        $scope.factura.tipo = proveedorCliente.tipo;
-                        $scope.factura.cxCCxPFlag = proveedorCliente.proveedorClienteFlag;
-                        $scope.factura.concepto = proveedorCliente.concepto;
+                    if (infoProveedor.datosProveedor) {
+                        $scope.factura.moneda = infoProveedor.datosProveedor.monedaDefault;
+                        $scope.factura.condicionesDePago = infoProveedor.datosProveedor.formaDePagoDefault;
+                        $scope.factura.tipo = infoProveedor.datosProveedor.tipo;
+                        $scope.factura.cxCCxPFlag = infoProveedor.datosProveedor.proveedorClienteFlag;
+                        $scope.factura.concepto = infoProveedor.datosProveedor.concepto;
 
                         if ($scope.proveedor.aplicaIvaFlag) {
-                            $scope.factura.montoFacturaConIva = proveedorCliente.montoCheque;
+                            $scope.factura.montoFacturaConIva = infoProveedor.datosProveedor.montoCheque;
                         } else {
-                            $scope.factura.montoFacturaSinIva = proveedorCliente.montoCheque;
+                            $scope.factura.montoFacturaSinIva = infoProveedor.datosProveedor.montoCheque;
                         }
                     }
 

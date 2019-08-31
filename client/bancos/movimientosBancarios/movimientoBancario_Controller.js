@@ -4,7 +4,6 @@ import { DialogModal } from '/client/imports/general/genericUIBootstrapModal/ang
 
 import { Companias } from '/imports/collections/companias';
 import { CompaniaSeleccionada } from '/imports/collections/companiaSeleccionada';
-import { Proveedores } from '/imports/collections/bancos/proveedoresClientes'; 
 import { Chequeras } from '/imports/collections/bancos/chequeras'; 
 
 import "/client/imports/css/angularjs-ui-select.css"; 

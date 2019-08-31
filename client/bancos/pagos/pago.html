@@ -61,17 +61,6 @@
                       style="margin-top: 5px; text-align: left; font-size: small; ">
 
                     <div class="row row-centered">
-                          <!-- <div class="col-sm-4 col-centered">
-                              <div class="form-group">
-                                  <label>Compañía</label>
-                                  <select class="form-control"
-                                          ng-model="pago.proveedor"
-                                          ng-options="item.proveedor as item.nombre for item in proveedores | orderBy:'nombre'"
-                                          ng-change="setIsEdited('compania')"
-                                          ng-model-options="{ updateOn: 'blur' }">
-                                      </select>
-                              </div>
-                          </div> -->
 
                         <div class="col-sm-4 col-centered">
                             <div class="form-group-sm">
@@ -80,7 +69,8 @@
                                            theme="bootstrap" 
                                            ng-disabled="false" 
                                            skip-focusser="true"
-                                           on-select="setIsEdited('compania')" spinner-enabled="true"
+                                           on-select="setIsEdited('compania')" 
+                                           spinner-enabled="true"
                                            spinner-class="original glyphicon-refresh ui-select-spin"
                                            style="width: 100%; font-size: 12px !important; ">
                                     <ui-select-match placeholder="Seleccione una compañía ...">

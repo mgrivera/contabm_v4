@@ -10,8 +10,7 @@ import { mensajeErrorDesdeMethod_preparar } from '/client/imports/clientGlobalMe
 import "/client/imports/css/angularjs-ui-select.css"; 
 
 angular.module("contabm").controller("Bancos_Pagos_Pago_Controller",
-['$scope', '$stateParams', '$state', '$meteor', '$modal', 'uiGridConstants',
-function ($scope, $stateParams, $state, $meteor, $modal, uiGridConstants) {
+['$scope', '$stateParams', '$state', '$meteor', '$modal', function ($scope, $stateParams, $state, $meteor, $modal) {
 
     $scope.showProgress = false;
 
@@ -37,7 +36,6 @@ function ($scope, $stateParams, $state, $meteor, $modal, uiGridConstants) {
 
     $scope.miSu_List = $scope.$parent.miSu_List;
 
-    // la lista de compañías viene desde el parent state; allí hacemos el subscribe ...
     $scope.helpers({
         proveedores: () => {
             return []; 
@@ -61,31 +59,70 @@ function ($scope, $stateParams, $state, $meteor, $modal, uiGridConstants) {
         if (value === 'compania' && $scope.pago.proveedor) {
             // leemos la compañía para intentar inicializar el valor miSuFlag
 
-            let compania = _.find($scope.proveedores, (x) => { return x.proveedor === $scope.pago.proveedor; });
-            if (compania && compania.proveedorClienteFlag) {
-                switch (compania.proveedorClienteFlag) {
-                    case 1:       // proveedor
-                        $scope.pago.miSuFlag = 1;
-                        break;
-                    case 2:       // cliente
-                        $scope.pago.miSuFlag = 2;
-                        break;
-                    default:
+            Meteor.call('leerDatosCompaniaParaFactura', $scope.pago.proveedor,
+                $scope.companiaSeleccionada.numero, (err, result) => {
+
+                if (err) {
+                    let errorMessage = mensajeErrorDesdeMethod_preparar(err);
+
+                    $scope.alerts.length = 0;
+                    $scope.alerts.push({
+                        type: 'danger',
+                        msg: errorMessage
+                    });
+
+                    $scope.showProgress = false;
+                    $scope.$apply();
+
+                    return;
                 }
-            }
 
-            if (compania && compania.monedaDefault) {
-                $scope.pago.moneda = compania.monedaDefault;
-            }
+                if (!result) {
+                    $scope.alerts.length = 0;
+                    $scope.showProgress = false;
+                    $scope.$apply();
+                }
 
-            if (compania && compania.concepto) {
-                $scope.pago.concepto = compania.concepto;
-            }
+                if (result.error) {
+
+                    $scope.alerts.length = 0;
+                    $scope.alerts.push({
+                        type: 'danger',
+                        msg: result.message
+                    })
+                    $scope.showProgress = false;
+                    $scope.$apply();
+
+                } else {
+                    const infoProveedor = JSON.parse(result);
+
+                    if (infoProveedor && infoProveedor.datosProveedor && infoProveedor.datosProveedor.proveedorClienteFlag) {
+                        switch (infoProveedor.datosProveedor.proveedorClienteFlag) {
+                            case 1:       // proveedor
+                                $scope.pago.miSuFlag = 1;
+                                break;
+                            case 2:       // cliente
+                                $scope.pago.miSuFlag = 2;
+                                break;
+                            default:
+                        }
+                    }
+
+                    if (infoProveedor && infoProveedor.datosProveedor && infoProveedor.datosProveedor.monedaDefault) {
+                        $scope.pago.moneda = infoProveedor.datosProveedor.monedaDefault;
+                    }
+
+                    if (infoProveedor && infoProveedor.datosProveedor && infoProveedor.datosProveedor.concepto) {
+                        $scope.pago.concepto = infoProveedor.datosProveedor.concepto;
+                    }
+                }
+            })
         }
 
-        if ($scope.pago.docState)
+        if ($scope.pago.docState) { 
             return;
-
+        }
+            
         $scope.pago.docState = 2;
     }
 
@@ -300,149 +337,149 @@ function ($scope, $stateParams, $state, $meteor, $modal, uiGridConstants) {
     }
 
 
-      $scope.asociarFacturas = () => {
-          if ($scope.pago.docState) {
-              DialogModal($modal, "<em>Pagos</em>",
-                                  `Aparentemente, <em>se han efectuado cambios</em> en el registro.
+    $scope.asociarFacturas = () => {
+        if ($scope.pago.docState) {
+            DialogModal($modal, "<em>Pagos</em>",
+                `Aparentemente, <em>se han efectuado cambios</em> en el registro.
                                    Por favor grabe los cambios antes de intentar ejecutar esta función.`,
-                                 false).then();
-              return;
-          };
+                false).then();
+            return;
+        };
 
-          $modal.open({
-              templateUrl: 'client/bancos/pagos/asociarFacturasModal.html',
-              controller: 'AsociarFacturasModal_Controller',
-              size: 'lg',
-              resolve: {
-                  companiaContabSeleccionada: () => {
-                      return $scope.companiaSeleccionada;
-                  },
-                  pago: () => {
-                      return $scope.pago;
-                  },
-              }
-          }).result.then(
-                function (resolve) {
-                    return true;
+        $modal.open({
+            templateUrl: 'client/bancos/pagos/asociarFacturasModal.html',
+            controller: 'AsociarFacturasModal_Controller',
+            size: 'lg',
+            resolve: {
+                companiaContabSeleccionada: () => {
+                    return $scope.companiaSeleccionada;
                 },
-                function (cancel) {
-                    // cuando el proceso registra los pagos que el usuario indica, se cierra el modal en forma
-                    // automática; entonces debemos leer nuevamente el pago para que se muestre la modificación
-                    // que el proceso hizo al mismo (el monto es actualizado con el monto pagado); notese que el
-                    // usuario también puede cerrar el modal en forma manual; en tal caso, no releemos el pago
-                    if (cancel === 'pagosOK') {
-                        inicializarItem();
-                    }
-                    return true;
-                });
-      }
+                pago: () => {
+                    return $scope.pago;
+                },
+            }
+        }).result.then(
+            function (resolve) {
+                return true;
+            },
+            function (cancel) {
+                // cuando el proceso registra los pagos que el usuario indica, se cierra el modal en forma
+                // automática; entonces debemos leer nuevamente el pago para que se muestre la modificación
+                // que el proceso hizo al mismo (el monto es actualizado con el monto pagado); notese que el
+                // usuario también puede cerrar el modal en forma manual; en tal caso, no releemos el pago
+                if (cancel === 'pagosOK') {
+                    inicializarItem();
+                }
+                return true;
+            });
+    }
 
-      $scope.revertirPago = () => {
+    $scope.revertirPago = () => {
 
-          if ($scope.pago.docState) {
-              DialogModal($modal, "<em>Pagos</em>",
-                                  `Aparentemente, <em>se han efectuado cambios</em> en el registro.
+        if ($scope.pago.docState) {
+            DialogModal($modal, "<em>Pagos</em>",
+                `Aparentemente, <em>se han efectuado cambios</em> en el registro.
                                    Por favor grabe los cambios antes de intentar ejecutar esta función.`,
-                                 false).then();
-              return;
-          }
+                false).then();
+            return;
+        }
 
-          DialogModal($modal,
-                      "<em>Bancos - Pagos</em>",
-                      `Realmente, desea revertir este pago y dejar sus facturas asociadas como
+        DialogModal($modal,
+            "<em>Bancos - Pagos</em>",
+            `Realmente, desea revertir este pago y dejar sus facturas asociadas como
                        estaban <em>antes</em> de efectuar este pago?
                       `,
-                      true).then(
-                          function (resolve) {
-                              revertirPago2();
-                          },
-                          function (err) {
-                              return true;
-                          });
-      }
+            true).then(
+                function (resolve) {
+                    revertirPago2();
+                },
+                function (err) {
+                    return true;
+                });
+    }
 
-      function revertirPago2() {
-          // si el pago tiene un movimiento bancario asociado, debemos indicarlo al usuario y permitir
-          // continuar o cancelar
-          $meteor.call('bancosPagos_revertirPago1', $scope.pago.claveUnica).then(
-              function (data) {
+    function revertirPago2() {
+        // si el pago tiene un movimiento bancario asociado, debemos indicarlo al usuario y permitir
+        // continuar o cancelar
+        $meteor.call('bancosPagos_revertirPago1', $scope.pago.claveUnica).then(
+            function (data) {
 
-                  if (data.error) {
-                      $scope.alerts.length = 0;
-                      $scope.alerts.push({
-                          type: 'danger',
-                          msg: data.message
-                      });
-                      $scope.showProgress = false;
-                  } else {
-                      if (data.movimientoBancario) {
-                          // el pago puede tener un moviminto bancario asociado; en ese caso, indicamos al
-                          // usuario y permitirmos continuar/cancelar
-                          DialogModal($modal,
-                                      "<em>Bancos - Pagos</em>",
-                                      `El pago que Ud. desea revertir, tiene un movimiento bancario asociado.<br />
-                                       Este movimiento bancario <b>no será afectado</b> en forma alguna, si Ud.
-                                       ejecuta este proceso y revierte el pago.<br /><br />
-                                       Ud. puede consultar este movimiento bancario para eliminarlo
-                                       o modificarlo, en la forma que le parezca adecuada.<br /><br />
-                                       Aún así, desea continuar y revertir este pago?
-                                      `,
-                                      true).then(
-                                          function (resolve) {
-                                              revertirPago3();
-                                          },
-                                          function (err) {
-                                              return true;
-                                          });
-                      } else {
-                          // el pago no tiene un movimiento bancario; simplente, revertimos
-                          revertirPago3();
-                      }
-                  }
-              },
-              function (err) {
+                if (data.error) {
+                    $scope.alerts.length = 0;
+                    $scope.alerts.push({
+                        type: 'danger',
+                        msg: data.message
+                    });
+                    $scope.showProgress = false;
+                } else {
+                    if (data.movimientoBancario) {
+                        // el pago puede tener un moviminto bancario asociado; en ese caso, indicamos al
+                        // usuario y permitirmos continuar/cancelar
+                        DialogModal($modal,
+                            "<em>Bancos - Pagos</em>",
+                            `El pago que Ud. desea revertir, tiene un movimiento bancario asociado.<br />
+                                    Este movimiento bancario <b>no será afectado</b> en forma alguna, si Ud.
+                                    ejecuta este proceso y revierte el pago.<br /><br />
+                                    Ud. puede consultar este movimiento bancario para eliminarlo
+                                    o modificarlo, en la forma que le parezca adecuada.<br /><br />
+                                    Aún así, desea continuar y revertir este pago?
+                                    `,
+                            true).then(
+                                function (resolve) {
+                                    revertirPago3();
+                                },
+                                function (err) {
+                                    return true;
+                                });
+                    } else {
+                        // el pago no tiene un movimiento bancario; simplente, revertimos
+                        revertirPago3();
+                    }
+                }
+            },
+            function (err) {
                 let errorMessage = mensajeErrorDesdeMethod_preparar(err);
 
-                  $scope.alerts.length = 0;
-                  $scope.alerts.push({
-                      type: 'danger',
-                      msg: errorMessage
-                  });
-                  $scope.showProgress = false;
-              });
-      }
+                $scope.alerts.length = 0;
+                $scope.alerts.push({
+                    type: 'danger',
+                    msg: errorMessage
+                });
+                $scope.showProgress = false;
+            });
+    }
 
-      function revertirPago3() {
-          $meteor.call('bancosPagos_revertirPago2', $scope.pago.claveUnica).then(
-              function (data) {
-                  if (data.error) {
-                      $scope.alerts.length = 0;
-                      $scope.alerts.push({
-                          type: 'danger',
-                          msg: data.message
-                      });
-                      $scope.showProgress = false;
-                  } else {
-                      $scope.alerts.length = 0;
-                      $scope.alerts.push({
-                          type: 'info',
-                          msg: data.message
-                      });
-                      inicializarItem();
-                      $scope.showProgress = false;
-                  }
-              },
-              function (err) {
+    function revertirPago3() {
+        $meteor.call('bancosPagos_revertirPago2', $scope.pago.claveUnica).then(
+            function (data) {
+                if (data.error) {
+                    $scope.alerts.length = 0;
+                    $scope.alerts.push({
+                        type: 'danger',
+                        msg: data.message
+                    });
+                    $scope.showProgress = false;
+                } else {
+                    $scope.alerts.length = 0;
+                    $scope.alerts.push({
+                        type: 'info',
+                        msg: data.message
+                    });
+                    inicializarItem();
+                    $scope.showProgress = false;
+                }
+            },
+            function (err) {
                 let errorMessage = mensajeErrorDesdeMethod_preparar(err);
 
-                  $scope.alerts.length = 0;
-                  $scope.alerts.push({
-                      type: 'danger',
-                      msg: errorMessage
-                  });
-                  $scope.showProgress = false;
-              });
-      }
+                $scope.alerts.length = 0;
+                $scope.alerts.push({
+                    type: 'danger',
+                    msg: errorMessage
+                });
+                $scope.showProgress = false;
+            });
+    }
 
     // -------------------------------------------------------------------------
     // Grabar las modificaciones hechas al registro
@@ -630,6 +667,14 @@ function ($scope, $stateParams, $state, $meteor, $modal, uiGridConstants) {
                 return;
             }
 
+            // las fechas vienen serializadas como strings; convertimos nuevamente a dates
+            $scope.pago.fecha = $scope.pago.fecha ? moment($scope.pago.fecha).toDate() : null;
+            $scope.pago.ingreso = $scope.pago.ingreso ? moment($scope.pago.ingreso).toDate() : null;
+            $scope.pago.ultAct = $scope.pago.ultAct ? moment($scope.pago.ultAct).toDate() : null;
+
+            // mantenemos las fechas originales para poder validar luego si el usuario las cambia
+            $scope.fechaOriginal = $scope.pago.fecha;
+
             // agregamos el proveedor al array de proveedores; debe estar allí para que el ui-select 
             // lo pueda mostrar 
             $scope.helpers({
@@ -642,14 +687,6 @@ function ($scope, $stateParams, $state, $meteor, $modal, uiGridConstants) {
                             }];
                 },
             })
-
-            // las fechas vienen serializadas como strings; convertimos nuevamente a dates
-            $scope.pago.fecha = $scope.pago.fecha ? moment($scope.pago.fecha).toDate() : null;
-            $scope.pago.ingreso = $scope.pago.ingreso ? moment($scope.pago.ingreso).toDate() : null;
-            $scope.pago.ultAct = $scope.pago.ultAct ? moment($scope.pago.ultAct).toDate() : null;
-
-            // mantenemos las fechas originales para poder validar luego si el usuario las cambia
-            $scope.fechaOriginal = $scope.pago.fecha;
 
             $scope.showProgress = false;
             $scope.$apply();

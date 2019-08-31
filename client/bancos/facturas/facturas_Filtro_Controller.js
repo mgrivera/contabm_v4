@@ -4,7 +4,6 @@ import lodash from 'lodash';
 
 import { Companias } from '/imports/collections/companias';
 import { CompaniaSeleccionada } from '/imports/collections/companiaSeleccionada';
-import { Proveedores } from '/imports/collections/bancos/proveedoresClientes'; 
 import { Filtros } from '/imports/collections/general/filtros'; 
 
 import { mensajeErrorDesdeMethod_preparar } from '/client/imports/clientGlobalMethods/mensajeErrorDesdeMethod_preparar'; 
@@ -51,13 +50,6 @@ angular.module("contabm").controller("Bancos_Facturas_Filter_Controller",
 
     $scope.estados = $scope.$parent.estados;
     $scope.cxcCxPList = $scope.$parent.cxcCxPList;
-
-    // la lista de compañías viene desde el parent state; allí hacemos el subscribe ...
-    $scope.helpers({
-        proveedores: () => {
-            return Proveedores.find({ }, { fields: { proveedor: 1, nombre: 1, }, });
-        },
-    })
 
     // para limpiar el filtro, simplemente inicializamos el $scope.filtro ...
     $scope.limpiarFiltro = function () {
