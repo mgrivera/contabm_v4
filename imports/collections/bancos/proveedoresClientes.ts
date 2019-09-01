@@ -1,29 +1,29 @@
 
-import { Mongo } from 'meteor/mongo';
+// import { Mongo } from 'meteor/mongo';
 import SimpleSchema from 'simpl-schema';
 
-export const Proveedores = new Mongo.Collection("proveedores");
+// export const Proveedores = new Mongo.Collection("proveedores");
 
-let schema = new SimpleSchema({
-    _id: { type: String, optional: false },
-    proveedor: { type: Number, label: "ID de la compañía", optional: false },
-    nombre: { type: String, label: 'Nombre', optional: false, min: 1, max: 70 },
-    abreviatura: { type: String, label: 'Abreviatura', optional: false, min: 1, max: 10 },
-    rif: { type: String, label: 'Rif', optional: true, min: 1, max: 20 },
-    beneficiario: { type: String, label: 'Beneficiario', optional: true, min: 1, max: 50 },
-    concepto: { type: String, label: 'Concepto', optional: true, min: 1, max: 250 },
-    montoCheque: { type: Number, label: 'Monto cheque', optional: true },
+// let schema = new SimpleSchema({
+//     _id: { type: String, optional: false },
+//     proveedor: { type: Number, label: "ID de la compañía", optional: false },
+//     nombre: { type: String, label: 'Nombre', optional: false, min: 1, max: 70 },
+//     abreviatura: { type: String, label: 'Abreviatura', optional: false, min: 1, max: 10 },
+//     rif: { type: String, label: 'Rif', optional: true, min: 1, max: 20 },
+//     beneficiario: { type: String, label: 'Beneficiario', optional: true, min: 1, max: 50 },
+//     concepto: { type: String, label: 'Concepto', optional: true, min: 1, max: 250 },
+//     montoCheque: { type: Number, label: 'Monto cheque', optional: true },
 
-    monedaDefault: { type: Number, label: 'Moneda por defecto', optional: true },
-    formaDePagoDefault: { type: Number, label: 'Forma de pago por defecto', optional: true },
-    tipo: { type: Number, label: 'Tipo (de servicio)', optional: false },
-    proveedorClienteFlag: { type: Number, label: 'Proveedor o cliente', optional: true },
-});
+//     monedaDefault: { type: Number, label: 'Moneda por defecto', optional: true },
+//     formaDePagoDefault: { type: Number, label: 'Forma de pago por defecto', optional: true },
+//     tipo: { type: Number, label: 'Tipo (de servicio)', optional: false },
+//     proveedorClienteFlag: { type: Number, label: 'Proveedor o cliente', optional: true },
+// });
 
-if (Meteor.isServer) {
-    // indicamos a mongo que queremos un índice ..
-    Proveedores._ensureIndex({ proveedor: 1 });
-}
+// if (Meteor.isServer) {
+//     // indicamos a mongo que queremos un índice ..
+//     Proveedores._ensureIndex({ proveedor: 1 });
+// }
 
 // ------------------------------------------------------------------------------------------------
 // agregamos un schema para validar cuando el usuario registra un proveedor; nótese que el schema de
@@ -103,4 +103,3 @@ export const Proveedores_SimpleSchema = new SimpleSchema({
 
     docState: { type: Number, optional: true, },
 });
-                

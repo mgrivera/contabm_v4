@@ -1,11 +1,11 @@
 
+
 import { sequelize } from '/server/sqlModels/_globals/_loadThisFirst/_globals';
 import moment from 'moment';
 import lodash from 'lodash';
 import SimpleSchema from 'simpl-schema';
 import { TimeOffset } from '/globals/globals'; 
 
-import { Proveedores } from '/imports/collections/bancos/proveedoresClientes'; 
 import { Proveedores_sql, Personas_sql } from '/server/imports/sqlModels/bancos/proveedores'; 
 
 Meteor.methods(
@@ -18,7 +18,7 @@ Meteor.methods(
 
         if (!proveedor || !proveedor.docState) {
             throw new Meteor.Error("Aparentemente, no se han editado los datos en la página. No hay nada que actualizar.");
-        };
+        }
 
         let usuario = Meteor.users.findOne(Meteor.userId());
         let docState = proveedor.docState;
@@ -49,7 +49,7 @@ Meteor.methods(
                     .then(function(result) { done(null, result); })
                     .catch(function (err) { done(err, null); })
                     .done();
-            });
+            })
 
             if (response.error) {
                 throw new Meteor.Error(response.error && response.error.message ? response.error.message : response.error.toString());
@@ -75,27 +75,8 @@ Meteor.methods(
                 if (response.error) {
                     throw new Meteor.Error(response.error && response.error.message ? response.error.message : response.error.toString());
                 }
-            });
-
-            // --------------------------------------------------------------------------------------------------------------------
-            // actualizamos el proveedor en el collection en mongo, para que el usuario no tenga que hacer 'copiar catalogos'
-            let document = {
-                _id: new Mongo.ObjectID()._str,
-                proveedor: proveedor.proveedor,
-                nombre: proveedor.nombre,
-                abreviatura: proveedor.abreviatura,
-                rif: proveedor.rif ? proveedor.rif : 'Indefinido',
-                beneficiario: proveedor.beneficiario ? proveedor.beneficiario : '',
-                concepto: proveedor.concepto ? proveedor.concepto : '',
-                montoCheque: proveedor.montoCheque ? proveedor.montoCheque : 0.00,
-                monedaDefault: proveedor.monedaDefault,
-                formaDePagoDefault: proveedor.formaDePagoDefault,
-                tipo: proveedor.tipo,
-                proveedorClienteFlag: proveedor.proveedorClienteFlag,
-            };
-
-            Proveedores.insert(document);
-        };
+            })
+        }
 
 
         if (proveedor.docState == 2) {
@@ -112,7 +93,7 @@ Meteor.methods(
                 x.ingreso = x.ingreso ? moment(x.ingreso).subtract(TimeOffset, 'hours').toDate() : null;
                 x.ultAct = x.ultAct ? moment(x.ultAct).subtract(TimeOffset, 'hours').toDate() : null;
                 x.usuario = usuario.emails[0].address;
-            });
+            })
 
             response = Async.runSync(function(done) {
                 Proveedores_sql.update(proveedor, {
@@ -143,7 +124,7 @@ Meteor.methods(
                             .then(function(result) { done(null, result); })
                             .catch(function (err) { done(err, null); })
                             .done();
-                    });
+                    })
                 }
                 else if (x.docState == 2) {
                     response = Async.runSync(function(done) {
@@ -151,7 +132,7 @@ Meteor.methods(
                             .then(function(result) { done(null, result); })
                             .catch(function (err) { done(err, null); })
                             .done();
-                    });
+                    })
                 }
                 else if (x.docState == 3) {
                     response = Async.runSync(function(done) {
@@ -160,31 +141,13 @@ Meteor.methods(
                             .catch(function (err) { done(err, null); })
                             .done();
                     });
-                };
+                }
 
                 if (response.error) {
                     throw new Meteor.Error(response.error && response.error.message ? response.error.message : response.error.toString());
                 }
-            });
-
-            // --------------------------------------------------------------------------------------------------------------------
-            // actualizamos el proveedor en el collection en mongo, para que el usuario no tenga que hacer 'copiar catalogos'
-            let document = {
-                nombre: proveedor.nombre,
-                abreviatura: proveedor.abreviatura,
-                rif: proveedor.rif ? proveedor.rif : 'Indefinido',
-                beneficiario: proveedor.beneficiario ? proveedor.beneficiario : '',
-                concepto: proveedor.concepto ? proveedor.concepto : '',
-                montoCheque: proveedor.montoCheque ? proveedor.montoCheque : 0.00,
-                monedaDefault: proveedor.monedaDefault,
-                formaDePagoDefault: proveedor.formaDePagoDefault,
-                tipo: proveedor.tipo,
-                proveedorClienteFlag: proveedor.proveedorClienteFlag,
-            };
-
-            // aquí intentamos usar un upsert, pero sin éxito; recurrimos a un insert o update, de acuerdo a si el doc fue encontrado arriba
-            Proveedores.update({ proveedor: proveedor.proveedor }, { $set: document });
-        };
+            })
+        }
 
 
         if (proveedor.docState == 3) {
@@ -199,10 +162,7 @@ Meteor.methods(
             if (response.error) {
                 throw new Meteor.Error(response.error && response.error.message ? response.error.message : response.error.toString());
             }
-
-            // eliminamos el proveedor del collection en mongo ...
-            Proveedores.remove({ proveedor: proveedor.proveedor });
-        };
+        }
 
         let tempProveedor = null;
 
@@ -258,6 +218,6 @@ Meteor.methods(
         return {
             message: 'Ok, los datos han sido actualizados en la base de datos.',
             id: proveedor.proveedor,
-        };
+        }
     }
-});
+})

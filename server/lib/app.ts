@@ -3,7 +3,6 @@ import * as lodash from 'lodash';
 
 import { Monedas } from 'imports/collections/monedas';
 import { Companias } from 'imports/collections/companias';
-import { Proveedores } from 'imports/collections/bancos/proveedoresClientes'; 
 import { Bancos } from 'imports/collections/bancos/bancos';
 import { Chequeras } from 'imports/collections/bancos/chequeras'; 
 import { TiposProveedor, FormasDePago } from 'imports/collections/bancos/catalogos'; 
@@ -39,7 +38,6 @@ Meteor.startup(function() {
     Monedas._ensureIndex({ moneda: 1 });
     Bancos._ensureIndex({ banco: 1 });
     Chequeras._ensureIndex({ numeroChequera: 1 });
-    Proveedores._ensureIndex({ proveedor: 1 });
     TiposProveedor._ensureIndex({ tipo: 1 });
     FormasDePago._ensureIndex({ formaDePago: 1 });
 

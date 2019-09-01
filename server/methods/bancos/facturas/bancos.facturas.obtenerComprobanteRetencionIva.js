@@ -19,7 +19,6 @@ import getStream from 'get-stream';
 import { Companias } from '/imports/collections/companias';
 import { CompaniaSeleccionada } from '/imports/collections/companiaSeleccionada';
 
-import { Proveedores } from '/imports/collections/bancos/proveedoresClientes'; 
 import { TimeOffset } from '/globals/globals'; 
 
 import SimpleSchema from 'simpl-schema';
@@ -234,7 +233,26 @@ Meteor.methods(
                 }
             })
 
-            let proveedor = Proveedores.findOne({ proveedor: factura.proveedor }, { fields: { nombre: 1, rif: 1, }});
+            query = `Select p.Nombre as nombre, p.Rif as rif 
+                     From Proveedores p 
+                     Where p.proveedor = ?`;
+
+            response = null;
+            response = Async.runSync(function(done) {
+                sequelize.query(query, { 
+                                replacements: [ factura.proveedor ], 
+                                type: sequelize.QueryTypes.SELECT 
+                            })
+                    .then(function(result) { done(null, result); })
+                    .catch(function (err) { done(err, null); })
+                    .done();
+            });
+
+            if (response.error) { 
+                throw new Meteor.Error(response.error && response.error.message ? response.error.message : response.error.toString());
+            }
+
+            const proveedor = response.result[0]; 
 
             let fechaDoc = `${moment(fechaRecepcion).format('DD')} de ${moment(fechaRecepcion).format('MMMM')} de ${numeral(parseInt(moment(fechaRecepcion).format('YYYY'))).format('0,0')}`;
 

@@ -3,7 +3,6 @@
 import { Monedas } from '/imports/collections/monedas';
 import { Companias } from '/imports/collections/companias';
 import { CompaniaSeleccionada } from '/imports/collections/companiaSeleccionada';
-import { Proveedores } from '/imports/collections/bancos/proveedoresClientes'; 
 import { Filtros } from '/imports/collections/general/filtros'; 
 
 import { mensajeErrorDesdeMethod_preparar } from '/client/imports/clientGlobalMethods/mensajeErrorDesdeMethod_preparar'; 
@@ -52,10 +51,6 @@ function ($scope, $stateParams, $state, $meteor, $modal) {
     // ------------------------------------------------------------------------------------------------
 
     $scope.helpers({
-        proveedores: () => {
-            // la lista de compañías viene desde el parent state; allí hacemos el subscribe ...
-            return Proveedores.find({ }, { fields: { proveedor: 1, nombre: 1, }, });
-        },
         monedas: () => {
             return Monedas.find();
         },

@@ -6,7 +6,6 @@ import * as lodash from 'lodash';
 import { Monedas } from '../../../imports/collections/monedas';
 import { Monedas_sql } from '../../imports/sqlModels/monedas';
 import { Companias } from '../../../imports/collections/companias';
-import { Proveedores } from '../../../imports/collections/bancos/proveedoresClientes'; 
 import { Proveedores_sql } from '../../imports/sqlModels/bancos/proveedores'; 
 import { Bancos_sql, Agencias_sql, CuentasBancarias_sql } from '../../imports/sqlModels/bancos/movimientosBancarios'; 
 import { FormasDePago_sql } from '../../imports/sqlModels/bancos/formasDePago'; 
@@ -46,7 +45,7 @@ Meteor.methods(
         let reportarCada = Math.floor(numberOfItems / 20);
         let reportar = 0;
         let cantidadRecs = 0;
-        let numberOfProcess = 9;
+        let numberOfProcess = 8;
         let currentProcess = 1;
         EventDDP.matchEmit('bancos_copiarCatalogos_reportProgress',
                             { myuserId: this.userId, app: 'bancos', process: 'copiarCatalogos' },
@@ -601,83 +600,6 @@ Meteor.methods(
                 }
             }
         })
-
-
-        // ---------------------------------------------------------------------------------------------------
-        // Proveedores - copiamos a mongo desde contab
-        // ---------------------------------------------------------------------------------------------------
-        response = Async.runSync(function(done) {
-            Proveedores_sql.findAndCountAll({ raw: true })
-                .then(function(result) { done(null, result); })
-                .catch(function (err) { done(err, null); })
-                .done();
-        });
-
-        if (response.error) { 
-            throw new Meteor.Error(response.error && response.error.message ? response.error.message : response.error.toString());
-        }
-            
-        // -------------------------------------------------------------------------------------------------------------
-        // para reportar progreso solo 20 veces; si hay menos de 20 registros, reportamos siempre ...
-        numberOfItems = response.result.count;
-        reportarCada = Math.floor(numberOfItems / 30);
-        reportar = 0;
-        cantidadRecs = 0;
-        currentProcess++;
-        EventDDP.matchEmit('bancos_copiarCatalogos_reportProgress',
-                            { myuserId: this.userId, app: 'bancos', process: 'copiarCatalogos' },
-                            { current: currentProcess, max: numberOfProcess, progress: '0 %' });
-        // -------------------------------------------------------------------------------------------------------------
-
-        response.result.rows.forEach((item) => {
-            // para cada catálogos, hacemos un 'upsert'; primero leemos a ver si existe; de ser así, usamos el _id del doc que existe ...
-            let itemExisteID: any = Proveedores.findOne({ proveedor: item.proveedor }, { fields: { _id: 1 }});
-
-            let document = {
-                _id: itemExisteID ? itemExisteID._id : new Mongo.ObjectID()._str,
-                proveedor: item.proveedor,
-                nombre: item.nombre ? item.nombre : 'Indefinido',
-                abreviatura: item.abreviatura ? item.abreviatura : 'Indefinido',
-                rif: item.rif ? item.rif : 'Indefinido',
-                beneficiario: item.beneficiario,
-                concepto: item.concepto,
-                montoCheque: item.montoCheque,
-
-                monedaDefault: item.monedaDefault,
-                formaDePagoDefault: item.formaDePagoDefault,
-                tipo: item.tipo,
-                proveedorClienteFlag: item.proveedorClienteFlag,
-            };
-
-            // aquí intentamos usar un upsert, pero sin éxito; recurrimos a un insert o update, de acuerdo a si el doc fue encontrado arriba
-            if (itemExisteID && itemExisteID._id) { 
-                Proveedores.update({ _id: itemExisteID._id }, { $set: document });
-            }   
-            else { 
-                Proveedores.insert(document);
-            }
-                
-            // -------------------------------------------------------------------------------------------------------
-            // vamos a reportar progreso al cliente; solo 20 veces ...
-            cantidadRecs++;
-            if (numberOfItems <= 30) {
-                // hay menos de 20 registros; reportamos siempre ...
-                EventDDP.matchEmit('bancos_copiarCatalogos_reportProgress',
-                                    { myuserId: this.userId, app: 'bancos', process: 'copiarCatalogos' },
-                                    { current: currentProcess, max: numberOfProcess, progress: numeral(cantidadRecs / numberOfItems).format("0 %") });
-            }
-            else {
-                reportar++;
-                if (reportar === reportarCada) {
-                    EventDDP.matchEmit('bancos_copiarCatalogos_reportProgress',
-                                        { myuserId: this.userId, app: 'bancos', process: 'copiarCatalogos' },
-                                        { current: currentProcess, max: numberOfProcess, progress: numeral(cantidadRecs / numberOfItems).format("0 %") });
-                    reportar = 0;
-                }
-            }
-            // -------------------------------------------------------------------------------------------------------
-        })
-
 
         // ---------------------------------------------------------------------------------------------------
         // tipos de proveedor - copiamos a mongo desde contab

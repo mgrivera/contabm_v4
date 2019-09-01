@@ -6,7 +6,6 @@ import SimpleSchema from 'simpl-schema';
 
 import { Monedas } from '/imports/collections/monedas';
 import { Companias } from '/imports/collections/companias';
-import { Proveedores } from '/imports/collections/bancos/proveedoresClientes'; 
 
 import { TimeOffset } from '/globals/globals'; 
 import { CajaChica_Reposiciones_sql, 
@@ -1360,378 +1359,163 @@ function agregarAsientoContable_Factura(entidadOriginal, tipoAsientoDefault, com
                                         fechaAsiento, mesFiscal, factorCambio, numeroNegativoAsiento,
                                         provieneDe_ID, currentUser) {
 
-        let mesCalendario = fechaAsiento.getMonth() + 1;
-        let anoCalendario = fechaAsiento.getFullYear();
+    let mesCalendario = fechaAsiento.getMonth() + 1;
+    let anoCalendario = fechaAsiento.getFullYear();
 
-        let asientoContable = {
-            // numeroAutomatico: ,
-            numero: numeroNegativoAsiento.numeroNegativoAsiento,
-            mes: mesCalendario,
-            ano: anoCalendario,
-            tipo: tipoAsientoDefault,
-            fecha: fechaAsiento,
-            descripcion: entidadOriginal.concepto.length <= 250 ?
-                         entidadOriginal.concepto :
-                         entidadOriginal.concepto.toString().substring(0, 250),
-            moneda: entidadOriginal.moneda,
-            monedaOriginal: entidadOriginal.moneda,
-            convertirFlag:  true,
-            factorDeCambio: factorCambio.factorCambio,
-            provieneDe: "Facturas",
-            provieneDe_id: provieneDe_ID,
-            ingreso: new Date(),
-            ultAct:  new Date(),
-            copiablaFlag: true,
-            asientoTipoCierreAnualFlag: false,
-            mesFiscal: mesFiscal.mesFiscal,
-            anoFiscal: mesFiscal.anoFiscal,
-            usuario: currentUser.emails[0].address,
-            lote: null,
-            cia: companiaContab.numero,
+    let asientoContable = {
+        // numeroAutomatico: ,
+        numero: numeroNegativoAsiento.numeroNegativoAsiento,
+        mes: mesCalendario,
+        ano: anoCalendario,
+        tipo: tipoAsientoDefault,
+        fecha: fechaAsiento,
+        descripcion: entidadOriginal.concepto.length <= 250 ?
+            entidadOriginal.concepto :
+            entidadOriginal.concepto.toString().substring(0, 250),
+        moneda: entidadOriginal.moneda,
+        monedaOriginal: entidadOriginal.moneda,
+        convertirFlag: true,
+        factorDeCambio: factorCambio.factorCambio,
+        provieneDe: "Facturas",
+        provieneDe_id: provieneDe_ID,
+        ingreso: new Date(),
+        ultAct: new Date(),
+        copiablaFlag: true,
+        asientoTipoCierreAnualFlag: false,
+        mesFiscal: mesFiscal.mesFiscal,
+        anoFiscal: mesFiscal.anoFiscal,
+        usuario: currentUser.emails[0].address,
+        lote: null,
+        cia: companiaContab.numero,
+    };
+
+    let query = `Select p.Tipo as tipo From Proveedores p Where p.proveedor = ?`;
+
+    let response = null;
+    response = Async.runSync(function (done) {
+        sequelize.query(query, {
+            replacements: [entidadOriginal.proveedor],
+            type: sequelize.QueryTypes.SELECT
+        })
+            .then(function (result) { done(null, result); })
+            .catch(function (err) { done(err, null); })
+            .done();
+    });
+
+    if (response.error) {
+        throw new Meteor.Error(response.error && response.error.message ? response.error.message : response.error.toString());
+    }
+
+    if (!Array.isArray(response.result) || !response.result.length) {
+        return {
+            error: true,
+            message: `Error inesperado: no pudimos leer los datos de la compañía indicada en la factura.<br />
+                    Debe existir una compañía para esta factura en <em>Catálogos</em>. Nota: probablemente Ud. deba
+                    ejecutar la opción <em>Copiar catálogos</em> en el menú <em>Bancos / Generales</em>.`
         };
+    }
 
-        // leemos cuenta bancaria (está en mongo) pues luego lo usamos para obtener las cuentas contables
-        let proveedor = Proveedores.findOne({ proveedor: entidadOriginal.proveedor });
+    const proveedor = response.result[0]; 
 
-        if (!proveedor) {
+    // creamos un array con las partidas del asiento, para grabarlas a sql al final; la idea de crear 
+    // las partidas en un array, es poder ordenarlo antes de grabar a sql; de esa forma, podemos grabar 
+    // los montos positivos primero y luego los negativos, siempre desde el mayor al menor. 
+    // --------------------------------------------------------------------------------------
+    // partida para registrar la compra o venta (gasto o ingresos por venta)
+    let partida = {};
+    let partidasAsientoContable = [];
+    let leerCuentaContableDefinida = null;
+    let montoAsiento = 0;
+
+    let cuentaContableDefinidaID = 0;
+    let conceptoDefinicionCuentaContable = 0;
+
+    if (entidadOriginal.cxCCxPFlag == 1) {
+        conceptoDefinicionCuentaContable = 2;
+    } else {
+        conceptoDefinicionCuentaContable = 8;
+    }
+
+    leerCuentaContableDefinida = ContabFunctions.leerCuentaContableDefinida(conceptoDefinicionCuentaContable,
+                                                                            entidadOriginal.proveedor,
+                                                                            entidadOriginal.tipo,
+                                                                            entidadOriginal.moneda,
+                                                                            companiaContab.numero,
+                                                                            null);
+
+    if (leerCuentaContableDefinida.error) {
+        if (entidadOriginal.cxCCxPFlag == 1) {
             return {
                 error: true,
-                message: `Error inesperado: no pudimos leer los datos de la compañía indicada en la factura.<br />
-                Debe existir una compañía para esta factura en <em>Catálogos</em>. Nota: probablemente Ud. deba
-                ejecutar la opción <em>Copiar catálogos</em> en el menú <em>Bancos / Generales</em>.`
-            };
-        };
-
-
-        // creamos un array con las partidas del asiento, para grabarlas a sql al final; la idea de crear 
-        // las partidas en un array, es poder ordenarlo antes de grabar a sql; de esa forma, podemos grabar 
-        // los montos positivos primero y luego los negativos, siempre desde el mayor al menor. 
-        // --------------------------------------------------------------------------------------
-        // partida para registrar la compra o venta (gasto o ingresos por venta)
-        let partida = {};
-        let partidasAsientoContable = [];
-        let leerCuentaContableDefinida = null;
-        let montoAsiento = 0;
-
-        let cuentaContableDefinidaID = 0;
-        let conceptoDefinicionCuentaContable = 0;
-
-        if (entidadOriginal.cxCCxPFlag == 1) {
-            conceptoDefinicionCuentaContable = 2;
+                message: `Error: no se ha encontrado una cuenta contable definida para contabilizar las compras (Compras).
+                            Por favor defina una cuenta contable para contabilizar las compras.`
+            }
         } else {
-            conceptoDefinicionCuentaContable = 8;
-        }
-
-        leerCuentaContableDefinida = ContabFunctions.leerCuentaContableDefinida(conceptoDefinicionCuentaContable,
-                                                                                entidadOriginal.proveedor,
-                                                                                entidadOriginal.tipo,
-                                                                                entidadOriginal.moneda,
-                                                                                companiaContab.numero,
-                                                                                null);
-
-        if (leerCuentaContableDefinida.error) {
-            if (entidadOriginal.cxCCxPFlag == 1) {
-                return {
-                    error: true,
-                    message: `Error: no se ha encontrado una cuenta contable definida para contabilizar las compras (Compras).
-                              Por favor defina una cuenta contable para contabilizar las compras.`
-                }
-            } else {
-                return {
-                    error: true,
-                    message: `no se ha encontrado una cuenta contable definida para contabilizar las ventas (Ventas).
-                        Por favor defina una cuenta contable para contabilizar las ventas.`
-                }
+            return {
+                error: true,
+                message: `no se ha encontrado una cuenta contable definida para contabilizar las ventas (Ventas).
+                    Por favor defina una cuenta contable para contabilizar las ventas.`
             }
         }
+    }
 
-        partida = {};
+    partida = {};
 
-        partida.cuentaContableID = leerCuentaContableDefinida.cuentaContableID;;
+    partida.cuentaContableID = leerCuentaContableDefinida.cuentaContableID;;
 
-        partida.descripcion = entidadOriginal.concepto.length > 75 ?
-                              entidadOriginal.concepto.substring(0, 75) :
-                              entidadOriginal.concepto;
+    partida.descripcion = entidadOriginal.concepto.length > 75 ?
+                            entidadOriginal.concepto.substring(0, 75) :
+                            entidadOriginal.concepto;
 
-        partida.referencia = entidadOriginal.numeroFactura.toString().length > 20 ?
-                             entidadOriginal.numeroFactura.toString().substring(0, 20) :
-                             entidadOriginal.numeroFactura.toString();
+    partida.referencia = entidadOriginal.numeroFactura.toString().length > 20 ?
+                            entidadOriginal.numeroFactura.toString().substring(0, 20) :
+                            entidadOriginal.numeroFactura.toString();
 
-        montoAsiento = (entidadOriginal.montoFacturaSinIva ? entidadOriginal.montoFacturaSinIva : 0) +
-                       (entidadOriginal.montoFacturaConIva ? entidadOriginal.montoFacturaConIva : 0);
+    montoAsiento = (entidadOriginal.montoFacturaSinIva ? entidadOriginal.montoFacturaSinIva : 0) +
+                    (entidadOriginal.montoFacturaConIva ? entidadOriginal.montoFacturaConIva : 0);
 
-        partida.debe = 0;
-        partida.haber = 0;
+    partida.debe = 0;
+    partida.haber = 0;
 
-        if (entidadOriginal.cxCCxPFlag == 1) {
-            // CxP
-            if (montoAsiento >= 0)
-                partida.debe = montoAsiento;
-            else
-                // nótese que las NC trane su monto negativo ...
-                partida.haber = montoAsiento * -1;
-        } else {
-            // CxC
-            if (montoAsiento >= 0)
-                partida.haber = montoAsiento;
-            else
-                // nótese que las NC trane su monto negativo ...
-                partida.debe = montoAsiento * -1;
-        }
+    if (entidadOriginal.cxCCxPFlag == 1) {
+        // CxP
+        if (montoAsiento >= 0)
+            partida.debe = montoAsiento;
+        else
+            // nótese que las NC trane su monto negativo ...
+            partida.haber = montoAsiento * -1;
+    } else {
+        // CxC
+        if (montoAsiento >= 0)
+            partida.haber = montoAsiento;
+        else
+            // nótese que las NC trane su monto negativo ...
+            partida.debe = montoAsiento * -1;
+    }
 
-        partidasAsientoContable.push(partida);
+    partidasAsientoContable.push(partida);
 
-        // -----------------------------------------------------------------------------------------------------
-        // partida para registrar el monto del iva;
-        // leemos el monto del impuesto Iva en el array de impuestos y retenciones
-        let impuestoIva = {};
-        if (entidadOriginal.impuestosRetenciones) {
-            impuestoIva = lodash.find(entidadOriginal.impuestosRetenciones, (x) => { return x.predefinido === 1; });
-        }
+    // -----------------------------------------------------------------------------------------------------
+    // partida para registrar el monto del iva;
+    // leemos el monto del impuesto Iva en el array de impuestos y retenciones
+    let impuestoIva = {};
+    if (entidadOriginal.impuestosRetenciones) {
+        impuestoIva = lodash.find(entidadOriginal.impuestosRetenciones, (x) => { return x.predefinido === 1; });
+    }
 
-        // nótese que el monto puede ser contabilizado con el pago, si así lo inidca el usuario ...
-        if (impuestoIva && !impuestoIva.contabilizarAlPagar_flag && impuestoIva.monto) {
-            cuentaContableDefinidaID = 0;
-            conceptoDefinicionCuentaContable = 0;
-
-            if (entidadOriginal.cxCCxPFlag == 1)
-                conceptoDefinicionCuentaContable = 4;
-            else
-                conceptoDefinicionCuentaContable = 9;
-
-            leerCuentaContableDefinida = ContabFunctions.leerCuentaContableDefinida(conceptoDefinicionCuentaContable,
-                                                                                    entidadOriginal.proveedor,
-                                                                                    proveedor.tipo,
-                                                                                    entidadOriginal.moneda,
-                                                                                    companiaContab.numero,
-                                                                                    null);
-
-            if (leerCuentaContableDefinida.error) {
-                if (entidadOriginal.cxCCxPFlag == 1) {
-                    return {
-                        error: true,
-                        message: `Error: no se ha encontrado una cuenta contable definida para contabilizar el Iva (Iva).
-                                  Por favor defina una cuenta contable para contabilizar el Iva.`
-                    }
-                } else {
-                    return {
-                        error: true,
-                        message: `Error: no se ha encontrado una cuenta contable definida para contabilizar el Iva (Iva por pagar).
-                            Por favor defina una cuenta contable para contabilizar el Iva.`
-                    }
-                }
-            }
-
-            partida = {};
-
-            partida.cuentaContableID = leerCuentaContableDefinida.cuentaContableID;
-
-            partida.descripcion = entidadOriginal.concepto.length > 75 ?
-                                  entidadOriginal.concepto.substring(0, 75) :
-                                  entidadOriginal.concepto;
-
-            partida.referencia = entidadOriginal.numeroFactura.toString().length > 20 ?
-                                 entidadOriginal.numeroFactura.toString().substring(0, 20) :
-                                 entidadOriginal.numeroFactura.toString();
-
-            montoAsiento = impuestoIva.monto;
-
-            partida.debe = 0;
-            partida.haber = 0;
-
-            if (entidadOriginal.cxCCxPFlag == 1) {
-                // CxP
-                if (montoAsiento >= 0)
-                    partida.debe = montoAsiento;
-                else
-                    // nótese que las NC trane su monto negativo ...
-                    partida.haber = montoAsiento * -1;
-            } else {
-                // CxC
-                if (montoAsiento >= 0)
-                    partida.haber = montoAsiento;
-                else
-                    // nótese que las NC trane su monto negativo ...
-                    partida.debe = montoAsiento * -1;
-            }
-
-            partidasAsientoContable.push(partida);
-        }
-
-
-        // -----------------------------------------------------------------------------------------------------
-        // partida para registrar el ISLR retenido
-        // leemos el monto de retención islr en el array de impuestos y retenciones
-        let retencionIslr = {};
-        if (entidadOriginal.impuestosRetenciones) {
-            retencionIslr = lodash.find(entidadOriginal.impuestosRetenciones, (x) => { return x.predefinido === 3; });
-        }
-
-        // nótese que el monto puede ser contabilizado con el pago, si así lo inidca el usuario ...
-        if (retencionIslr && !retencionIslr.contabilizarAlPagar_flag && retencionIslr.monto) {
-            cuentaContableDefinidaID = 0;
-            conceptoDefinicionCuentaContable = 0;
-
-            if (entidadOriginal.cxCCxPFlag == 1)
-                conceptoDefinicionCuentaContable = 3;
-            else
-                conceptoDefinicionCuentaContable = 3;
-
-            leerCuentaContableDefinida = ContabFunctions.leerCuentaContableDefinida(conceptoDefinicionCuentaContable,
-                                                                                    entidadOriginal.proveedor,
-                                                                                    proveedor.tipo,
-                                                                                    entidadOriginal.moneda,
-                                                                                    companiaContab.numero,
-                                                                                    null);
-
-            if (leerCuentaContableDefinida.error) {
-                if (entidadOriginal.cxCCxPFlag == 1) {
-                    return {
-                        error: true,
-                        message: `Error: no se ha encontrado una cuenta contable definida para
-                                  contabilizar la retención sobre el ISLR (Impuestos retenidos).
-                                  Por favor defina una cuenta contable para contabilizar la retención sobre el ISLR.`
-                    }
-                } else {
-                    return {
-                        error: true,
-                        message: `Error: no se ha encontrado una cuenta contable definida para
-                                  contabilizar la retención sobre el ISLR (Impuestos retenidos).
-                                  Por favor defina una cuenta contable para contabilizar la retención sobre el ISLR.`
-                    }
-                }
-            }
-
-            partida = {};
-
-            partida.cuentaContableID = leerCuentaContableDefinida.cuentaContableID;
-
-            partida.descripcion = entidadOriginal.concepto.length > 75 ?
-                                  entidadOriginal.concepto.substring(0, 75) :
-                                  entidadOriginal.concepto;
-
-            partida.referencia = entidadOriginal.numeroFactura.toString().length > 20 ?
-                                 entidadOriginal.numeroFactura.toString().substring(0, 20) :
-                                 entidadOriginal.numeroFactura.toString();
-
-            montoAsiento = retencionIslr.monto;
-
-            partida.debe = 0;
-            partida.haber = 0;
-
-            if (entidadOriginal.cxCCxPFlag == 1) {
-                // CxP
-                if (montoAsiento >= 0)
-                    partida.haber = montoAsiento;
-                else
-                    // nótese que las NC trane su monto negativo ...
-                    partida.debe = montoAsiento * -1;
-            } else {
-                // CxC
-                if (montoAsiento >= 0)
-                    partida.debe = montoAsiento;
-                else
-                    // nótese que las NC trane su monto negativo ...
-                    partida.haber = montoAsiento * -1;
-            }
-
-            partidasAsientoContable.push(partida);
-        }
-
-
-        // -----------------------------------------------------------------------------------------------------
-        // partida para registrar el impuesto Iva retenido
-        // leemos el monto de retención iva en el array de impuestos y retenciones
-        let retencionIva = {};
-        if (entidadOriginal.impuestosRetenciones) {
-            retencionIva = lodash.find(entidadOriginal.impuestosRetenciones, (x) => { return x.predefinido === 2; });
-        }
-
-        // nótese que el monto puede ser contabilizado con el pago, si así lo inidca el usuario ...
-        if (retencionIva && !retencionIva.contabilizarAlPagar_flag && retencionIva.monto) {
-            cuentaContableDefinidaID = 0;
-            conceptoDefinicionCuentaContable = 0;
-
-            if (entidadOriginal.cxCCxPFlag == 1)
-                conceptoDefinicionCuentaContable = 5;
-            else
-                conceptoDefinicionCuentaContable = 5;
-
-            leerCuentaContableDefinida = ContabFunctions.leerCuentaContableDefinida(conceptoDefinicionCuentaContable,
-                                                                                    entidadOriginal.proveedor,
-                                                                                    proveedor.tipo,
-                                                                                    entidadOriginal.moneda,
-                                                                                    companiaContab.numero,
-                                                                                    null);
-
-            if (leerCuentaContableDefinida.error) {
-                if (entidadOriginal.cxCCxPFlag == 1) {
-                    return {
-                        error: true,
-                        message: `Error: no se ha encontrado una cuenta contable definida para
-                                  contabilizar la retención sobre el IVA (Retención sobre iva).
-                                  Por favor defina una cuenta contable para contabilizar la retención sobre el IVA.`
-                    }
-                } else {
-                    return {
-                        error: true,
-                        message: `Error: no se ha encontrado una cuenta contable definida para
-                                  contabilizar la retención sobre el IVA (Retención sobre iva).
-                                  Por favor defina una cuenta contable para contabilizar la retención sobre el IVA.`
-                    }
-                }
-            }
-
-            partida = {};
-
-            partida.cuentaContableID = leerCuentaContableDefinida.cuentaContableID;
-
-            partida.descripcion = entidadOriginal.concepto.length > 75 ?
-                                  entidadOriginal.concepto.substring(0, 75) :
-                                  entidadOriginal.concepto;
-
-            partida.referencia = entidadOriginal.numeroFactura.toString().length > 20 ?
-                                 entidadOriginal.numeroFactura.toString().substring(0, 20) :
-                                 entidadOriginal.numeroFactura.toString();
-
-            montoAsiento = retencionIva.monto;
-
-            partida.debe = 0;
-            partida.haber = 0;
-
-            if (entidadOriginal.cxCCxPFlag == 1) {
-                // CxP
-                if (montoAsiento >= 0)
-                    partida.haber = montoAsiento;
-                else
-                    // nótese que las NC trane su monto negativo ...
-                    partida.debe = montoAsiento * -1;
-            } else {
-                // CxC
-                if (montoAsiento >= 0)
-                    partida.debe = montoAsiento;
-                else
-                    // nótese que las NC trane su monto negativo ...
-                    partida.haber = montoAsiento * -1;
-            }
-
-            partidasAsientoContable.push(partida);
-        }
-
-
-        // -----------------------------------------------------------------------------------------------------
-        // partida para registrar la cuenta por cobrar o pagar ...
+    // nótese que el monto puede ser contabilizado con el pago, si así lo inidca el usuario ...
+    if (impuestoIva && !impuestoIva.contabilizarAlPagar_flag && impuestoIva.monto) {
         cuentaContableDefinidaID = 0;
         conceptoDefinicionCuentaContable = 0;
 
         if (entidadOriginal.cxCCxPFlag == 1)
-            conceptoDefinicionCuentaContable = 1;
+            conceptoDefinicionCuentaContable = 4;
         else
-            conceptoDefinicionCuentaContable = 7;
+            conceptoDefinicionCuentaContable = 9;
 
         leerCuentaContableDefinida = ContabFunctions.leerCuentaContableDefinida(conceptoDefinicionCuentaContable,
                                                                                 entidadOriginal.proveedor,
-                                                                                entidadOriginal.tipo,
+                                                                                proveedor.tipo,
                                                                                 entidadOriginal.moneda,
                                                                                 companiaContab.numero,
                                                                                 null);
@@ -1740,57 +1524,111 @@ function agregarAsientoContable_Factura(entidadOriginal, tipoAsientoDefault, com
             if (entidadOriginal.cxCCxPFlag == 1) {
                 return {
                     error: true,
-                    message: `Error: no se ha encontrado una cuenta contable definida para la compañía (Compañía (CxP)).
-                              Por favor defina una cuenta contable para la compañia.`
+                    message: `Error: no se ha encontrado una cuenta contable definida para contabilizar el Iva (Iva).
+                                Por favor defina una cuenta contable para contabilizar el Iva.`
                 }
             } else {
                 return {
                     error: true,
-                    message: `Error: no se ha encontrado una cuenta contable definida para la compañía (Compañía (CxC)).
-                        Por favor defina una cuenta contable para la compañia.`
+                    message: `Error: no se ha encontrado una cuenta contable definida para contabilizar el Iva (Iva por pagar).
+                        Por favor defina una cuenta contable para contabilizar el Iva.`
                 }
             }
         }
 
         partida = {};
 
-        partida.cuentaContableID = leerCuentaContableDefinida.cuentaContableID;;
+        partida.cuentaContableID = leerCuentaContableDefinida.cuentaContableID;
 
         partida.descripcion = entidadOriginal.concepto.length > 75 ?
-                              entidadOriginal.concepto.substring(0, 75) :
-                              entidadOriginal.concepto;
+                                entidadOriginal.concepto.substring(0, 75) :
+                                entidadOriginal.concepto;
 
         partida.referencia = entidadOriginal.numeroFactura.toString().length > 20 ?
-                             entidadOriginal.numeroFactura.toString().substring(0, 20) :
-                             entidadOriginal.numeroFactura.toString();
+                                entidadOriginal.numeroFactura.toString().substring(0, 20) :
+                                entidadOriginal.numeroFactura.toString();
 
-        // calculamos el total a pagar a la compañía
-        montoAsiento =
-            (
-            (entidadOriginal.montoFacturaSinIva ? entidadOriginal.montoFacturaSinIva : 0) +
-            (entidadOriginal.montoFacturaConIva ? entidadOriginal.montoFacturaConIva : 0) +
-            (entidadOriginal.otrosImpuestos ? entidadOriginal.otrosImpuestos : 0) -
-            (entidadOriginal.otrasRetenciones ? entidadOriginal.otrasRetenciones : 0) -
-            (entidadOriginal.anticipo ? entidadOriginal.anticipo : 0)
-            );
+        montoAsiento = impuestoIva.monto;
 
-        // los impuestos y retenciones están en el array impuestosRetenciones y fueron leídos en las variables que siguen;
-        // nótese que el usuario puede indicar que estos montos se contabilicen con el pago (en vez de ahora)
+        partida.debe = 0;
+        partida.haber = 0;
 
-        if (impuestoIva && !impuestoIva.contabilizarAlPagar_flag && impuestoIva.monto) {
-            // hay un monto Iva y no se va a contabilizar al pagar
-            montoAsiento += impuestoIva.monto;
+        if (entidadOriginal.cxCCxPFlag == 1) {
+            // CxP
+            if (montoAsiento >= 0)
+                partida.debe = montoAsiento;
+            else
+                // nótese que las NC trane su monto negativo ...
+                partida.haber = montoAsiento * -1;
+        } else {
+            // CxC
+            if (montoAsiento >= 0)
+                partida.haber = montoAsiento;
+            else
+                // nótese que las NC trane su monto negativo ...
+                partida.debe = montoAsiento * -1;
         }
 
-        if (retencionIva && !retencionIva.contabilizarAlPagar_flag && retencionIva.monto) {
-            // hay un monto Iva y no se va a contabilizar al pagar
-            montoAsiento -= retencionIva.monto;
+        partidasAsientoContable.push(partida);
+    }
+
+
+    // -----------------------------------------------------------------------------------------------------
+    // partida para registrar el ISLR retenido
+    // leemos el monto de retención islr en el array de impuestos y retenciones
+    let retencionIslr = {};
+    if (entidadOriginal.impuestosRetenciones) {
+        retencionIslr = lodash.find(entidadOriginal.impuestosRetenciones, (x) => { return x.predefinido === 3; });
+    }
+
+    // nótese que el monto puede ser contabilizado con el pago, si así lo inidca el usuario ...
+    if (retencionIslr && !retencionIslr.contabilizarAlPagar_flag && retencionIslr.monto) {
+        cuentaContableDefinidaID = 0;
+        conceptoDefinicionCuentaContable = 0;
+
+        if (entidadOriginal.cxCCxPFlag == 1)
+            conceptoDefinicionCuentaContable = 3;
+        else
+            conceptoDefinicionCuentaContable = 3;
+
+        leerCuentaContableDefinida = ContabFunctions.leerCuentaContableDefinida(conceptoDefinicionCuentaContable,
+                                                                                entidadOriginal.proveedor,
+                                                                                proveedor.tipo,
+                                                                                entidadOriginal.moneda,
+                                                                                companiaContab.numero,
+                                                                                null);
+
+        if (leerCuentaContableDefinida.error) {
+            if (entidadOriginal.cxCCxPFlag == 1) {
+                return {
+                    error: true,
+                    message: `Error: no se ha encontrado una cuenta contable definida para
+                                contabilizar la retención sobre el ISLR (Impuestos retenidos).
+                                Por favor defina una cuenta contable para contabilizar la retención sobre el ISLR.`
+                }
+            } else {
+                return {
+                    error: true,
+                    message: `Error: no se ha encontrado una cuenta contable definida para
+                                contabilizar la retención sobre el ISLR (Impuestos retenidos).
+                                Por favor defina una cuenta contable para contabilizar la retención sobre el ISLR.`
+                }
+            }
         }
 
-        if (retencionIslr && !retencionIslr.contabilizarAlPagar_flag && retencionIslr.monto) {
-            // hay un monto Iva y no se va a contabilizar al pagar
-            montoAsiento -= retencionIslr.monto;
-        }
+        partida = {};
+
+        partida.cuentaContableID = leerCuentaContableDefinida.cuentaContableID;
+
+        partida.descripcion = entidadOriginal.concepto.length > 75 ?
+                                entidadOriginal.concepto.substring(0, 75) :
+                                entidadOriginal.concepto;
+
+        partida.referencia = entidadOriginal.numeroFactura.toString().length > 20 ?
+                                entidadOriginal.numeroFactura.toString().substring(0, 20) :
+                                entidadOriginal.numeroFactura.toString();
+
+        montoAsiento = retencionIslr.monto;
 
         partida.debe = 0;
         partida.haber = 0;
@@ -1812,122 +1650,298 @@ function agregarAsientoContable_Factura(entidadOriginal, tipoAsientoDefault, com
         }
 
         partidasAsientoContable.push(partida);
+    }
 
 
-        // -----------------------------------------------------------------------------------------------------
-        // partida para registrar el monto cobrado o pagado por anticipado
-        if (entidadOriginal.anticipo) {
-            cuentaContableDefinidaID = 0;
-            conceptoDefinicionCuentaContable = 0;
+    // -----------------------------------------------------------------------------------------------------
+    // partida para registrar el impuesto Iva retenido
+    // leemos el monto de retención iva en el array de impuestos y retenciones
+    let retencionIva = {};
+    if (entidadOriginal.impuestosRetenciones) {
+        retencionIva = lodash.find(entidadOriginal.impuestosRetenciones, (x) => { return x.predefinido === 2; });
+    }
 
-            if (entidadOriginal.cxCCxPFlag == 1)
-                conceptoDefinicionCuentaContable = 12;
-            else
-                conceptoDefinicionCuentaContable = 12;
+    // nótese que el monto puede ser contabilizado con el pago, si así lo inidca el usuario ...
+    if (retencionIva && !retencionIva.contabilizarAlPagar_flag && retencionIva.monto) {
+        cuentaContableDefinidaID = 0;
+        conceptoDefinicionCuentaContable = 0;
 
-            leerCuentaContableDefinida = ContabFunctions.leerCuentaContableDefinida(conceptoDefinicionCuentaContable,
-                                                                                    entidadOriginal.proveedor,
-                                                                                    proveedor.tipo,
-                                                                                    entidadOriginal.moneda,
-                                                                                    companiaContab.numero,
-                                                                                    null);
+        if (entidadOriginal.cxCCxPFlag == 1)
+            conceptoDefinicionCuentaContable = 5;
+        else
+            conceptoDefinicionCuentaContable = 5;
 
-            if (leerCuentaContableDefinida.error) {
-                if (entidadOriginal.cxCCxPFlag == 1) {
-                    return {
-                        error: true,
-                        message: `Error: no se ha encontrado una cuenta contable definida para
-                                  contabilizar el monto de anticipo (Anticipo en pago de facturas).
-                                  Por favor defina una cuenta contable para contabilizar el anticipo.`
-                    }
-                } else {
-                    return {
-                        error: true,
-                        message: `Error: no se ha encontrado una cuenta contable definida para
-                                  contabilizar el monto de anticipo (Anticipo en pago de facturas).
-                                  Por favor defina una cuenta contable para contabilizar el anticipo.`
-                    }
+        leerCuentaContableDefinida = ContabFunctions.leerCuentaContableDefinida(conceptoDefinicionCuentaContable,
+                                                                                entidadOriginal.proveedor,
+                                                                                proveedor.tipo,
+                                                                                entidadOriginal.moneda,
+                                                                                companiaContab.numero,
+                                                                                null);
+
+        if (leerCuentaContableDefinida.error) {
+            if (entidadOriginal.cxCCxPFlag == 1) {
+                return {
+                    error: true,
+                    message: `Error: no se ha encontrado una cuenta contable definida para
+                                contabilizar la retención sobre el IVA (Retención sobre iva).
+                                Por favor defina una cuenta contable para contabilizar la retención sobre el IVA.`
+                }
+            } else {
+                return {
+                    error: true,
+                    message: `Error: no se ha encontrado una cuenta contable definida para
+                                contabilizar la retención sobre el IVA (Retención sobre iva).
+                                Por favor defina una cuenta contable para contabilizar la retención sobre el IVA.`
                 }
             }
+        }
 
-            partida = {};
+        partida = {};
 
-            partida.cuentaContableID = leerCuentaContableDefinida.cuentaContableID;;
+        partida.cuentaContableID = leerCuentaContableDefinida.cuentaContableID;
 
-            partida.descripcion = entidadOriginal.concepto.length > 75 ?
-                                  entidadOriginal.concepto.substring(0, 75) :
-                                  entidadOriginal.concepto;
+        partida.descripcion = entidadOriginal.concepto.length > 75 ?
+                                entidadOriginal.concepto.substring(0, 75) :
+                                entidadOriginal.concepto;
 
-            partida.referencia = entidadOriginal.numeroFactura.toString().length > 20 ?
-                                 entidadOriginal.numeroFactura.toString().substring(0, 20) :
-                                 entidadOriginal.numeroFactura.toString();
+        partida.referencia = entidadOriginal.numeroFactura.toString().length > 20 ?
+                                entidadOriginal.numeroFactura.toString().substring(0, 20) :
+                                entidadOriginal.numeroFactura.toString();
 
-            montoAsiento = entidadOriginal.anticipo;
+        montoAsiento = retencionIva.monto;
 
-            partida.debe = 0;
-            partida.haber = 0;
+        partida.debe = 0;
+        partida.haber = 0;
 
-            if (entidadOriginal.cxCCxPFlag == 1) {
-                // CxP
-                if (montoAsiento >= 0)
-                    partida.haber = montoAsiento;
-                else
-                    // nótese que las NC trane su monto negativo ...
-                    partida.debe = montoAsiento * -1;
-            } else {
-                // CxC
-                if (montoAsiento >= 0)
-                    partida.debe = montoAsiento;
-                else
-                    // nótese que las NC trane su monto negativo ...
-                    partida.haber = montoAsiento * -1;
+        if (entidadOriginal.cxCCxPFlag == 1) {
+            // CxP
+            if (montoAsiento >= 0)
+                partida.haber = montoAsiento;
+            else
+                // nótese que las NC trane su monto negativo ...
+                partida.debe = montoAsiento * -1;
+        } else {
+            // CxC
+            if (montoAsiento >= 0)
+                partida.debe = montoAsiento;
+            else
+                // nótese que las NC trane su monto negativo ...
+                partida.haber = montoAsiento * -1;
+        }
+
+        partidasAsientoContable.push(partida);
+    }
+
+
+    // -----------------------------------------------------------------------------------------------------
+    // partida para registrar la cuenta por cobrar o pagar ...
+    cuentaContableDefinidaID = 0;
+    conceptoDefinicionCuentaContable = 0;
+
+    if (entidadOriginal.cxCCxPFlag == 1)
+        conceptoDefinicionCuentaContable = 1;
+    else
+        conceptoDefinicionCuentaContable = 7;
+
+    leerCuentaContableDefinida = ContabFunctions.leerCuentaContableDefinida(conceptoDefinicionCuentaContable,
+                                                                            entidadOriginal.proveedor,
+                                                                            entidadOriginal.tipo,
+                                                                            entidadOriginal.moneda,
+                                                                            companiaContab.numero,
+                                                                            null);
+
+    if (leerCuentaContableDefinida.error) {
+        if (entidadOriginal.cxCCxPFlag == 1) {
+            return {
+                error: true,
+                message: `Error: no se ha encontrado una cuenta contable definida para la compañía (Compañía (CxP)).
+                            Por favor defina una cuenta contable para la compañia.`
             }
+        } else {
+            return {
+                error: true,
+                message: `Error: no se ha encontrado una cuenta contable definida para la compañía (Compañía (CxC)).
+                    Por favor defina una cuenta contable para la compañia.`
+            }
+        }
+    }
 
-            partidasAsientoContable.push(partida);
+    partida = {};
+
+    partida.cuentaContableID = leerCuentaContableDefinida.cuentaContableID;;
+
+    partida.descripcion = entidadOriginal.concepto.length > 75 ?
+                            entidadOriginal.concepto.substring(0, 75) :
+                            entidadOriginal.concepto;
+
+    partida.referencia = entidadOriginal.numeroFactura.toString().length > 20 ?
+                            entidadOriginal.numeroFactura.toString().substring(0, 20) :
+                            entidadOriginal.numeroFactura.toString();
+
+    // calculamos el total a pagar a la compañía
+    montoAsiento =
+        (
+        (entidadOriginal.montoFacturaSinIva ? entidadOriginal.montoFacturaSinIva : 0) +
+        (entidadOriginal.montoFacturaConIva ? entidadOriginal.montoFacturaConIva : 0) +
+        (entidadOriginal.otrosImpuestos ? entidadOriginal.otrosImpuestos : 0) -
+        (entidadOriginal.otrasRetenciones ? entidadOriginal.otrasRetenciones : 0) -
+        (entidadOriginal.anticipo ? entidadOriginal.anticipo : 0)
+        );
+
+    // los impuestos y retenciones están en el array impuestosRetenciones y fueron leídos en las variables que siguen;
+    // nótese que el usuario puede indicar que estos montos se contabilicen con el pago (en vez de ahora)
+
+    if (impuestoIva && !impuestoIva.contabilizarAlPagar_flag && impuestoIva.monto) {
+        // hay un monto Iva y no se va a contabilizar al pagar
+        montoAsiento += impuestoIva.monto;
+    }
+
+    if (retencionIva && !retencionIva.contabilizarAlPagar_flag && retencionIva.monto) {
+        // hay un monto Iva y no se va a contabilizar al pagar
+        montoAsiento -= retencionIva.monto;
+    }
+
+    if (retencionIslr && !retencionIslr.contabilizarAlPagar_flag && retencionIslr.monto) {
+        // hay un monto Iva y no se va a contabilizar al pagar
+        montoAsiento -= retencionIslr.monto;
+    }
+
+    partida.debe = 0;
+    partida.haber = 0;
+
+    if (entidadOriginal.cxCCxPFlag == 1) {
+        // CxP
+        if (montoAsiento >= 0)
+            partida.haber = montoAsiento;
+        else
+            // nótese que las NC trane su monto negativo ...
+            partida.debe = montoAsiento * -1;
+    } else {
+        // CxC
+        if (montoAsiento >= 0)
+            partida.debe = montoAsiento;
+        else
+            // nótese que las NC trane su monto negativo ...
+            partida.haber = montoAsiento * -1;
+    }
+
+    partidasAsientoContable.push(partida);
+
+    // -----------------------------------------------------------------------------------------------------
+    // partida para registrar el monto cobrado o pagado por anticipado
+    if (entidadOriginal.anticipo) {
+        cuentaContableDefinidaID = 0;
+        conceptoDefinicionCuentaContable = 0;
+
+        if (entidadOriginal.cxCCxPFlag == 1)
+            conceptoDefinicionCuentaContable = 12;
+        else
+            conceptoDefinicionCuentaContable = 12;
+
+        leerCuentaContableDefinida = ContabFunctions.leerCuentaContableDefinida(conceptoDefinicionCuentaContable,
+                                                                                entidadOriginal.proveedor,
+                                                                                proveedor.tipo,
+                                                                                entidadOriginal.moneda,
+                                                                                companiaContab.numero,
+                                                                                null);
+
+        if (leerCuentaContableDefinida.error) {
+            if (entidadOriginal.cxCCxPFlag == 1) {
+                return {
+                    error: true,
+                    message: `Error: no se ha encontrado una cuenta contable definida para
+                                contabilizar el monto de anticipo (Anticipo en pago de facturas).
+                                Por favor defina una cuenta contable para contabilizar el anticipo.`
+                }
+            } else {
+                return {
+                    error: true,
+                    message: `Error: no se ha encontrado una cuenta contable definida para
+                                contabilizar el monto de anticipo (Anticipo en pago de facturas).
+                                Por favor defina una cuenta contable para contabilizar el anticipo.`
+                }
+            }
         }
 
-        // ----------------------------------------------------------------------------------------------------------------
-        // para compensar la conversión que ocurre en las fechas al grabar a sql server, restamos 4.3 horas a cada una ...
-        let asientoContable_sql = lodash.cloneDeep(asientoContable);
-        asientoContable_sql.fecha = moment(asientoContable.fecha).subtract(TimeOffset, 'h').toDate();
-        asientoContable_sql.ingreso = moment(asientoContable.ingreso).subtract(TimeOffset, 'h').toDate();
-        asientoContable_sql.ultAct = moment(asientoContable.ultAct).subtract(TimeOffset, 'h').toDate();
+        partida = {};
 
-        let response = Async.runSync(function(done) {
-        AsientosContables_sql.create(asientoContable_sql)
-           .then(function(result) { done(null, result); })
-           .catch(function (err) { done(err, null); })
-           .done();
+        partida.cuentaContableID = leerCuentaContableDefinida.cuentaContableID;;
+
+        partida.descripcion = entidadOriginal.concepto.length > 75 ?
+                                entidadOriginal.concepto.substring(0, 75) :
+                                entidadOriginal.concepto;
+
+        partida.referencia = entidadOriginal.numeroFactura.toString().length > 20 ?
+                                entidadOriginal.numeroFactura.toString().substring(0, 20) :
+                                entidadOriginal.numeroFactura.toString();
+
+        montoAsiento = entidadOriginal.anticipo;
+
+        partida.debe = 0;
+        partida.haber = 0;
+
+        if (entidadOriginal.cxCCxPFlag == 1) {
+            // CxP
+            if (montoAsiento >= 0)
+                partida.haber = montoAsiento;
+            else
+                // nótese que las NC trane su monto negativo ...
+                partida.debe = montoAsiento * -1;
+        } else {
+            // CxC
+            if (montoAsiento >= 0)
+                partida.debe = montoAsiento;
+            else
+                // nótese que las NC trane su monto negativo ...
+                partida.haber = montoAsiento * -1;
+        }
+
+        partidasAsientoContable.push(partida);
+    }
+
+    // ----------------------------------------------------------------------------------------------------------------
+    // para compensar la conversión que ocurre en las fechas al grabar a sql server, restamos 4.3 horas a cada una ...
+    let asientoContable_sql = lodash.cloneDeep(asientoContable);
+    asientoContable_sql.fecha = moment(asientoContable.fecha).subtract(TimeOffset, 'h').toDate();
+    asientoContable_sql.ingreso = moment(asientoContable.ingreso).subtract(TimeOffset, 'h').toDate();
+    asientoContable_sql.ultAct = moment(asientoContable.ultAct).subtract(TimeOffset, 'h').toDate();
+
+    response = null; 
+    response = Async.runSync(function(done) {
+    AsientosContables_sql.create(asientoContable_sql)
+        .then(function(result) { done(null, result); })
+        .catch(function (err) { done(err, null); })
+        .done();
+    });
+
+    if (response.error) {
+        throw new Meteor.Error(response.error && response.error.message ? response.error.message : response.error.toString());
+    }
+
+    let asientoAgregado = response.result.dataValues;
+
+    // ahora recorremos el array de partidas del asiento y agregamos a sql cada una de ellas
+    let numeroPartida = 0;
+    lodash(partidasAsientoContable).orderBy(['debe', 'haber'], ['desc', 'desc']).forEach((partidaAsiento) => {
+        numeroPartida += 10;
+
+        partidaAsiento.numeroAutomatico = asientoAgregado.numeroAutomatico,
+        partidaAsiento.partida = numeroPartida,
+
+        response = Async.runSync(function(done) {
+            dAsientosContables_sql.create(partidaAsiento)
+                .then(function(result) { done(null, result); })
+                .catch(function (err) { done(err, null); })
+                .done();
         });
 
-        if (response.error) {
+        if (response.error)
             throw new Meteor.Error(response.error && response.error.message ? response.error.message : response.error.toString());
-        }
+    });
 
-        let asientoAgregado = response.result.dataValues;
-
-        // ahora recorremos el array de partidas del asiento y agregamos a sql cada una de ellas
-        let numeroPartida = 0;
-        lodash(partidasAsientoContable).orderBy(['debe', 'haber'], ['desc', 'desc']).forEach((partidaAsiento) => {
-            numeroPartida += 10;
-
-            partidaAsiento.numeroAutomatico = asientoAgregado.numeroAutomatico,
-            partidaAsiento.partida = numeroPartida,
-
-            response = Async.runSync(function(done) {
-                dAsientosContables_sql.create(partidaAsiento)
-                    .then(function(result) { done(null, result); })
-                    .catch(function (err) { done(err, null); })
-                    .done();
-            });
-
-            if (response.error)
-                throw new Meteor.Error(response.error && response.error.message ? response.error.message : response.error.toString());
-        });
-
-        return {
-            asientoContableAgregadoID: asientoAgregado.numeroAutomatico
-        };
+    return {
+        asientoContableAgregadoID: asientoAgregado.numeroAutomatico
+    };
 }
 
 
@@ -2290,18 +2304,33 @@ function agregarAsientoContable_RetencionImpuestos(entidadOriginal,
         cia: companiaContab.numero,
     };
 
-    // leemos cuenta bancaria (está en mongo) pues luego lo usamos para obtener las cuentas contables
-    let proveedor = Proveedores.findOne({ proveedor: entidadOriginal.proveedor });
+    let query = `Select p.Tipo as tipo From Proveedores p Where p.proveedor = ?`;
 
-    if (!proveedor) {
+    let response = null;
+    response = Async.runSync(function (done) {
+        sequelize.query(query, {
+            replacements: [ entidadOriginal.proveedor ],
+            type: sequelize.QueryTypes.SELECT
+        })
+            .then(function (result) { done(null, result); })
+            .catch(function (err) { done(err, null); })
+            .done();
+    });
+
+    if (response.error) {
+        throw new Meteor.Error(response.error && response.error.message ? response.error.message : response.error.toString());
+    }
+
+    if (!Array.isArray(response.result) || !response.result.length) {
         return {
             error: true,
             message: `Error inesperado: no pudimos leer los datos de la compañía indicada en la factura.<br />
-                        Debe existir una compañía para esta factura en <em>Catálogos</em>. Nota: probablemente Ud. deba
-                        ejecutar la opción <em>Copiar catálogos</em> en el menú <em>Bancos / Generales</em>.`
+                    Debe existir una compañía para esta factura en <em>Catálogos</em>. Nota: probablemente Ud. deba
+                    ejecutar la opción <em>Copiar catálogos</em> en el menú <em>Bancos / Generales</em>.`
         };
     }
 
+    const proveedor = response.result[0]; 
 
     // creamos un array con las partidas del asiento, para grabarlas a sql al final; la idea de crear 
     // las partidas en un array, es poder ordenarlo antes de grabar a sql; de esa forma, podemos grabar 
@@ -2546,7 +2575,8 @@ function agregarAsientoContable_RetencionImpuestos(entidadOriginal,
     asientoContable_sql.ingreso = moment(asientoContable.ingreso).subtract(TimeOffset, 'h').toDate();
     asientoContable_sql.ultAct = moment(asientoContable.ultAct).subtract(TimeOffset, 'h').toDate();
 
-    let response = Async.runSync(function (done) {
+    response = null; 
+    response = Async.runSync(function (done) {
         AsientosContables_sql.create(asientoContable_sql)
             .then(function (result) { done(null, result); })
             .catch(function (err) { done(err, null); })

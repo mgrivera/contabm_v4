@@ -625,11 +625,7 @@ function ($scope, $stateParams, $state, $meteor, $modal) {
 
             $scope.fechaOriginalMovimientoBancario = $scope.movimientoBancario.fecha;
 
-            console.log("proveedor - antes json.parse: ", result.proveedor); 
-
             const proveedor = JSON.parse(result.proveedor);
-
-            console.log("proveedor - luego json.parse: ", proveedor); 
 
             $scope.helpers({
                 proveedores: () => {

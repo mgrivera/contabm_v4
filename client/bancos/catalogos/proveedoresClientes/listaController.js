@@ -14,8 +14,8 @@ import { mensajeErrorDesdeMethod_preparar } from '/client/imports/clientGlobalMe
 import { Filtros } from '/imports/collections/general/filtros'; 
 import { TiposProveedor, FormasDePago } from '/imports/collections/bancos/catalogos'; 
 
-angular.module("contabm.bancos.catalogos").controller("ProveedoresClientes_Lista_Controller",
-['$stateParams', '$scope', '$meteor', '$modal', function ($stateParams, $scope, $meteor, $modal) {
+angular.module("contabm.bancos.catalogos")
+       .controller("ProveedoresClientes_Lista_Controller", ['$scope', '$modal', function ($scope, $modal) {
 
       $scope.showProgress = false;
 

@@ -1,9 +1,9 @@
 
 
-import * as numeral from 'numeral';
-import * as moment from 'moment';
-import * as lodash from 'lodash';
-import * as angular from 'angular';
+import numeral from 'numeral';
+import moment from 'moment';
+import lodash from 'lodash';
+import angular from 'angular';
 import { Meteor } from 'meteor/meteor';
 import { Mongo } from 'meteor/mongo'; 
 
@@ -18,7 +18,7 @@ import { DialogModal } from '../../../imports/general/genericUIBootstrapModal/an
 
 import { mensajeErrorDesdeMethod_preparar } from '../../../imports/clientGlobalMethods/mensajeErrorDesdeMethod_preparar'; 
 
-import * as select2_styles from "client/imports/css/angularjs-ui-select.css"; 
+import "/client/imports/css/angularjs-ui-select.css"; 
 
 angular.module("contabm").controller("Catalogos_ActivosFijos_Controller",
 ['$stateParams', '$scope', '$modal', '$interval', function ($stateParams, $scope,  $modal, $interval) {
@@ -71,7 +71,7 @@ angular.module("contabm").controller("Catalogos_ActivosFijos_Controller",
     })
 
     
-    $scope.getItemsFromServerForSelectProveedores = (search: any) => {
+    $scope.getItemsFromServerForSelectProveedores = (search) => {
 
         $scope.showProgress = true;
         const where = `Proveedores.Nombre Like '%${search}%'`;
@@ -175,9 +175,9 @@ angular.module("contabm").controller("Catalogos_ActivosFijos_Controller",
     // establecer el tab 'activo' en ui-bootstrap ...
     $scope.activeTab = { tab1: true, tab2: false, tab3: false, };
 
-    let activosFijos_ui_grid_api: any = null;
+    let activosFijos_ui_grid_api = null;
 
-    let itemSeleccionado = {} as any;
+    let itemSeleccionado = {};
     let itemSeleccionadoParaSerEliminado = false;
 
     let angularInterval = null;           // para detener el interval que usamos más abajo
@@ -453,15 +453,15 @@ angular.module("contabm").controller("Catalogos_ActivosFijos_Controller",
         },
     ]
 
-    $scope.deleteItem = function (item: any) {
+    $scope.deleteItem = function (item) {
         // nótese como  indicamos que el usuario no quiere seleccionar el item en la lista, solo marcarlo para ser eliminado;
         // la idea es que el item se marque para ser eliminado, pero no se muestre (sus detalles) en el tab que sigue ...
 
         if (item.docState == 3) {
-            delete $scope.activosFijos.find((x: any) => x.claveUnica === item.claveUnica).docState; 
+            delete $scope.activosFijos.find((x) => x.claveUnica === item.claveUnica).docState; 
         }
         else { 
-            $scope.activosFijos.find((x: any) => x.claveUnica === item.claveUnica).docState = 3;
+            $scope.activosFijos.find((x) => x.claveUnica === item.claveUnica).docState = 3;
         }
 
         itemSeleccionadoParaSerEliminado = true;
@@ -519,7 +519,7 @@ angular.module("contabm").controller("Catalogos_ActivosFijos_Controller",
     // solo para eliminar los registros que el usuario 'marca' en la lista
     $scope.grabarEliminaciones = () => {
 
-        if (!$scope.activosFijos.find((x: any) => x.docState && x.docState == 3)) {
+        if (!$scope.activosFijos.find((x) => x.docState && x.docState == 3)) {
             let message = `Aparentemente, <em>Ud. no ha marcado</em> registros en la lista para ser eliminados.<br />.<br />
                            Recuerde que mediante esta función Ud. puede eliminar los registros que se hayan <em>marcado</em> (
                            haciendo un <em>click</em> en la x roja al final de cada registro) para ello en la lista.`; 
@@ -537,9 +537,9 @@ angular.module("contabm").controller("Catalogos_ActivosFijos_Controller",
     let grabarEliminaciones2 = function() {
 
         $scope.showProgress = true;
-        let registrosAEliminar = $scope.activosFijos.filter((x: any) => x.docState && x.docState == 3);
+        let registrosAEliminar = $scope.activosFijos.filter((x) => x.docState && x.docState == 3);
 
-        Meteor.call('contab.activosFijos.eliminar', registrosAEliminar, (err: any, resolve: any) => {
+        Meteor.call('contab.activosFijos.eliminar', registrosAEliminar, (err, resolve) => {
 
             if (err) {
                 let errorMessage = mensajeErrorDesdeMethod_preparar(err);
@@ -589,7 +589,7 @@ angular.module("contabm").controller("Catalogos_ActivosFijos_Controller",
 
         Meteor.call('contab.activosFijos.LeerDesdeSql', JSON.stringify($scope.filtro), 
                                                         $scope.companiaSeleccionada.numero, 
-                                                        (err: any, result: any) => {
+                                                        (err, result) => {
             if (err) {
                 let errorMessage = mensajeErrorDesdeMethod_preparar(err);
 
@@ -673,7 +673,7 @@ angular.module("contabm").controller("Catalogos_ActivosFijos_Controller",
     }
 
 
-    let subscriptionHandle = {} as any;
+    let subscriptionHandle = {};
     $scope.leerRegistrosDesdeServer = function (limit, mostrarPropioMensaje = true) {
         // la idea es 'paginar' los registros que se suscriben, de 50 en 50
         // el usuario puede indicar 'mas', para leer 50 más; o todos, para leer todos los registros ...
@@ -762,7 +762,7 @@ angular.module("contabm").controller("Catalogos_ActivosFijos_Controller",
 
             if (!isValid) {
                 ActivosFijos_SimpleSchema.namedContext().validationErrors().forEach(function (error) {
-                    errores.push("El valor '" + error.value + "' no es adecuado para el campo '" + ActivosFijos_SimpleSchema.label(error.name) + "'; error de tipo '" + error.type + "'." as never);
+                    errores.push("El valor '" + error.value + "' no es adecuado para el campo '" + ActivosFijos_SimpleSchema.label(error.name) + "'; error de tipo '" + error.type + "'.");
                 });
             }
         }
@@ -841,7 +841,7 @@ angular.module("contabm").controller("Catalogos_ActivosFijos_Controller",
 
 
     $scope.calcularDepreciacion = function() { 
-        let result: any = calcularDepreciacion($scope.activoFijo); 
+        let result = calcularDepreciacion($scope.activoFijo); 
 
         if (result.error) { 
 
@@ -886,7 +886,7 @@ angular.module("contabm").controller("Catalogos_ActivosFijos_Controller",
 
     $scope.showProgress = true;
     leerListaEmpleados($scope.companiaSeleccionada.numero)
-        .then((result0: any) => {
+        .then((result0) => {
             // el resultado es un array; cada item tiene un array con items (año y cant de asientos) 
             $scope.helpers({
                 empleados: () => {
@@ -950,11 +950,11 @@ angular.module("contabm").controller("Catalogos_ActivosFijos_Controller",
 
 function inicializarItem(itemID, $scope) {
 
-    return new Promise(function(resolve:any, reject:any) { 
+    return new Promise(function(resolve, reject) { 
         if (itemID == 0) {
             $scope.showProgress = true;
             $scope.activoFijo = {};
-            let usuario: any =  Meteor.user();
+            let usuario =  Meteor.user();
     
             $scope.activoFijo = {
                 claveUnica: 0,
@@ -981,7 +981,7 @@ function inicializarItem(itemID, $scope) {
             // nótese que ejecutamos un promise que lee el item en la base de datos (server) y lo regresa 
             item_leerByID_desdeSql(itemID, $scope).then( 
     
-                function (result: any) { 
+                function (result) { 
                     $scope.activoFijo = {};
                     $scope.activoFijo = JSON.parse(result.activoFijo);
     
@@ -1036,7 +1036,7 @@ function inicializarItem(itemID, $scope) {
 }
 
 
-function item_leerByID_desdeSql(pk: number, $scope: {}) {
+function item_leerByID_desdeSql(pk, $scope) {
     return new Promise(function(resolve, reject) { 
         // ejecutamos un método para leer el asiento contable en sql server y grabarlo a mongo (para el current user)
         Meteor.call('contab.activosFijos.leerByID.desdeSql', pk, (err: {}, result: {}) => {
@@ -1051,7 +1051,7 @@ function item_leerByID_desdeSql(pk: number, $scope: {}) {
 }
 
 
-function calcularDepreciacion(activoFijo: any) { 
+function calcularDepreciacion(activoFijo) { 
 
     if (!activoFijo.fechaCompra || !activoFijo.montoADepreciar || !activoFijo.numeroDeAnos) { 
         return { 
@@ -1063,8 +1063,8 @@ function calcularDepreciacion(activoFijo: any) {
         }
     }
 
-    let depreciarDesde_mes: number; 
-    let depreciarDesde_ano: number; 
+    let depreciarDesde_mes; 
+    let depreciarDesde_ano; 
 
     if (!activoFijo.depreciarDesdeMes) { 
         depreciarDesde_mes = activoFijo.fechaCompra.getMonth() + 1; 
