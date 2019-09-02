@@ -32,6 +32,19 @@ function ($scope, $modalInstance, ciaSeleccionada, factura, facturasFiltro) {
     $scope.downLoadLink = "";
 
     $scope.obtenerDocumentoWord = (file) => {
+
+        if ($scope.tipoPlantillaWord != "facturas" && $scope.tipoPlantillaWord != "retIva" && $scope.tipoPlantillaWord != "retIslr") { 
+            $scope.alerts.length = 0;
+
+            const message = `Ud. debe indicar el <em>tipo de plantilla</em> <b>antes</b> de intentar seleccionar una.`; 
+            $scope.alerts.push({
+                type: 'danger',
+                msg:  message
+            });
+
+            return;
+        }
+
         $scope.showProgress = true;
 
         if ($scope.tipoPlantillaWord == "retIva") {

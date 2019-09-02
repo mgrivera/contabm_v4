@@ -175,11 +175,11 @@ Meteor.methods(
 
             let montoFacturaIncluyeIva = 0;
 
-            montoFacturaIncluyeIva += factura.montoFacturaConIva ? factura.montoFacturaConIva : 0;
-            montoFacturaIncluyeIva += factura.montoFacturaSinIva ? factura.montoFacturaSinIva : 0;
+            montoFacturaIncluyeIva += factura.montoImponible ? factura.montoImponible : 0;
+            montoFacturaIncluyeIva += factura.montoNoImponible ? factura.montoNoImponible : 0;
             montoFacturaIncluyeIva += factura.iva ? factura.iva : 0;
 
-            montoVentasExemptoIva = factura.montoFacturaSinIva ? factura.montoFacturaSinIva : 0;
+            const montoVentasExemptoIva = factura.montoFacturaSinIva ? factura.montoFacturaSinIva : 0;
 
             let montoImponible = 0;
             let alicuotaIva = 0;
@@ -233,9 +233,7 @@ Meteor.methods(
                 }
             })
 
-            query = `Select p.Nombre as nombre, p.Rif as rif 
-                     From Proveedores p 
-                     Where p.proveedor = ?`;
+            query = `Select p.Nombre as nombre, p.Rif as rif From Proveedores p Where p.proveedor = ?`;
 
             response = null;
             response = Async.runSync(function(done) {
@@ -381,7 +379,7 @@ Meteor.methods(
             }
         } 
 
-                // ----------------------------------------------------------------------------------------------------------------
+        // ----------------------------------------------------------------------------------------------------------------
         // authenticamos en dropbox para usar la clase y sus métodos; la idea es obtner un 'shared link' que pasaremos al 
         // browser para hacer el download ... 
         const dbx = new Dropbox({
