@@ -85,7 +85,7 @@ let facturasImpuestos_SimpleSchema = new SimpleSchema({
 let facturas_SimpleSchema = new SimpleSchema({
     claveUnica: { type: Number, label: 'ClaveUnica', optional: false },
     proveedor: { type: Number, label: 'Compañía (proveedor o cliente)', optional: false },
-    numeroFactura: { type: String, label: 'Número de factura', optional: false },
+    numeroFactura: { type: String, label: 'Número de factura', min: 1, optional: false },
     numeroControl: { type: String, label: 'Número de control', optional: true },
     ncNdFlag: { type: String, label: 'NcNdFlag', optional: true },
     numeroFacturaAfectada: { type: String, label: 'Número de la factura afectada', optional: true },

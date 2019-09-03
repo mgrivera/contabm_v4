@@ -2,7 +2,7 @@
 
 import React from "react";
 import PropTypes from 'prop-types';
-import { Formik, ErrorMessage } from 'formik';
+import { Formik } from 'formik';
 import { AsyncTypeahead } from 'react-bootstrap-typeahead';
 import 'react-bootstrap-typeahead/css/Typeahead.min.css';
 

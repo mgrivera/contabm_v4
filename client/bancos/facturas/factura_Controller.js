@@ -379,7 +379,7 @@ function ($scope, $stateParams, $state, $modal, tablasImpuestosRetenciones) {
 
     $scope.mostrarCuotas = () => {
 
-        if (!$scope.factura || !_.isArray($scope.factura.cuotasFactura) || !$scope.factura.cuotasFactura.length) {
+        if (!$scope.factura || !Array.isArray($scope.factura.cuotasFactura) || !$scope.factura.cuotasFactura.length) {
             DialogModal($modal, "<em>Bancos - Facturas - Cuotas</em>",
                                 `Factura sin cuotas. No hay cuotas que mostrar.<br />
                                 Recuerde que las cuotas para una factura que se está registrando son
@@ -928,7 +928,7 @@ function ($scope, $stateParams, $state, $modal, tablasImpuestosRetenciones) {
 
     $scope.deleteItemImpuestoRetenciones = (item) => {
         // nótese que eliminamos el item del array; en otras ocasiones lo marcamos ...
-        if (_.isArray($scope.factura.impuestosRetenciones)) {
+        if (Array.isArray($scope.factura.impuestosRetenciones)) {
             $scope.factura.impuestosRetenciones =
                 lodash.filter($scope.factura.impuestosRetenciones, (x) => { return x !== item; });
 
@@ -958,7 +958,7 @@ function ($scope, $stateParams, $state, $modal, tablasImpuestosRetenciones) {
             // docState: 1
         };
 
-        if (!_.isArray($scope.factura.impuestosRetenciones)) {
+        if (!Array.isArray($scope.factura.impuestosRetenciones)) {
             $scope.factura.impuestosRetenciones = [];
         }
 
@@ -1119,7 +1119,7 @@ function ($scope, $stateParams, $state, $modal, tablasImpuestosRetenciones) {
             // nótese que el montoIva lo calculamos justo antes; para que haya una retención Iva deben haber un monto Iva ...
             // la compañía indica que se debe aplicar un impuesto Iva; Nota: debemos buscar una definición en la tabla
             // ImpuestosRetenciones_Definicion, para el valor predefinido 2 ...
-            let definicionItem = _.find($scope.impuestosRetencionesDefinicion, (x) => {
+            let definicionItem = lodash.find($scope.impuestosRetencionesDefinicion, (x) => {
                 return x.Predefinido === 2;
             });
 
@@ -1325,40 +1325,42 @@ function ($scope, $stateParams, $state, $modal, tablasImpuestosRetenciones) {
             
         // -------------------------------------------------------------------------------
         // intentamos calcular los impuestos y retenciones que existan en la lista ...
-        factura.impuestosRetenciones.forEach((impuesto) => {
-            let definicionImpRet = null;
-
-            // lo primero que hacemos es leer la definición del imp o ret en el catálogo
-            definicionImpRet = $scope.impuestosRetencionesDefinicion.find(x => x.ID === impuesto.impRetID);
-
-            // TODO: para impIva: intentar calcular tipoAlicuota, si no viene una
-            // TODO: para retIslr: intentar determinar codigo y sustraendo, si no vienen estos valores
-
-            // solo para rubros no 'predefinidos', intentamos usar el porcentaje de la definición si no viene uno
-            // (aunque en estos casos, de imp/ret no predefinidos, el usuario indicará un % en forma manual)
-            if (!impuesto.porcentaje) { 
-                if (!definicionImpRet.Predefinido)  {
-                    if (definicionImpRet.Porcentaje) { 
-                        impuesto.porcentaje = definicionImpRet.Porcentaje;
+        if (factura.impuestosRetenciones) { 
+            factura.impuestosRetenciones.forEach((impuesto) => {
+                let definicionImpRet = null;
+    
+                // lo primero que hacemos es leer la definición del imp o ret en el catálogo
+                definicionImpRet = $scope.impuestosRetencionesDefinicion.find(x => x.ID === impuesto.impRetID);
+    
+                // TODO: para impIva: intentar calcular tipoAlicuota, si no viene una
+                // TODO: para retIslr: intentar determinar codigo y sustraendo, si no vienen estos valores
+    
+                // solo para rubros no 'predefinidos', intentamos usar el porcentaje de la definición si no viene uno
+                // (aunque en estos casos, de imp/ret no predefinidos, el usuario indicará un % en forma manual)
+                if (!impuesto.porcentaje) { 
+                    if (!definicionImpRet.Predefinido)  {
+                        if (definicionImpRet.Porcentaje) { 
+                            impuesto.porcentaje = definicionImpRet.Porcentaje;
+                        }  
                     }  
-                }  
-            }
-                    
-            // por un error de diseño en el análisis que hicimos hace bastante tiempo, aplicamos el sustraendo *luego* del 
-            // porcentaje de retención. Debe ser antes ... Nótese que esto aplica, generalmente, a la retención del Islr 
-            // y no la del Iva (para la cual no aplica un sustraendo) ... 
-            // ejemplo: monto: 100 - sust: 30 - %: 3. Hacíamos: RetIslr = (100 * 3%) - 30. Debe ser: RetIslr = (100 - 30) * 3%
-
-            if (impuesto.montoBase && impuesto.porcentaje) {
-                impuesto.montoAntesSustraendo = lodash.round(impuesto.montoBase * impuesto.porcentaje / 100, 4);
-                impuesto.monto = impuesto.montoAntesSustraendo; 
-            }
-
-            if (impuesto.sustraendo) { 
-                impuesto.monto -= impuesto.sustraendo;
-            }
-        })
-
+                }
+                        
+                // por un error de diseño en el análisis que hicimos hace bastante tiempo, aplicamos el sustraendo *luego* del 
+                // porcentaje de retención. Debe ser antes ... Nótese que esto aplica, generalmente, a la retención del Islr 
+                // y no la del Iva (para la cual no aplica un sustraendo) ... 
+                // ejemplo: monto: 100 - sust: 30 - %: 3. Hacíamos: RetIslr = (100 * 3%) - 30. Debe ser: RetIslr = (100 - 30) * 3%
+    
+                if (impuesto.montoBase && impuesto.porcentaje) {
+                    impuesto.montoAntesSustraendo = lodash.round(impuesto.montoBase * impuesto.porcentaje / 100, 4);
+                    impuesto.monto = impuesto.montoAntesSustraendo; 
+                }
+    
+                if (impuesto.sustraendo) { 
+                    impuesto.monto -= impuesto.sustraendo;
+                }
+            })
+        }
+        
         // arriba calculamos el monto de impuestos y retenciones (en el grid); ahora, calculamos los
         // montos generales de la factura ...
         calcularFactura2(factura);
@@ -1374,8 +1376,8 @@ function ($scope, $stateParams, $state, $modal, tablasImpuestosRetenciones) {
         // calcularFactura, para completar el calculo de la factura cuando ya están calculados
         // los montos en el grid
 
-        factura.iva = null;
-        factura.otrosImpuestos = null;
+        factura.iva = 0;
+        factura.otrosImpuestos = 0;
         factura.totalAPagar = 0;
         factura.retencionSobreIva = null;
         factura.impuestoRetenido = null;
@@ -1402,28 +1404,29 @@ function ($scope, $stateParams, $state, $modal, tablasImpuestosRetenciones) {
 
         // calculamos y agregamos el iva
         // nótese que el iva está en la lista de impuestos y retenciones
-        factura.impuestosRetenciones.forEach((impuesto) => {
-            // lo primero que hacemos es leer la definición del imp o ret en el catálogo
-            let definicionImpRet = $scope.impuestosRetencionesDefinicion.find(x => x.ID === impuesto.impRetID);
-
-            if (definicionImpRet.Predefinido && definicionImpRet.Predefinido == 1) {
-                if (!factura.iva) { 
-                factura.iva = 0;
+        if (factura.impuestosRetenciones) { 
+            factura.impuestosRetenciones.forEach((impuesto) => {
+                // lo primero que hacemos es leer la definición del imp o ret en el catálogo
+                let definicionImpRet = $scope.impuestosRetencionesDefinicion.find(x => x.ID === impuesto.impRetID);
+    
+                if (definicionImpRet.Predefinido && definicionImpRet.Predefinido == 1) {
+                    if (!factura.iva) { 
+                    factura.iva = 0;
+                    }
+                        
+                    factura.iva += impuesto.monto ? impuesto.monto : 0;
                 }
-                    
-                factura.iva += impuesto.monto ? impuesto.monto : 0;
-            }
-
-            // 'otros' impuestos; vienen de registros no predefinidos, pero de tipo impuestos
-            if (!definicionImpRet.Predefinido && definicionImpRet.ImpuestoRetencion === 1) {
-                if (!factura.otrosImpuestos) { 
-                factura.otrosImpuestos = 0;
+    
+                // 'otros' impuestos; vienen de registros no predefinidos, pero de tipo impuestos
+                if (!definicionImpRet.Predefinido && definicionImpRet.ImpuestoRetencion === 1) {
+                    if (!factura.otrosImpuestos) { 
+                    factura.otrosImpuestos = 0;
+                    }
+                        
+                    factura.otrosImpuestos += impuesto.monto;
                 }
-                    
-                factura.otrosImpuestos += impuesto.monto;
-            }
-        })
-
+            })
+        }
 
         if (factura.otrosImpuestos) { 
             factura.totalFactura += factura.otrosImpuestos;
@@ -1432,39 +1435,40 @@ function ($scope, $stateParams, $state, $modal, tablasImpuestosRetenciones) {
         if (factura.iva) { 
             factura.totalFactura += factura.iva;
         }
+
+        if (factura.impuestosRetenciones) { 
+            factura.impuestosRetenciones.forEach((impuesto) => {
+                // lo primero que hacemos es leer la definición del imp o ret en el catálogo
+                let definicionImpRet = $scope.impuestosRetencionesDefinicion.find(x => x.ID === impuesto.impRetID);
+    
+                if (definicionImpRet.Predefinido && definicionImpRet.Predefinido === 2) {
+                    if (!factura.retencionSobreIva) { 
+                        factura.retencionSobreIva = 0;
+                    }
+                        
+                    factura.retencionSobreIva += impuesto.monto ? impuesto.monto : 0;
+                }
+    
+                // retención Islr
+                if (definicionImpRet.Predefinido && definicionImpRet.Predefinido === 3) {
+                    if (!factura.impuestoRetenido) { 
+                        factura.impuestoRetenido = 0;
+                    }
+                        
+                    factura.impuestoRetenido += impuesto.monto ? impuesto.monto : 0;
+                }
+    
+                // 'otras' retenciones
+                if (!definicionImpRet.Predefinido && definicionImpRet.ImpuestoRetencion == 2) {
+                    if (!factura.otrasRetenciones) { 
+                        factura.otrasRetenciones = 0;
+                    }
+                        
+                    factura.otrasRetenciones += impuesto.monto ? impuesto.monto : 0;
+                }
+            })
+        }
             
-        factura.impuestosRetenciones.forEach((impuesto) => {
-            // lo primero que hacemos es leer la definición del imp o ret en el catálogo
-            let definicionImpRet = $scope.impuestosRetencionesDefinicion.find(x => x.ID === impuesto.impRetID);
-
-            if (definicionImpRet.Predefinido && definicionImpRet.Predefinido === 2) {
-                if (!factura.retencionSobreIva) { 
-                    factura.retencionSobreIva = 0;
-                }
-                    
-                factura.retencionSobreIva += impuesto.monto ? impuesto.monto : 0;
-            }
-
-            // retención Islr
-            if (definicionImpRet.Predefinido && definicionImpRet.Predefinido === 3) {
-                if (!factura.impuestoRetenido) { 
-                    factura.impuestoRetenido = 0;
-                }
-                    
-                factura.impuestoRetenido += impuesto.monto ? impuesto.monto : 0;
-            }
-
-            // 'otras' retenciones
-            if (!definicionImpRet.Predefinido && definicionImpRet.ImpuestoRetencion == 2) {
-                if (!factura.otrasRetenciones) { 
-                    factura.otrasRetenciones = 0;
-                }
-                    
-                factura.otrasRetenciones += impuesto.monto ? impuesto.monto : 0;
-            }
-        })
-
-
         // por último calculamos el total a pagar y el saldo
         factura.totalAPagar = factura.totalFactura;
 
@@ -1640,7 +1644,7 @@ function ($scope, $stateParams, $state, $modal, tablasImpuestosRetenciones) {
         $scope.showProgress = true;
 
         // obtenemos un clone de los datos a guardar ...
-        let editedItem = _.cloneDeep($scope.factura);
+        let editedItem = lodash.cloneDeep($scope.factura);
 
         if (editedItem.docState != 3) {
             if (!editedItem.numeroFactura) {
@@ -2034,7 +2038,7 @@ function ($scope, $stateParams, $state, $modal, tablasImpuestosRetenciones) {
         // registrado en el catálogo: ImpuestosRetencionesDefinicion ...
 
         // lo primero que hacemos es leer la definición del item, en base a su tipo
-        let definicionItem = _.find(impuestosRetencionesDefinicion, (x) => {
+        let definicionItem = lodash.find(impuestosRetencionesDefinicion, (x) => {
             return x.ID === impRetItem.impRetID;
         });
 
