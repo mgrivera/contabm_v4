@@ -33,7 +33,7 @@ export const AsientosContables_sql = sequelize.define('AsientosContables_sql', {
 });
 
 
-export const dAsientosContables_sql = sequelize.define('AsientosContables_sql', {
+export const dAsientosContables_sql = sequelize.define('dAsientosContables_sql', {
     numeroAutomatico: { type: Sequelize.INTEGER, field: 'NumeroAutomatico', allowNull: false, autoIncrement: false, primaryKey: true, },
     partida: { type: Sequelize.INTEGER, field: 'Partida', allowNull: false, autoIncrement: false, primaryKey: true, },
     cuentaContableID: { type: Sequelize.INTEGER, field: 'CuentaContableID', allowNull: false,  },
@@ -47,8 +47,8 @@ export const dAsientosContables_sql = sequelize.define('AsientosContables_sql', 
 });
 
 
-AsientosContables_sql.hasMany( dAsientosContables_sql, { as: 'partidas', foreignKey: 'NumeroAutomatico' } );
-dAsientosContables_sql.belongsTo( AsientosContables_sql, { as: 'asiento', foreignKey: 'NumeroAutomatico' } );
+AsientosContables_sql.hasMany( dAsientosContables_sql, { as: 'partidas', foreignKey: 'numeroAutomatico' } );
+dAsientosContables_sql.belongsTo( AsientosContables_sql, { as: 'asiento', foreignKey: 'numeroAutomatico' } );
 
-CuentasContables_sql.hasMany( dAsientosContables_sql, { as: 'partidasAsientos', foreignKey: 'CuentaContableID' } );
-dAsientosContables_sql.belongsTo( CuentasContables_sql, { as: 'cuentaContable', foreignKey: 'CuentaContableID' } );
+CuentasContables_sql.hasMany( dAsientosContables_sql, { as: 'partidasAsientos', foreignKey: 'cuentaContableID' } );
+dAsientosContables_sql.belongsTo( CuentasContables_sql, { as: 'cuentaContable', foreignKey: 'cuentaContableID' } );

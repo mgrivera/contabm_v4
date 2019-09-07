@@ -1,6 +1,8 @@
 
+
 import lodash from 'lodash';
 import moment from 'moment';
+
 import { Monedas } from '/imports/collections/monedas';
 import { sequelize } from '/server/sqlModels/_globals/_loadThisFirst/_globals';
 import { TimeOffset } from '/globals/globals'; 
@@ -13,13 +15,11 @@ Meteor.methods(
 
         check(asientoContableID, Number);
 
+        // -------------------------------------------------------------
         // lo primero que hacemos es leer el asiento contable
         let response = null;
         response = Async.runSync(function(done) {
-            AsientosContables_sql.findAll({ where: { numeroAutomatico: asientoContableID },
-                include: [{ model: dAsientosContables_sql, as: 'partidas' }],
-                // raw: true            nótese que, al menos por ahora, no funciona cuando hay un 'include' (???!!)
-            })
+            AsientosContables_sql.findOne({ where: { numeroAutomatico: asientoContableID }, raw: true, })
                 .then(function(result) { done(null, result); })
                 .catch(function (err) { done(err, null); })
                 .done();
@@ -29,14 +29,43 @@ Meteor.methods(
             throw new Meteor.Error(response.error && response.error.message ? response.error.message : response.error.toString());
         }
 
-        if (!response.result.length) {
+        if (!response.result) {
             return {
                 error: true,
                 message: `Error inesperado: no hemos podido leer el asiento contable en la base de datos. `
             };
         }
 
-        let asientoContable = response.result[0].dataValues;
+        let asientoContable = response.result;
+
+        // -------------------------------------------------------------
+        // ahora leemos las partidas 
+        response = null;
+        response = Async.runSync(function(done) {
+            dAsientosContables_sql.findAndCountAll({ 
+                    where: { numeroAutomatico: asientoContableID }, 
+                    order: [ ['partida', 'ASC'] ],                     
+                    raw: true, 
+                })
+                .then(function(result) { done(null, result); })
+                .catch(function (err) { done(err, null); })
+                .done();
+        });
+
+        if (response.error) {
+            throw new Meteor.Error(response.error && response.error.message ? response.error.message : response.error.toString());
+        }
+
+        // el asiento contable debe tener partidas
+        if (!response.result.count) {
+            return {
+                error: true,
+                message: `Error inesperado: el asiento contable no tiene partidas registradas. No hay montos que convertir.<br />
+                          El asiento contable no ha sido convertido.`
+            }
+        }
+
+        let partidasAsientoContable = response.result.rows;
 
         // ajustamos las fechas para revertir la conversión que ocurre, para intentar convertir desde utc a local
         asientoContable.fecha = moment(asientoContable.fecha).add(TimeOffset, 'hours').toDate();
@@ -53,18 +82,10 @@ Meteor.methods(
             throw new Meteor.Error("meses-cerrado-en-Contab", validarMesCerradoEnContab.errMessage);
         }
 
-        // el asiento contable debe tener partidas
-        if (!asientoContable.partidas || !_.isArray(asientoContable.partidas) || !asientoContable.partidas.length) {
-            return {
-                error: true,
-                message: `Error: el asiento contable no tiene partidas registradas. No hay montos que convertir.`
-            };
-        }
-
         // la compañía debe estar definida como 'multimoneda' en Contab ...
         response = null;
         response = Async.runSync(function(done) {
-            ParametrosContab_sql.findAll({ where: { cia: asientoContable.cia }, raw: true })
+            ParametrosContab_sql.findOne({ where: { cia: asientoContable.cia }, raw: true })
                 .then(function(result) { done(null, result); })
                 .catch(function (err) { done(err, null); })
                 .done();
@@ -74,7 +95,7 @@ Meteor.methods(
             throw new Meteor.Error(response.error && response.error.message ? response.error.message : response.error.toString());
         }
 
-        if (!response.result.length) {
+        if (!response.result) {
             return {
                 error: true,
                 message: `Error inesperado: no hemos podido leer la tabla de <em>parámetros Contab</em>,
@@ -82,7 +103,7 @@ Meteor.methods(
             };
         }
 
-        let parametrosContab = response.result[0];
+        let parametrosContab = response.result;
 
         if (!parametrosContab.multiMoneda) {
             return {
@@ -107,8 +128,9 @@ Meteor.methods(
         }
 
 
-        // ----------------------------------------------------------------------------------------
+        // -------------------------------------------------------------------------------------------------
         // antes de eliminar el asiento ya convertido, averiguamos si existe (para informar al usuario)
+        // nótese que buscamos uno con moneda original diferente a moneda 
         let asientoConvertidoExiste = false;
 
         response = null;
@@ -163,29 +185,29 @@ Meteor.methods(
             asientoOriginalMonedaNacional = true;
         }
 
-        let asientoConvertido = lodash.clone(asientoContable);
-        delete asientoConvertido.numeroAutomatico;      // pk en sql server ...
+        let asientoContableConvertido = lodash.cloneDeep(asientoContable);
+        asientoContableConvertido.numeroAutomatico = 0;      // pk en sql server ...
 
         // nótese como asignamos la moneda del asiento convertido (la moneda original se mantiene)
         if (asientoOriginalMonedaNacional) {
-            asientoConvertido.moneda = monedaExtranjera.moneda;
+            asientoContableConvertido.moneda = monedaExtranjera.moneda;
         } else {
-            asientoConvertido.moneda = monedaNacional.moneda;
+            asientoContableConvertido.moneda = monedaNacional.moneda;
         }
 
         // ajustamos las fechas para revertir la conversión que ocurre, para intentar convertir desde utc a local
-        asientoConvertido.fecha = moment(asientoContable.fecha).subtract(TimeOffset, 'hours').toDate();
-        asientoConvertido.ingreso = moment(asientoContable.ingreso).subtract(TimeOffset, 'hours').toDate();
-        asientoConvertido.ultAct = moment(asientoContable.ultAct).subtract(TimeOffset, 'hours').toDate();
+        asientoContableConvertido.fecha = moment(asientoContable.fecha).subtract(TimeOffset, 'hours').toDate();
 
-        asientoConvertido.ingreso = moment().subtract(TimeOffset, 'hours').toDate();
-        asientoConvertido.ultAct = moment().subtract(TimeOffset, 'hours').toDate();
-        asientoConvertido.usuario = Meteor.user().emails[0].address;
+        asientoContableConvertido.ingreso = moment().subtract(TimeOffset, 'hours').toDate();
+        asientoContableConvertido.ultAct = moment().subtract(TimeOffset, 'hours').toDate();
+        asientoContableConvertido.usuario = Meteor.user().emails[0].address;
 
         let diferenciaDebeHaber = 0;
 
-        asientoContable.partidas.forEach((partida) => {
+        partidasAsientoContable.forEach((partida) => {
             // nótese como hacemos la conversión justo en las partidas
+            partida.numeroAutomatico = 0;      // pk en sql server ...
+
             if (asientoOriginalMonedaNacional) {
                 // el asiento a convertir es en moneda extranjera; dividimos por el factor de cambio
                 if (asientoContable.factorDeCambio != 0) {
@@ -206,11 +228,11 @@ Meteor.methods(
             partida.haber = lodash.round(partida.haber, 2);
 
             diferenciaDebeHaber += partida.debe - partida.haber;
-        });
+        })
 
 
         if (diferenciaDebeHaber != 0) {
-            let primeraPartida = asientoConvertido.partidas[0];
+            let primeraPartida = partidasAsientoContable[0];
 
             if (diferenciaDebeHaber > 0) {
                 // la diferencia es mayor que cero: restamos al debe o sumamos al haber
@@ -233,13 +255,10 @@ Meteor.methods(
             }
         }
 
-
-        // nótese como grabamos el asiento y sus partidas (Asientos/dAsientos)
+        // grabamos el asiento 
         response = null;
         response = Async.runSync(function(done) {
-            AsientosContables_sql.create(asientoConvertido, {
-                include: [{ model: dAsientosContables_sql, as: 'partidas' }],
-            })
+            AsientosContables_sql.create(asientoContableConvertido)
                 .then(function(result) { done(null, result); })
                 .catch(function (err) { done(err, null); })
                 .done();
@@ -249,18 +268,35 @@ Meteor.methods(
             throw new Meteor.Error(response.error && response.error.message ? response.error.message : response.error.toString());
         }
 
+        const savedItem = response.result.dataValues;
+
+        partidasAsientoContable.forEach((partida) => { 
+            // grabamos cada partida
+            partida.numeroAutomatico = savedItem.numeroAutomatico; 
+
+            response = null;
+            response = Async.runSync(function(done) {
+                dAsientosContables_sql.create(partida)
+                    .then(function(result) { done(null, result); })
+                    .catch(function (err) { done(err, null); })
+                    .done();
+            });
+
+            if (response.error) {
+                throw new Meteor.Error(response.error && response.error.message ? response.error.message : response.error.toString());
+            }
+        })
+
         let resultMessage = `Ok, la conversión del asiento contable se ha efectuado en forma satisfactoria. `;
 
         if (asientoConvertidoExiste) {
-            resultMessage += `<br />
-                              (Nota: el asiento convertido <b>ya existía</b>.
-                               Fue sustituído por el resultado de esta operación)`;
+            resultMessage += `<br />(Nota: el asiento convertido <b>ya existía</b>.
+                              Fue sustituído por el resultado de esta operación)`;
         }
 
         return {
             error: false,
             message: resultMessage
         };
-
     }
-});
+})

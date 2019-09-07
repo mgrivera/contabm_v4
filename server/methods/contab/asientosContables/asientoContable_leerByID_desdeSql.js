@@ -1,9 +1,7 @@
 
 import moment from 'moment';
-import { sequelize } from '/server/sqlModels/_globals/_loadThisFirst/_globals';
 import { TimeOffset } from '/globals/globals'; 
 
-import { AsientosContables } from '/imports/collections/contab/asientosContables'; 
 import { AsientosContables_sql, dAsientosContables_sql } from '/server/imports/sqlModels/contab/asientosContables'; 
 
 Meteor.methods(
@@ -18,20 +16,21 @@ Meteor.methods(
                 .then(function(result) { done(null, result); })
                 .catch(function (err) { done(err, null); })
                 .done();
-        });
+        })
 
-        if (response.error)
+        if (response.error) { 
             throw new Meteor.Error(response.error && response.error.message ? response.error.message : response.error.toString());
+        }
 
         if (!response.result.length) {
-            let message = `Error inesperado: no hemos podido leer, en la base de datos, el asiento contable,
-                           cuyo número automático (pk) es: <b>${numeroAutomatico.toString()}<b/>.`;
-
-            throw new Meteor.Error("validationErrors", error.invalidKeys.toString());
-        };
-
-        // eliminamos el asiento en mongo; al menos por ahora, para el current user
-        AsientosContables.remove({ numeroAutomatico: numeroAutomatico, user: this.userId });
+            // si el asiento no es encontrado, probablemente es porqué el usuario lo eliminó, pero siempre se ejecuta 
+            // este método luego de hacer click en Grabar. 
+            return { 
+                error: false, 
+                message: '', 
+                asientoContable: JSON.stringify({}), 
+            }
+        }
 
         let asientoContable = response.result[0];
 
@@ -51,33 +50,24 @@ Meteor.methods(
                     .done();
             });
 
-            if (response.error)
+            if (response.error) { 
                 throw new Meteor.Error(response.error && response.error.message ? response.error.message : response.error.toString());
-
+            }
+                
             if (response.result.count > 0) {
 
                 asientoContable.partidas = [];
 
                 response.result.rows.forEach((partida) => {
-                    partida._id =  new Mongo.ObjectID()._str;
                     asientoContable.partidas.push(partida);
                 });
-            };
-
-            // finalmente, grabamos el asiento contable (y sus partidas) a mongo
-            asientoContable._id = new Mongo.ObjectID()._str;
-            asientoContable.user = Meteor.userId();
-
-            AsientosContables.insert(asientoContable, function (error, result) {
-                if (error) { 
-                    throw new Meteor.Error("validationErrors", error.invalidKeys.toString());
-                }   
-            })
+            }
         }
 
-        return {
-            pkAsientoContale: asientoContable.numeroAutomatico,
-            asientoContableMongoID: asientoContable._id
-        };
+        return { 
+            error: false, 
+            message: '', 
+            asientoContable: JSON.stringify(asientoContable), 
+        }
     }
 })

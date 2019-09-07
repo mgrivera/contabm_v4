@@ -1,6 +1,7 @@
 
 
 import lodash from 'lodash';
+import moment from 'moment'; 
 import saveAs from 'save-as'
 import { Monedas } from '/imports/collections/monedas';
 
@@ -9,7 +10,7 @@ import { CompaniaSeleccionada } from '/imports/collections/companiaSeleccionada'
 import { TiposAsientoContable } from '/imports/collections/contab/tiposAsientoContable'; 
 import { CuentasContables2 } from '/imports/collections/contab/cuentasContables2';  
 import { ParametrosGlobalBancos } from '/imports/collections/bancos/parametrosGlobalBancos'; 
-import { AsientosContables } from '/imports/collections/contab/asientosContables'; 
+import { AsientosContables_SimpleSchema } from '/imports/collections/contab/asientosContables'; 
 
 import { DialogModal } from '/client/imports/general/genericUIBootstrapModal/angularGenericModal'; 
 import { mensajeErrorDesdeMethod_preparar } from '/client/imports/clientGlobalMethods/mensajeErrorDesdeMethod_preparar'; 
@@ -50,6 +51,9 @@ function ($scope, $stateParams, $state, $meteor, $modal, uiGridConstants) {
         }
     })
 
+    // ------------------------------------------------------------------------------------------------
+    // para validar que la fecha del asiento contable, cuando es editada, no cambie a un mes diferente 
+    let _fechaOriginalAsientoContable = null;
 
     $scope.origen = $stateParams.origen;
     $scope.id = $stateParams.id;
@@ -150,6 +154,16 @@ function ($scope, $stateParams, $state, $meteor, $modal, uiGridConstants) {
 
     $scope.refresh0 = function () {
 
+        if ($scope.asientoContable && $scope.asientoContable.docState && $scope.asientoContable.docState == 1) {
+            var promise = DialogModal($modal,
+                                    "<em>Asientos contables</em>",
+                                    `Ud. está ahora agregando un <em>nuevo</em> registro; no hay nada que refrescar.<br />
+                                     Ud. puede hacer un <em>click</em> en <em>Nuevo</em> para deshacer esta operación y comenzar de nuevo.
+                                    `,
+                                    false);
+            return;
+        }
+
         if ($scope.asientoContable.docState && $scope.origen == 'edicion') {
             var promise = DialogModal($modal,
                                     "<em>Asientos contables</em>",
@@ -166,58 +180,14 @@ function ($scope, $stateParams, $state, $meteor, $modal, uiGridConstants) {
 
             return;
         }
-        else
+        else { 
             $scope.refresh();
+        }
     }
 
     $scope.refresh = () => {
-
-        // hacemos un nuevo subscribe para volver a leer el asiento contable; solo desde mongo; desde la lista,
-        // se leyó el asiento contable desde sql server y se grabó a mongo; al refrescar, lo volvemos a leer, tal
-        // como fue grabado en mongo ...
-        $scope.showProgress = true;
-
-        Meteor.subscribe('asientosContables', JSON.stringify({ _id: $scope.id }), () => {
-
-            $scope.asientoContable = {};
-            $scope.partidas_ui_grid.data = [];
-
-            $scope.helpers({
-                asientoContable: () => {
-                    return AsientosContables.findOne({ _id: $scope.id });
-                }
-            })
-
-            // guardamos, en una propiedad separada, la fecha del asiento; esto nos permitirá validar 2 cosas, aún
-            // si el usuario cambia la fecha del asiento:
-            // 1.- que no se cambie a un mes diferente (esto podría permitirse, pero tomando en cuenta varios criterios)
-            // 2.- que el asiento no corresponda a un mes cerrado (y su fecha sea cambiada a uno que no lo es)
-            fechaOriginalAsientoContable = $scope.asientoContable && $scope.asientoContable.fecha ? $scope.asientoContable.fecha : null;
-
-            $scope.partidas_ui_grid.data = [];
-            if ($scope.asientoContable && Array.isArray($scope.asientoContable.partidas)) { 
-                $scope.partidas_ui_grid.data = $scope.asientoContable.partidas;
-            }
-
-            let result = {}; 
-
-            if ($scope.asientoContable && Array.isArray($scope.asientoContable.partidas)) { 
-                result = revisarSumasIguales($scope.asientoContable.partidas);
-            }
-               
-            $scope.alerts.length = 0; 
-            if (result.error) {
-                // eliminamos '//'; parece que ts lo agrega cuando encuentra un string con algunos caracteres especiales, 
-                // como new line ... 
-                let message = result.message.replace(/\/\//gi, "");
-                $scope.alerts.push({ type: 'warning', msg: message });
-            }
-
-            $scope.showProgress = false;
-            $scope.$apply();
-        })
+        asientoContable_leerById_desdeSqlServer($scope.asientoContable.numeroAutomatico);
     }
-
 
     $scope.imprimir = () => {
 
@@ -274,8 +244,8 @@ function ($scope, $stateParams, $state, $meteor, $modal, uiGridConstants) {
                                     "Ha ocurrido un error al intentar ejecutar esta función:<br />" +
                                     message,
                                     false).then();
-            };
-        };
+            }
+        }
     }
 
     $scope.importarAsientoContable = function() {
@@ -686,10 +656,10 @@ function ($scope, $stateParams, $state, $meteor, $modal, uiGridConstants) {
         },
         // para reemplazar el field '$$hashKey' con nuestro propio field, que existe para cada row ...
         rowIdentity: function (row) {
-            return row._id;
+            return `${row.numeroAutomatico.toString()}-${row.partida.toString()}`; 
         },
         getRowIdentity: function (row) {
-            return row._id;
+            return `${row.numeroAutomatico.toString()}-${row.partida.toString()}`; 
         }
     }
 
@@ -871,7 +841,7 @@ function ($scope, $stateParams, $state, $meteor, $modal, uiGridConstants) {
         let ultimaPartida = lodash.last( lodash.sortBy($scope.asientoContable.partidas, (x) => { return x.partida; }) );
 
         let partida = {
-            _id: new Mongo.ObjectID()._str,
+            numeroAutomatico: $scope.asientoContable.numeroAutomatico,
             partida: 10,
             debe: 0,
             haber: 0,
@@ -934,17 +904,17 @@ function ($scope, $stateParams, $state, $meteor, $modal, uiGridConstants) {
         let isValid = false;
         let errores = [];
 
-        // para que el usuario tenga una mejor experiencia al registrar el asiento, agregamos siempre una nueva partida a la lista. Por ésto, 
-        // siempre va a haber una partida de más en el array. La eliminamos pues no pasaría la validación ... 
+        // para que el usuario tenga una mejor experiencia al registrar el asiento, agregamos siempre una nueva partida a la lista. 
+        // Por ésto, siempre va a haber una partida de más en el array. La eliminamos pues no pasaría la validación ... 
         if (editedItem && editedItem.partidas && Array.isArray(editedItem.partidas) && editedItem.partidas.length) { 
             lodash.remove(editedItem.partidas, (p) => { return p.docState === 0; }); 
         }
 
         if (editedItem.docState != 3) {
-            isValid = AsientosContables.simpleSchema().namedContext().validate(editedItem);
+            isValid = AsientosContables_SimpleSchema.namedContext().validate(editedItem);
 
             if (!isValid) {
-                AsientosContables.simpleSchema().namedContext().validationErrors().forEach(function (error) {
+                AsientosContables_SimpleSchema.namedContext().validationErrors().forEach(function (error) {
                     errores.push("El valor '" + error.value + "' no es adecuado para el campo '" + error.name + "'; error de tipo '" + error.type + ".");
                 });
             }
@@ -970,7 +940,7 @@ function ($scope, $stateParams, $state, $meteor, $modal, uiGridConstants) {
         }
 
         $scope.partidas_ui_grid.data = [];
-        Meteor.call('asientosContablesSave', editedItem, fechaOriginalAsientoContable, (err, result) => {
+        Meteor.call('asientosContablesSave', editedItem, _fechaOriginalAsientoContable, (err, result) => {
 
             if (err) {
 
@@ -988,19 +958,13 @@ function ($scope, $stateParams, $state, $meteor, $modal, uiGridConstants) {
                 return;
             }
 
-            if ($scope.asientoContable && $scope.asientoContable.numeroAutomatico == 0) {
-                // cuando el asiento es nuevo, hacemos un refresh(). El resultado es que el asiento es leído desde la
-                // base de datos, con todos sus valores, tal como se determinaron en el servidor: número automático (pk),
-                // mes y año fiscal, número del asiento, etc.
+            $scope.id = result.id;
 
-                // nota: cuando el usuario elimine un asiento, éste será eliminado de mongo y, por efecto de reactividad,
-                // $scope.asientoContable será undefined ...
-                $scope.id = $scope.asientoContable._id;  // asiento nuevo: $scope.id siempre es cero (hasta que lo grabamos)
-                $scope.refresh();
-            }
-            else {
-                $scope.refresh();
-            }
+            // nótese que siempre, al registrar cambios, leemos el registro desde sql server; la idea es
+            // mostrar los datos tal como fueron grabados y refrescarlos para el usuario. Cuando el
+            // usuario elimina el registro, su id debe regresar en -999 e InicializarItem no debe
+            // encontrar nada ...
+            inicializarItem($scope.id);
         })
     }
 
@@ -1040,48 +1004,46 @@ function ($scope, $stateParams, $state, $meteor, $modal, uiGridConstants) {
 
         $scope.showProgress = true;
 
-        $meteor.call('contab_asignarNumeroAsientoContab', $scope.asientoContable.numeroAutomatico).then(
-            function (data) {
+        Meteor.call('contab_asignarNumeroAsientoContab', $scope.asientoContable.numeroAutomatico, (err, result) => {
 
-                $scope.alerts.length = 0;
-                $scope.alerts.push({
-                    type: 'info',
-                    msg: data
-                });
+            if (err) {
 
-                $scope.showProgress = false;
-            },
-            function (err) {
-
-                let errorMessage = "<b>Error:</b> se ha producido un error al intentar ejecutar la operación.";
-                if (err.errorType)
-                    errorMessage += " (" + err.errorType + ")";
-
-                errorMessage += "<br />";
-
-                if (err.message)
-                    // aparentemente, Meteor compone en message alguna literal que se regrese en err.reason ...
-                    errorMessage += err.message + " ";
-                else {
-                    if (err.reason)
-                        errorMessage += err.reason + " ";
-
-                    if (err.details)
-                        errorMessage += "<br />" + err.details;
-                }
-
-                if (!err.message && !err.reason && !err.details)
-                    errorMessage += err.toString();
-
-
-                $scope.alerts.length = 0;
-                $scope.alerts.push({
+                let errorMessage = mensajeErrorDesdeMethod_preparar(err);
+                
+                $scope.$parent.alerts.length = 0;
+                $scope.$parent.alerts.push({
                     type: 'danger',
                     msg: errorMessage
                 });
-
+    
                 $scope.showProgress = false;
-            });
+                $scope.$apply();
+    
+                return;
+            }
+
+            if (result.error) {
+
+                $scope.$parent.alerts.length = 0;
+                $scope.$parent.alerts.push({
+                    type: 'danger',
+                    msg: result.message
+                });
+    
+                $scope.showProgress = false;
+                $scope.$apply();
+    
+                return;
+            }
+
+            $scope.id = result.asientoContableID;
+
+            // nótese que siempre, al registrar cambios, leemos el registro desde sql server; la idea es
+            // mostrar los datos tal como fueron grabados y refrescarlos para el usuario. Cuando el
+            // usuario elimina el registro, su id debe regresar en -999 e InicializarItem no debe
+            // encontrar nada ...
+            inicializarItem($scope.id);
+        })
     }
 
 
@@ -1137,9 +1099,7 @@ function ($scope, $stateParams, $state, $meteor, $modal, uiGridConstants) {
 
         $scope.showProgress = true;
 
-        Meteor.call('contab.asientos.convertir',
-                $scope.asientoContable.numeroAutomatico,
-                (err, result) => {
+        Meteor.call('contab.asientos.convertir', $scope.asientoContable.numeroAutomatico, (err, result) => {
 
                 if (err) {
                 let errorMessage = mensajeErrorDesdeMethod_preparar(err);
@@ -1164,7 +1124,7 @@ function ($scope, $stateParams, $state, $meteor, $modal, uiGridConstants) {
 
                 $scope.showProgress = false;
                 $scope.$apply();
-        });
+        })
     }
 
 
@@ -1266,8 +1226,6 @@ function ($scope, $stateParams, $state, $meteor, $modal, uiGridConstants) {
         },
     });
 
-    let fechaOriginalAsientoContable = null;
-
     function inicializarItem() {
 
         $scope.showProgress = true;
@@ -1276,7 +1234,7 @@ function ($scope, $stateParams, $state, $meteor, $modal, uiGridConstants) {
             let usuario = Meteor.users.findOne(Meteor.userId());
             let monedaDefecto = Monedas.findOne({ defaultFlag: true });
             let tipoAsientoDefecto = ParametrosGlobalBancos.findOne();
-            fechaOriginalAsientoContable = null;
+            _fechaOriginalAsientoContable = null;
 
             if (!monedaDefecto) {
                 DialogModal($modal, "<em>Asientos contables</em>",
@@ -1301,8 +1259,7 @@ function ($scope, $stateParams, $state, $meteor, $modal, uiGridConstants) {
                 return;
             }
 
-            $scope.asientoContable = {  _id: new Mongo.ObjectID()._str,
-                                        numeroAutomatico: 0,
+            $scope.asientoContable = {  numeroAutomatico: 0,
                                         mes: 0,
                                         ano: 0,
                                         mesFiscal: 0,
@@ -1314,64 +1271,104 @@ function ($scope, $stateParams, $state, $meteor, $modal, uiGridConstants) {
                                         partidas: [],
                                         ingreso: new Date(),
                                         ultAct: new Date(),
-                                        user: Meteor.userId(),
+                                        copiableFlag: false, 
                                         usuario: usuario.emails[0].address,
                                         cia: companiaContabSeleccionada.numero,
                                         docState: 1
                                     };
 
-            $scope.agregarPartida();        // para que el asiento nuevo venga con una partida y el usuario no tenga que hacer un click en Nuevo ... 
+            // para que el asiento nuevo venga con una partida y el usuario no tenga que hacer un click en Nuevo ... 
+            $scope.agregarPartida();        
 
             $scope.partidas_ui_grid.data = [];
             $scope.partidas_ui_grid.data = $scope.asientoContable.partidas;
-                
+            
+            $scope.$parent.alerts.length = 0;
             $scope.showProgress = false;
         }
         else {
-
-            let filtro = {
-                _id: $scope.id,
-            };
-
-            // cuando el usuario selecciona el asiento en la lista (asientosContablesList), alli, con
-            // un Meteor method se lee desde sql y se graba a mongo; ahora suscribimos para leerlo
-            // desde mongo y mostrarlo en esta página
-            Meteor.subscribe('asientosContables', JSON.stringify(filtro), () => {
-
-                $scope.helpers({
-                    asientoContable: () => {
-                    return AsientosContables.findOne({ _id: $scope.id });
-                    }
-                });
-
-                // guardamos, en una propiedad separada, la fecha del asiento; esto nos permitirá validar 2 cosas, aún
-                // si el usuario cambia la fecha del asiento:
-                // 1) que no se cambie a un mes diferente (esto podría permitirse, pero tomando en cuenta varios criterios)
-                // 2) que el asiento no corresponda a un mes cerrado (y su fecha sea cambiada a uno que no lo es)
-                fechaOriginalAsientoContable = $scope.asientoContable ? $scope.asientoContable.fecha : null;
-
-                $scope.partidas_ui_grid.data = [];
-
-                if (lodash.isArray($scope.asientoContable.partidas)) { 
-                    $scope.partidas_ui_grid.data = $scope.asientoContable.partidas;
-                }
-
-                let result = revisarSumasIguales($scope.asientoContable.partidas); 
-
-                if (result.error) { 
-                    let message = result.message.replace(/\/\//gi, "");
-                    $scope.alerts.push({ type: 'warning', msg: message });
-                }
-
-                $scope.showProgress = false;
-                $scope.$apply();
-            })
+            asientoContable_leerById_desdeSqlServer(parseInt($scope.id));
         }
     }
 
     inicializarItem();
+
+    function asientoContable_leerById_desdeSqlServer(pk) {
+
+        $scope.showProgress = true;
+
+        Meteor.call('asientoContable_leerByID_desdeSql', pk, (err, result) => {
+
+            if (err) {
+                let errorMessage = mensajeErrorDesdeMethod_preparar(err);
+
+                $scope.alerts.length = 0;
+                $scope.alerts.push({
+                    type: 'danger',
+                    msg: errorMessage
+                });
+
+                $scope.showProgress = false;
+                $scope.$apply();
+                return;
+            }
+
+            if (result.error) {
+                $scope.alerts.length = 0;
+                $scope.alerts.push({
+                    type: 'danger',
+                    msg: result.message
+                });
+
+                $scope.showProgress = false;
+                $scope.$apply();
+                return;
+            }
+
+            $scope.asientoContable = {};
+            $scope.asientoContable = JSON.parse(result.asientoContable);
+
+            if (!$scope.asientoContable || lodash.isEmpty($scope.asientoContable)) {
+                // el usuario eliminó el registro y, por eso, no pudo se leído desde sql
+                $scope.asientoContable = {};
+
+                $scope.showProgress = false;
+                $scope.$apply();
+
+                return;
+            }
+
+            // las fechas vienen serializadas como strings; convertimos nuevamente a dates
+            $scope.asientoContable.fecha = $scope.asientoContable.fecha ? moment($scope.asientoContable.fecha).toDate() : null;
+            $scope.asientoContable.ingreso = $scope.asientoContable.ingreso ? moment($scope.asientoContable.ingreso).toDate() : null;
+            $scope.asientoContable.ultAct = $scope.asientoContable.ultAct ? moment($scope.asientoContable.ultAct).toDate() : null;
+
+            // guardamos, en una propiedad separada, la fecha del asiento; esto nos permitirá validar 2 cosas, aún
+            // si el usuario cambia la fecha del asiento:
+            // 1) que no se cambie a un mes diferente (esto podría permitirse, pero tomando en cuenta varios criterios)
+            // 2) que el asiento no corresponda a un mes cerrado (y su fecha sea cambiada a uno que no lo es)
+            _fechaOriginalAsientoContable = $scope.asientoContable ? $scope.asientoContable.fecha : null;
+
+            $scope.partidas_ui_grid.data = [];
+
+            if (Array.isArray($scope.asientoContable.partidas)) {
+                $scope.partidas_ui_grid.data = $scope.asientoContable.partidas;
+            }
+
+            const result2 = revisarSumasIguales($scope.asientoContable.partidas);
+
+            if (result2.error) {
+                let message = result.message.replace(/\/\//gi, "");
+                $scope.alerts.push({ type: 'warning', msg: message });
+            }
+
+            $scope.$parent.alerts.length = 0;
+            $scope.showProgress = false;
+            $scope.$apply();
+        })
+    }
   }
-]);
+])
 
 function montoConMasDeDosDecimales(partidas) {
     // verificamos que ninguna de las partidas en el array, tenga más de dos decimales en su monto

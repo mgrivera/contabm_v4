@@ -11,17 +11,16 @@ function ($scope, $modalInstance, $modal, $state, provieneDe, entidadID, ciaSele
     // entidades son: bancos, facturas, nomina, pagos, etc.
 
     // un ejemplo de un asiento asociado a un movimiento bancario, tendría estos valores en estos
-    // campos: ProvieneDe: 'Bancos', ProvieneDe_ID: claveUnica del movimiento bancario.
+    // campos: ProvieneDe: 'Bancos', ProvieneDe_ID: pk del movimiento bancario.
 
     // origen: edicion/consulta; la idea es permitir o no editar el asiento contable mostrado o
     // permtir construir uno ...
 
-    // ui-bootstrap alerts ...
     $scope.alerts = [];
 
     $scope.closeAlert = function (index) {
         $scope.alerts.splice(index, 1);
-    };
+    }
 
     $scope.companiaSeleccionada = ciaSeleccionada;
 
@@ -34,7 +33,7 @@ function ($scope, $modalInstance, $modal, $state, provieneDe, entidadID, ciaSele
 
     $scope.cancel = function () {
         $modalInstance.dismiss("Cancel");
-    };
+    }
 
     $scope.origen = origen;
     $scope.asientosContablesAsociadosList = [];
@@ -76,52 +75,22 @@ function ($scope, $modalInstance, $modal, $state, provieneDe, entidadID, ciaSele
         $scope.$apply();
     })
 
-
     $scope.mostrarAsientoSeleccionado = (asientoContableID) => {
 
         $scope.showProgress = false;
 
-        // cerramos el modal y regresamos el pk del asiento seleccionado ...
-        // $scope.ok(asientoContableID);
+        const url2 = $state.href('contab.asientosContables.asientoContable',
+            {
+                origen: origen,
+                id: asientoContableID,
+                pageNumber: 0,
+                vieneDeAfuera: true
+            });
 
-        // ejecutamos un método para leer el asiento contable en sql server y grabarlo a mongo
-        // (para el current user)
-        Meteor.call('asientoContable_leerByID_desdeSql', asientoContableID, (err, result) => {
+        window.open(url2, '_blank');
 
-            if (err) {
-
-                let errorMessage = mensajeErrorDesdeMethod_preparar(err);
-
-                $scope.alerts.length = 0;
-                $scope.alerts.push({
-                    type: 'danger',
-                    msg: errorMessage
-                });
-
-                $scope.showProgress = false;
-                $scope.$apply();
-
-                return;
-            };
-
-            let filtro = {
-                _id: result.asientoContableMongoID
-            };
-
-            // nótese como angular nos permite abrir un route desde el code y, con window.open, en otro Tab! ...
-            var url2 = $state.href('contab.asientosContables.asientoContable',
-                                   {
-                                       origen: origen,
-                                       id: result.asientoContableMongoID,
-                                       pageNumber: 0,
-                                       vieneDeAfuera: true
-                                   });
-
-            window.open(url2, '_blank');
-
-            $scope.showProgress = false;
-        });
-    };
+        $scope.showProgress = false;
+    }
 
     $scope.agregarAsientoContable = () => {
 
@@ -214,5 +183,4 @@ function ($scope, $modalInstance, $modal, $state, provieneDe, entidadID, ciaSele
             })
         })
     }
-}
-]);
+}])

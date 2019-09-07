@@ -44,7 +44,7 @@ Meteor.methods(
         }
 
 
-        let usuario = Meteor.users.findOne(Meteor.userId());
+        const usuario = Meteor.users.findOne(Meteor.userId());
         let docState = pago.docState;
 
         if (pago.docState == 1) {
@@ -72,7 +72,7 @@ Meteor.methods(
             // el registro, luego de ser grabado en sql, es regresado en response.result.dataValues ...
             let savedItem = response.result.dataValues;
             pago.claveUnica = savedItem.claveUnica;
-        };
+        }
 
 
         if (pago.docState == 2) {
@@ -85,7 +85,6 @@ Meteor.methods(
             pago_sql.fecha = pago_sql.fecha ? moment(pago_sql.fecha).subtract(TimeOffset, 'hours').toDate() : null;
             pago_sql.ingreso = pago_sql.ingreso ? moment(pago_sql.ingreso).subtract(TimeOffset, 'hours').toDate() : null;
 
-            let usuario = Meteor.users.findOne(this.userId);
             pago_sql.ultAct = moment(new Date()).subtract(TimeOffset, 'hours').toDate();
             pago_sql.usuario = usuario.emails[0].address;
 
@@ -101,7 +100,7 @@ Meteor.methods(
             if (response.error) {
                 throw new Meteor.Error(response.error && response.error.message ? response.error.message : response.error.toString());
             }
-        };
+        }
 
 
         if (pago.docState == 3) {
@@ -116,7 +115,7 @@ Meteor.methods(
             if (response.error) {
                 throw new Meteor.Error(response.error && response.error.message ? response.error.message : response.error.toString());
             }
-        };
+        }
 
         let tempPago = null;
 
@@ -158,7 +157,7 @@ Meteor.methods(
             // para localizar, nosotros lo sumamos para contrarestar este efecto
             // ahora tenemos una variable 'global' que sirve de 'offset' ...
             tempPago.fecha = tempPago.fecha ? moment(tempPago.fecha).add(TimeOffset, 'hours').toDate() : null;
-        };
+        }
 
 
         if (docState == 1) {

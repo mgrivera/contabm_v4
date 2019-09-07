@@ -1,4 +1,6 @@
 
+
+import lodash from 'lodash'; 
 import moment from 'moment';
 import { Monedas } from '/imports/collections/monedas';
 import { DialogModal } from '/client/imports/general/genericUIBootstrapModal/angularGenericModal'; 
@@ -287,11 +289,11 @@ angular.module("contabm").controller("Bancos_Pagos_Pago_Controller",
             var promise = DialogModal($modal,
                                     "<em>Bancos - Pagos</em>",
                                     `Ud. está ahora agregando un <em>nuevo</em> registro; no hay nada que refrescar.<br />
-                                        Ud. puede hacer un <em>click</em> en <em>Nuevo</em> para deshacer esta operación y comenzar de nuevo.
+                                     Ud. puede hacer un <em>click</em> en <em>Nuevo</em> para deshacer esta operación y comenzar de nuevo.
                                     `,
                                     false);
             return;
-        };
+        }
 
         if ($scope.pago.docState && $scope.origen == 'edicion') {
             var promise = DialogModal($modal,
@@ -309,8 +311,9 @@ angular.module("contabm").controller("Bancos_Pagos_Pago_Controller",
 
             return;
         }
-        else
+        else { 
             $scope.refresh();
+        }  
     }
 
       $scope.refresh = () => {
@@ -502,7 +505,7 @@ angular.module("contabm").controller("Bancos_Pagos_Pago_Controller",
         $scope.showProgress = true;
 
         // obtenemos un clone de los datos a guardar ...
-        let editedItem = _.cloneDeep($scope.pago);
+        let editedItem = lodash.cloneDeep($scope.pago);
 
         // nótese como intentamos hacer un clean() al schema para que se establezcan sus default values y, en general,
         // simple-schema "limpie" el objeto usando el schema como base ...
@@ -625,6 +628,9 @@ angular.module("contabm").controller("Bancos_Pagos_Pago_Controller",
 
     function pago_leerByID_desdeSql(pk) {
         // ejecutamos un método para leer el pago desde sql server
+
+        $scope.showProgress = true;
+        
         Meteor.call('pago.leerByID.desdeSql', pk, (err, result) => {
 
             if (err) {

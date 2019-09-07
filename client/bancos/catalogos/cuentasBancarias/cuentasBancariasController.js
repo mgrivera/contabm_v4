@@ -5,7 +5,6 @@ import lodash from 'lodash';
 import { CompaniaSeleccionada } from '/imports/collections/companiaSeleccionada';
 import { Companias } from '/imports/collections/companias';
 import { Monedas } from '/imports/collections/monedas'; 
-import { CuentasContables2 } from '/imports/collections/contab/cuentasContables2'; 
 import { Bancos } from '/imports/collections/bancos/bancos';
 import { Chequeras } from '/imports/collections/bancos/chequeras'; 
 
@@ -34,7 +33,6 @@ angular.module("contabm.bancos.catalogos").controller("Catalogos_CuentasBancaria
         companiaSeleccionadaDoc = Companias.findOne(companiaSeleccionada.companiaID, { fields: { numero: true, nombre: true, nombreCorto: true } });
     }
         
-
     $scope.companiaSeleccionada = {};
 
     if (companiaSeleccionadaDoc) { 
@@ -519,10 +517,7 @@ angular.module("contabm.bancos.catalogos").controller("Catalogos_CuentasBancaria
     }
 
 
-    $scope.cuentasContablesLista = CuentasContables2.find({ cia: companiaSeleccionadaDoc.numero, totDet: 'D', actSusp: 'A' },
-                                                            { sort: { cuenta: true }}).fetch();
-    $scope.cuentasContablesLista.forEach((x) => { x.cuentaDescripcionCia = x.cuentaDescripcionCia(); })
-
+    $scope.cuentasContablesLista = []; 
 
     $scope.cuentasBancarias_ui_grid.columnDefs = [
         {
@@ -632,9 +627,9 @@ angular.module("contabm.bancos.catalogos").controller("Catalogos_CuentasBancaria
 
             editableCellTemplate: 'ui-grid/dropdownEditor',
             editDropdownIdLabel: 'id',
-            editDropdownValueLabel: 'cuentaDescripcionCia',
+            editDropdownValueLabel: 'descripcion',
             editDropdownOptionsArray: $scope.cuentasContablesLista,
-            cellFilter: 'mapDropdown:row.grid.appScope.cuentasContablesLista:"id":"cuentaDescripcionCia"',
+            cellFilter: 'mapDropdown:row.grid.appScope.cuentasContablesLista:"id":"descripcion"',
 
             enableColumnMenu: false,
             enableCellEdit: true,
@@ -651,9 +646,9 @@ angular.module("contabm.bancos.catalogos").controller("Catalogos_CuentasBancaria
 
             editableCellTemplate: 'ui-grid/dropdownEditor',
             editDropdownIdLabel: 'id',
-            editDropdownValueLabel: 'cuentaDescripcionCia',
+            editDropdownValueLabel: 'descripcion',
             editDropdownOptionsArray: $scope.cuentasContablesLista,
-            cellFilter: 'mapDropdown:row.grid.appScope.cuentasContablesLista:"id":"cuentaDescripcionCia"',
+            cellFilter: 'mapDropdown:row.grid.appScope.cuentasContablesLista:"id":"descripcion"',
 
             enableColumnMenu: false,
             enableCellEdit: true,
@@ -1212,6 +1207,101 @@ angular.module("contabm.bancos.catalogos").controller("Catalogos_CuentasBancaria
             })
     }
 
+    $scope.save = function () {
+        $scope.showProgress = true;
+
+        let editedItems = lodash.filter($scope.chequerasList, function (item) { return item.docState; });
+
+        // nótese como validamos cada item antes de intentar guardar (en el servidor)
+        let isValid = false;
+        let errores = [];
+
+        editedItems.forEach((item) => {
+            if (item.docState != 3) {
+                isValid = Chequeras.simpleSchema().namedContext().validate(item);
+
+                if (!isValid) {
+                    Chequeras.simpleSchema().namedContext().validationErrors().forEach(function (error) {
+                        errores.push("El valor '" + error.value + "' no es adecuado para el campo <b><em>" + Chequeras.simpleSchema().label(error.name) + "</b></em>; error de tipo '" + error.type + ".");
+                    });
+                }
+            }
+        })
+
+        if (errores && errores.length) {
+            $scope.alerts.length = 0;
+            $scope.alerts.push({
+                type: 'danger',
+                msg: "Se han encontrado errores al intentar guardar las modificaciones efectuadas en la base de datos:<br /><br />" +
+                    errores.reduce(function (previous, current) {
+
+                        if (previous == "")
+                            // first value
+                            return current;
+                        else
+                            return previous + "<br />" + current;
+                    }, "")
+            });
+
+            $scope.showProgress = false;
+            return;
+        }
+
+        $meteor.call('bancos.chequerasSave', editedItems).then(
+            function (data) {
+
+                $scope.alerts.length = 0;
+                $scope.alerts.push({
+                    type: 'info',
+                    msg: data
+                });
+
+                // por alguna razón, que aún no entendemos del todo, si no hacemos el subscribe nuevamente,
+                // se queda el '*' para registros nuevos en el ui-grid ...
+                $scope.chequerasList = [];
+                $scope.chequeras_ui_grid.data = [];
+
+                let filtro = { numeroCuenta: cuentaBancariaSeleccionada.cuentaInterna };
+
+                if (chequerasSubscriptionHandle) {
+                    chequerasSubscriptionHandle.stop();
+                }
+
+                chequerasSubscriptionHandle =
+                    Meteor.subscribe('chequeras', JSON.stringify(filtro), () => {
+                        $scope.helpers({
+                            chequerasList: () => {
+                                return Chequeras.find(
+                                    {
+                                        numeroCuenta: cuentaBancariaSeleccionada.cuentaInterna
+                                    },
+                                    {
+                                        sort: { numeroChequera: 1 }
+                                    });
+                            },
+                        })
+
+                        $scope.chequeras_ui_grid.data = $scope.chequerasList;
+
+                        $scope.cuentaBancaria_ChequeraSeleccionada = bancoSeleccionado.nombre + " - " +
+                            cuentaBancariaSeleccionada.cuentaBancaria;
+
+                        $scope.showProgress = false;
+                        $scope.$apply();
+                    });
+            },
+            function (err) {
+                let errorMessage = mensajeErrorDesdeMethod_preparar(err);
+
+                $scope.alerts.length = 0;
+                $scope.alerts.push({
+                    type: 'danger',
+                    msg: errorMessage
+                });
+
+                $scope.showProgress = false;
+            })
+    }
 
     $scope.helpers({
         bancos: () => {
@@ -1219,111 +1309,94 @@ angular.module("contabm.bancos.catalogos").controller("Catalogos_CuentasBancaria
         }
     })
 
+    $scope.bancos_ui_grid.data = $scope.bancos;
+    $scope.agencias_ui_grid.data = [];
+    $scope.cuentasBancarias_ui_grid.data = [];
+    $scope.chequeras_ui_grid.data = [];
 
-    $scope.save = function () {
-         $scope.showProgress = true;
+    // detenemos los publishers cuando el usuario deja la página
+    $scope.$on("$destroy", () => {
+        if (chequerasSubscriptionHandle && chequerasSubscriptionHandle.stop) {
+            chequerasSubscriptionHandle.stop();
+        }
+    })
 
-         let editedItems = lodash.filter($scope.chequerasList, function (item) { return item.docState; });
+    // =================================================================================================================
+    // para que estén desde el inicio, leemos las cuentas contables que el usuario ha registrado antes aqui 
+    let listaCuentasContablesIDs = [];
 
-         // nótese como validamos cada item antes de intentar guardar (en el servidor)
-         let isValid = false;
-         let errores = [];
+    // construimos la lista de cuentas contables. En este caso, no es muy simple, pues debemos leer las cuentas bancarias de la 
+    // compañía contab, en agencias, en bancos ... 
+    $scope.bancos.forEach((b) => {
+        b.agencias.forEach((a) => {
+            const cuentasBancarias = a.cuentasBancarias.filter((c) => c.cia === $scope.companiaSeleccionada.numero)
+            cuentasBancarias.forEach((c) => {
+                if (c.cuentaContable) {
+                    // primero la buscamos, para no repetirla 
+                    const cuenta = listaCuentasContablesIDs.find(x => x === c.cuentaContable); 
 
-         editedItems.forEach((item) => {
-             if (item.docState != 3) {
-                 isValid = Chequeras.simpleSchema().namedContext().validate(item);
+                    if (!cuenta) { 
+                        listaCuentasContablesIDs.push(c.cuentaContable);
+                    }
+                }
 
-                 if (!isValid) {
-                     Chequeras.simpleSchema().namedContext().validationErrors().forEach(function (error) {
-                         errores.push("El valor '" + error.value + "' no es adecuado para el campo <b><em>" + Chequeras.simpleSchema().label(error.name) + "</b></em>; error de tipo '" + error.type + ".");
-                     });
-                 }
-             }
-         })
+                if (c.cuentaContableGastosIDB) {
+                    // primero la buscamos, para no repetirla 
+                    const cuenta = listaCuentasContablesIDs.find(x => x === c.cuentaContableGastosIDB); 
 
-         if (errores && errores.length) {
-             $scope.alerts.length = 0;
-             $scope.alerts.push({
-                 type: 'danger',
-                 msg: "Se han encontrado errores al intentar guardar las modificaciones efectuadas en la base de datos:<br /><br />" +
-                     errores.reduce(function (previous, current) {
+                    if (!cuenta) { 
+                        listaCuentasContablesIDs.push(c.cuentaContableGastosIDB);
+                    }
+                }
+            })
+        })
+    })
 
-                         if (previous == "")
-                             // first value
-                             return current;
-                         else
-                             return previous + "<br />" + current;
-                     }, "")
-             });
+    leerCuentasContablesFromSql(listaCuentasContablesIDs)
+        .then((result) => {
 
-             $scope.showProgress = false;
-             return;
-         }
+            // agregamos las cuentas contables leídas al arrary en el $scope. Además, hacemos el binding del ddl en el ui-grid 
+            const cuentasContablesArray = result.cuentasContables;
 
-         $meteor.call('bancos.chequerasSave', editedItems).then(
-           function (data) {
+            // 1) agregamos el array de cuentas contables al $scope 
+            $scope.cuentasContablesLista = cuentasContablesArray; 
 
-               $scope.alerts.length = 0;
-               $scope.alerts.push({
-                   type: 'info',
-                   msg: data
-               });
+            // 2) hacemos el binding entre la lista y el ui-grid 
+            $scope.cuentasBancarias_ui_grid.columnDefs[6].editDropdownOptionsArray = $scope.cuentasContablesLista; 
+            $scope.cuentasBancarias_ui_grid.columnDefs[7].editDropdownOptionsArray = $scope.cuentasContablesLista;      
+        })
+        .catch((err) => {
 
-               // por alguna razón, que aún no entendemos del todo, si no hacemos el subscribe nuevamente,
-               // se queda el '*' para registros nuevos en el ui-grid ...
-               $scope.chequerasList = [];
-               $scope.chequeras_ui_grid.data = [];
+            $scope.alerts.length = 0;
+            $scope.alerts.push({
+                type: 'danger',
+                msg: "Se han encontrado errores al intentar leer las cuentas contables usadas por esta función:<br /><br />" + err.message
+            });
 
-               let filtro = { numeroCuenta: cuentaBancariaSeleccionada.cuentaInterna };
+            $scope.showProgress = false;
+            $scope.$apply();
+        })
+}])
 
-               if (chequerasSubscriptionHandle) {
-                   chequerasSubscriptionHandle.stop();
-               }
 
-               chequerasSubscriptionHandle =
-               Meteor.subscribe('chequeras', JSON.stringify(filtro), () => {
-                   $scope.helpers({
-                       chequerasList: () => {
-                           return Chequeras.find(
-                               {
-                                   numeroCuenta: cuentaBancariaSeleccionada.cuentaInterna },
-                                   { sort: { numeroChequera: 1 }
-                               });
-                       },
-                   })
+// leemos las cuentas contables que usa la función y las regresamos en un array 
+const leerCuentasContablesFromSql = function(listaCuentasContablesIDs) { 
 
-                   $scope.chequeras_ui_grid.data = $scope.chequerasList;
+    return new Promise((resolve, reject) => { 
 
-                   $scope.cuentaBancaria_ChequeraSeleccionada = bancoSeleccionado.nombre + " - " +
-                                                                cuentaBancariaSeleccionada.cuentaBancaria;
+        Meteor.call('contab.cuentasContables.readFromSqlServer', listaCuentasContablesIDs, (err, result) => {
 
-                   $scope.showProgress = false;
-                   $scope.$apply();
-                 });
-           },
-           function (err) {
-                let errorMessage = mensajeErrorDesdeMethod_preparar(err);
+            if (err) {
+                reject(err); 
+                return; 
+            }
 
-               $scope.alerts.length = 0;
-               $scope.alerts.push({
-                   type: 'danger',
-                   msg: errorMessage
-               });
+            if (result.error) {
+                reject(result.error); 
+                return; 
+            }
 
-               $scope.showProgress = false;
-           })
-       }
-
-      $scope.bancos_ui_grid.data = $scope.bancos;
-      $scope.agencias_ui_grid.data = [];
-      $scope.cuentasBancarias_ui_grid.data = [];
-      $scope.chequeras_ui_grid.data = [];
-
-      // detenemos los publishers cuando el usuario deja la página
-      $scope.$on("$destroy", () => {
-          if (chequerasSubscriptionHandle && chequerasSubscriptionHandle.stop) {
-              chequerasSubscriptionHandle.stop();
-          }
-      })
+            resolve(result); 
+        })
+    })
 }
-])

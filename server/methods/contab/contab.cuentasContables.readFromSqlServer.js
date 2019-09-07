@@ -5,24 +5,43 @@ import SimpleSchema from 'simpl-schema';
 
 Meteor.methods(
 {
-    'contab.cuentasContables.searchDesdeSql': function (search, ciaContabSeleccionada) {
+    // recibimos una lista de IDs de cuentas contables, las leemos desde sql server y las regresamos 
+    'contab.cuentasContables.readFromSqlServer': function (listaCuentasContablesIDs) {
 
         new SimpleSchema({
-            search: { type: String, optional: false, }, 
-            ciaContabSeleccionada: { type: Number, optional: false, },
-        }).validate({ search, ciaContabSeleccionada, });
+            listaCuentasContablesIDs: { type: Array, optional: false, }, 
+            'listaCuentasContablesIDs.$': { type: Number, }, 
+        }).validate({ listaCuentasContablesIDs });
 
-        // hacemos que la busqueda sea siempre genérica ... nótese como quitamos algunos '*' que el usuario haya agregado
-        let criteria = search.replace(/\*/g, '');
-        criteria = `%${criteria}%`;
+        let where = ""; 
 
-        const where = `(c.Cuenta Like '${criteria}') Or (c.Descripcion Like '${criteria}')`;
+        if (Array.isArray(listaCuentasContablesIDs) && listaCuentasContablesIDs.length > 0) {
+
+            let lista = "";
+
+            listaCuentasContablesIDs.forEach((x) => {
+                if (!lista) { 
+                    lista = `(${x.toString()}`;
+                }
+                else { 
+                    lista += `, ${x.toString()}`;
+                }
+            });
+
+            lista += ")";
+            where += `(c.ID In ${lista})`;
+        }
+
+        if (!where) { 
+            where = `(1 = 2)`;
+        }
+        
 
         // ---------------------------------------------------------------------------------------------------
         // leemos los pagos desde sql server, que cumplan el criterio indicado
         let query = `Select c.ID as id, (c.Cuenta + ' ' + c.Descripcion) as descripcion 
                      From CuentasContables c
-                     Where ${where} And c.Cia = ${ciaContabSeleccionada} And c.TotDet = 'D' And c.ActSusp = 'A' 
+                     Where ${where}  
                      Order By c.Cuenta, c.Descripcion
                     `;
 

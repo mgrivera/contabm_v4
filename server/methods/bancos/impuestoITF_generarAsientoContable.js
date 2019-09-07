@@ -10,7 +10,6 @@ import { Companias } from '/imports/collections/companias';
 import { Bancos } from '/imports/collections/bancos/bancos';
 import { ParametrosBancos } from '/imports/collections/bancos/parametrosBancos'; 
 import { Chequeras } from '/imports/collections/bancos/chequeras'; 
-import { AsientosContables } from '/imports/collections/contab/asientosContables'; 
 import { ParametrosGlobalBancos } from '/imports/collections/bancos/parametrosGlobalBancos'; 
 
 import { AsientosContables_sql, dAsientosContables_sql } from '/server/imports/sqlModels/contab/asientosContables'; 
@@ -78,22 +77,18 @@ Meteor.methods(
         if (mesFiscal.error) {
             throw new Meteor.Error("Contab-DeterminarMesFiscal",
                 mesFiscal.errorMessage ? mesFiscal.errorMessage : "Error: mensaje de error indefinido.");
-        };
+        }
 
         let factorCambio = ContabFunctions.leerCambioMonedaMasReciente(fechaAsiento);
 
         if (factorCambio.error) {
             throw new Meteor.Error("Contab-DeterminarMesFiscal",
                 factorCambio.errorMessage ? factorCambio.errorMessage : "Error: mensaje de error indefinido.");
-        };
+        }
 
         let numeroLote = moment(new Date()).format('YYYY-MM-DD hh:mm') + " " + currentUser.emails[0].address;
         if (numeroLote.length > 50)
             numeroLote = numeroLote.substring(0, 50);
-
-        // debugger;
-        // mongo: eliminamos los asientos que puedan existir para el usuario
-        AsientosContables.remove({ user: this.userId });
 
         // a cada movimiento itf, asociamos su cuenta bancaria; la buscamos en chequeras ...
         movimientosITF.forEach((movimientoITF) => {
@@ -106,9 +101,9 @@ Meteor.methods(
                     Debe existir una chequera aunque sea 'genérica'. Nota: probablemente Ud. deba ejecutar la opción
                     <em>Copiar catálogos</em> en el menú <em>Generales</em>.`
                 );
-            };
+            }
             movimientoITF.cuentaBancariaID = chequera.numeroCuenta;
-        });
+        })
 
         // Ok, ahora que tenemos la cuenta bancaria en cada movimiento, agrupamos por cuenta bancaria y ejecutamos la
         // función que sigue para cada una (los movimientos de cada cuenta bancaria son pasados como un array)...
@@ -126,8 +121,7 @@ Meteor.methods(
             );
 
             cantidadAsientosAgregados++;
-        };
-
+        }
 
         return {
             cantidadAsientosAgregados: cantidadAsientosAgregados,
@@ -142,14 +136,12 @@ function bancos_itf_generarAsientoContable_movimientosCuentaBancaria (
     tipoAsientoDefault, cuentaBancariaID, cuentaContableITF, fechaAsiento, mesFiscal, anoFiscal, factorCambio,
     numeroLote, currentUser, ciaContab, movimientosBancarios_ITF_cuentaBancaria
 ) {
-
-    // debugger;
     let numeroNegativoAsiento = ContabFunctions.determinarNumeroNegativoAsiento(fechaAsiento, ciaContab.numero);
 
     if (numeroNegativoAsiento.error) {
         throw new Meteor.Error("Contab-ConstruirNumeroNegativo",
             numeroNegativoAsiento.errorMessage ? numeroNegativoAsiento.errorMessage : "Error: mensaje de error indefinido.");
-    };
+    }
 
     // leemos cuenta bancaria, en mongo, para obtener cuenta contable y moneda; también banco para mostrar nombre en asiento
     let banco = Bancos.findOne({ 'agencias.cuentasBancarias.cuentaInterna': cuentaBancariaID });
@@ -160,8 +152,8 @@ function bancos_itf_generarAsientoContable_movimientosCuentaBancaria (
             '${cuentaBancariaID}'.<br />
             Debe existir una banco para esta cuenta bancaria en <em>Catálogos</em>. Nota: probablemente Ud. deba
             ejecutar la opción <em>Copiar catálogos</em> en el menú <em>Generales</em>.`
-        );
-    };
+        )
+    }
 
     let cuentaBancaria = {};
 
@@ -170,7 +162,7 @@ function bancos_itf_generarAsientoContable_movimientosCuentaBancaria (
         cuentaBancaria = lodash.find(agencia.cuentasBancarias, (x) => { return x.cuentaInterna == cuentaBancariaID; });
         if (cuentaBancaria)
             return false;           // logramos un 'break' en el (lodash) forEach ..
-    });
+    })
 
     let moneda = Monedas.findOne({ moneda: cuentaBancaria.moneda });
 
@@ -217,41 +209,11 @@ function bancos_itf_generarAsientoContable_movimientosCuentaBancaria (
             .done();
     });
 
-    if (response.error)
+    if (response.error) { 
         throw new Meteor.Error(response.error && response.error.message ? response.error.message : response.error.toString());
-
+    }
+        
     let asientoAgregado = response.result.dataValues;
-
-    // -----------------------------------------------------------------------------------------------------------
-    // mongo: preparamos el objecto para agregar el asiento para el usuario (en mongo)
-    let asientoContable_mongo = {
-        _id: new Mongo.ObjectID()._str,
-        numeroAutomatico: asientoAgregado.numeroAutomatico,
-        numero: asientoContable.numero,
-        mes: asientoContable.mes,
-        ano: asientoContable.ano,
-        tipo: asientoContable.tipo,
-        fecha: asientoContable.fecha,
-        descripcion: asientoContable.descripcion,
-        moneda: asientoContable.moneda,
-        monedaOriginal: asientoContable.monedaOriginal,
-        convertirFlag: asientoContable.convertirFlag,
-        factorDeCambio: asientoContable.factorDeCambio,
-        partidas: [],
-        provieneDe: asientoContable.provieneDe,
-        // provieneDe_id: asientoContable.provieneDe_id,
-        ingreso: asientoContable.ingreso,
-        ultAct: asientoContable.ultAct,
-        copiablaFlag: asientoContable.copiablaFlag,
-        asientoTipoCierreAnualFlag: asientoContable.asientoTipoCierreAnualFlag,
-        mesFiscal: asientoContable.mesFiscal,
-        anoFiscal: asientoContable.anoFiscal,
-        usuario: asientoContable.usuario,
-        lote: asientoContable.lote,
-        cia: asientoContable.cia,
-        user: currentUser._id,
-    };
-
 
     // ahora que agregamos el asiento, agrgamos sus partidas ...
     // TODO: revisar: nótese como agregamos solo los movimientos para la cuenta bancaria seleccionada;
@@ -281,19 +243,9 @@ function bancos_itf_generarAsientoContable_movimientosCuentaBancaria (
                 .done();
         });
 
-        if (response.error)
+        if (response.error) { 
             throw new Meteor.Error(response.error && response.error.message ? response.error.message : response.error.toString());
-
-        // mongo: agregamos la partida al objeto que será grabado en mongo
-        asientoContable_mongo.partidas.push({
-            _id: new Mongo.ObjectID()._str,
-            partida: partidaAsiento.partida,
-            cuentaContableID: partidaAsiento.cuentaContableID,
-            descripcion: partidaAsiento.descripcion,
-            referencia: partidaAsiento.referencia,
-            debe: partidaAsiento.debe,
-            haber: partidaAsiento.haber,
-        });
+        }
 
         numeroPartida = numeroPartida + 10;
 
@@ -316,25 +268,12 @@ function bancos_itf_generarAsientoContable_movimientosCuentaBancaria (
                 .done();
         });
 
-        if (response.error)
+        if (response.error) { 
             throw new Meteor.Error(response.error && response.error.message ? response.error.message : response.error.toString());
-
-        // mongo: agregamos la partida al objeto que será grabado en mongo
-        asientoContable_mongo.partidas.push({
-            _id: new Mongo.ObjectID()._str,
-            partida: partidaAsiento.partida,
-            cuentaContableID: partidaAsiento.cuentaContableID,
-            descripcion: partidaAsiento.descripcion,
-            referencia: partidaAsiento.referencia,
-            debe: partidaAsiento.debe,
-            haber: partidaAsiento.haber,
-        });
+        }
 
         numeroPartida = numeroPartida + 10;
-    });
-
-    // finalmente, cuando ya el asiento ha sido grabado en sql server, lo grabamos en mongo ...
-    AsientosContables.insert(asientoContable_mongo);
+    })
 
     return { error: false };
 }

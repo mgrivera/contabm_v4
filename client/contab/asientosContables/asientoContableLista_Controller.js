@@ -160,7 +160,12 @@ angular.module("contabm")
                         return;
                     }
 
-                    asientoContable_leerByID_desdeSql(asientoContableSeleccionado.numeroAutomatico);
+                    $state.go('contab.asientosContables.asientoContable', {
+                        origen: $scope.origen,
+                        id: asientoContableSeleccionado.numeroAutomatico,
+                        pageNumber: 0,
+                        vieneDeAfuera: false
+                    })
                 }
                 else { 
                     return;
@@ -465,37 +470,6 @@ angular.module("contabm")
         })
     }
 
-
-    function asientoContable_leerByID_desdeSql(pk) {
-
-        $scope.showProgress = true;
-
-        // ejecutamos un método para leer el asiento contable en sql server y grabarlo a mongo (para el current user)
-        Meteor.call('asientoContable_leerByID_desdeSql', pk, (err, result) => {
-
-            if (err) {
-                let errorMessage = mensajeErrorDesdeMethod_preparar(err);
-                
-                $scope.$parent.alerts.length = 0;
-                $scope.$parent.alerts.push({
-                    type: 'danger',
-                    msg: errorMessage
-                });
-    
-                $scope.showProgress = false;
-                $scope.$apply();
-    
-                return;
-            }
-
-            $state.go('contab.asientosContables.asientoContable', {
-                origen: $scope.origen,
-                id: result.asientoContableMongoID,
-                pageNumber: 0,
-                vieneDeAfuera: false
-            })
-        })
-    }
 
     $scope.asientosContables = []
     $scope.asientosContables_ui_grid.data = [];
