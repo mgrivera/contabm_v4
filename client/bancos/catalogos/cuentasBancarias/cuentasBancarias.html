@@ -21,7 +21,6 @@
     </div>
 </div>
 
-
 <tabset>
     <tab heading="Cuentas bancarias">
 
@@ -34,6 +33,14 @@
                                 <li><a href="#" class="navbar_custom_small_header">Bancos - Cuentas bancarias</a></li>
         
                                 <li><a href="#" ng-click="grabarCuentasBancarias()" class="navbar_custom_small_node">Grabar&nbsp;&nbsp;<span class="fa fa-floppy-o"></span></a></li>
+                                
+                                <li>
+                                    <a href="#" class="navbar_custom_small_node">
+                                            <cuentas-contables-search-modal cia-contab-seleccionada="companiaSeleccionada"
+                                                                            agregar-cuentas-contables-leidas-desde-sql="agregarCuentasContablesLeidasDesdeSql">   
+                                            </cuentas-contables-search-modal>
+                                    </a>
+                                </li>
                             </ul>
                         </div>
                     </div>

@@ -1376,6 +1376,38 @@ angular.module("contabm.bancos.catalogos").controller("Catalogos_CuentasBancaria
             $scope.showProgress = false;
             $scope.$apply();
         })
+
+    $scope.agregarCuentasContablesLeidasDesdeSql = (cuentasArray) => { 
+
+        // cuando el modal que permite al usuario leer cuentas contables desde el servidor se cierra, 
+        // recibimos las cuentas leídas y las agregamos al $scope, para que estén presentes en la lista del
+        // ddl de cuentas contables 
+
+        let cuentasContablesAgregadas = 0; 
+
+        if (cuentasArray && Array.isArray(cuentasArray) && cuentasArray.length) { 
+
+            for (const cuenta of cuentasArray) { 
+
+                const existe = $scope.cuentasContablesLista.some(x => x.id == cuenta.id); 
+
+                if (existe) { 
+                    continue; 
+                }
+
+                $scope.cuentasContablesLista.push(cuenta); 
+                cuentasContablesAgregadas++; 
+            }
+        }
+
+        if (cuentasContablesAgregadas) { 
+            // hacemos el binding entre la lista y el ui-grid 
+            $scope.cuentasContablesLista = lodash.sortBy($scope.cuentasContablesLista, ['descripcion']);
+
+            $scope.cuentasBancarias_ui_grid.columnDefs[6].editDropdownOptionsArray = $scope.cuentasContablesLista; 
+            $scope.cuentasBancarias_ui_grid.columnDefs[7].editDropdownOptionsArray = $scope.cuentasContablesLista;      
+        }
+    }
 }])
 
 

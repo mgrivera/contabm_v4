@@ -111,7 +111,7 @@ export default class DefinicionCuentasContables extends React.Component {
     handleCuentasTypeAheadSearch = (query) => { 
 
         // como el state contiene inner objects, nos aseguramos que el setState se ejecute en forma correcta 
-        let cuentasTypeAheadOptions = JSON.parse(JSON.stringify(this.state.proveedoresTypeAheadOptions))
+        let cuentasTypeAheadOptions = JSON.parse(JSON.stringify(this.state.cuentasTypeAheadOptions))
         cuentasTypeAheadOptions.isLoading = true; 
         this.setState({cuentasTypeAheadOptions}) 
 
@@ -164,14 +164,15 @@ export default class DefinicionCuentasContables extends React.Component {
 
         let initialValues = this.props.item; 
 
-        // todos los items deben ir en el objeto 
-        initialValues.rubro = this.props.item.rubro ? this.props.item.rubro : null; 
-        initialValues.compania = this.props.item.compania ? this.props.item.compania : null; 
-        initialValues.moneda = this.props.item.moneda ? this.props.item.moneda : null; 
-        initialValues.concepto = this.props.item.concepto ? this.props.item.concepto : null; 
-        initialValues.concepto2 = this.props.item.concepto2 ? this.props.item.concepto2 : null; 
-        initialValues.cuentaContableID = this.props.item.cuentaContableID ? this.props.item.cuentaContableID : null; 
-       
+        // todos los values deben ir en el objeto; como son selects, pasamos empty string si viene un null, 
+        // pues un option en el select no puede tener value null ...   
+        initialValues.rubro = this.props.item.rubro ? this.props.item.rubro : ""; 
+        initialValues.compania = this.props.item.compania ? this.props.item.compania : ""; 
+        initialValues.moneda = this.props.item.moneda ? this.props.item.moneda : ""; 
+        initialValues.concepto = this.props.item.concepto ? this.props.item.concepto : ""; 
+        initialValues.concepto2 = this.props.item.concepto2 ? this.props.item.concepto2 : ""; 
+        initialValues.cuentaContableID = this.props.item.cuentaContableID ? this.props.item.cuentaContableID : ""; 
+
         return (
             <Grid fluid={true}>
                 <Row>
@@ -197,17 +198,13 @@ export default class DefinicionCuentasContables extends React.Component {
                                 onSubmit={(values, { setSubmitting }) => {
 
                                     // select siempre regresa strings; convertimos a number 
-                                    values.rubro = values.rubro ? parseInt(values.rubro) : values.rubro; 
-                                    values.compania = values.compania ? parseInt(values.compania) : values.compania; 
-                                    values.moneda = values.moneda ? parseInt(values.moneda) : values.moneda;
-                                    values.concepto = values.concepto ? parseInt(values.concepto) : values.concepto;
-                                    values.cuentaContableID = values.cuentaContableID ? parseInt(values.cuentaContableID) : values.cuentaContableID;
-                                    
-                                    // si el usuario quita el valor, select regresa ""; convertimos a null 
-                                    values.rubro = values.rubro === "" ? null : values.rubro; 
-                                    values.compania = values.compania === "" ? null : values.compania; 
-                                    values.moneda = values.moneda === "" ? null : values.moneda; 
-
+                                    // si viene un '' pasamos null 
+                                    values.rubro = values.rubro ? parseInt(values.rubro) : null; 
+                                    values.compania = values.compania ? parseInt(values.compania) : null; 
+                                    values.moneda = values.moneda ? parseInt(values.moneda) : null;
+                                    values.concepto = values.concepto ? parseInt(values.concepto) : null;
+                                    values.cuentaContableID = values.cuentaContableID ? parseInt(values.cuentaContableID) : null;
+                                
                                     setSubmitting(false);
 
                                     this.props.functionOk(values); 
@@ -253,21 +250,40 @@ export default class DefinicionCuentasContables extends React.Component {
                                                         <AsyncTypeahead
                                                             id={"compania_typeAhead"}
                                                             {...this.state.proveedoresTypeAheadOptions}
-                                                            defaultInputValue={this.props.item.nombreCompania}
+
+                                                            // nos aseguramos que este valor sea siempre un string; por ejemplo, no un null ... 
+                                                            defaultInputValue={this.props.item.nombreCompania ? this.props.item.nombreCompania : ""}
 
                                                             // fires when user selects an item from the list 
                                                             onChange={(selected) => {
                                                                 // en selected viene el item seleccionado por el usuario; 
                                                                 // casi siempre es un objeto 
                                                                 // como la selección puede ser multiple, selected es un array 
-                                                                const value = (selected.length > 0) ? selected[0].proveedor : 0;
-                                                                const nombre = (selected.length > 0) ? selected[0].nombre : '';
+
+                                                                const value = (selected && Array.isArray(selected) && selected.length > 0) ? selected[0].proveedor : "";
+                                                                const nombre = (selected && Array.isArray(selected) && selected.length > 0) ? selected[0].nombre : "";
+
+                                                                console.log("onChange / proveedor / selected / value / nombre: ", selected, value, nombre); 
 
                                                                 setFieldValue('compania', value);
                                                                 setFieldTouched('compania', true); 
 
                                                                 setFieldValue('nombreCompania', nombre);
                                                                 setFieldTouched('nombreCompania', true); 
+                                                            }}
+
+                                                            onBlur={(e) => { 
+                                                                // si el usuario cambia por "" (deselecciona), actualizamos el valor apropiado
+                                                                // (pues no se produce un onChange del TypeAhead) 
+                                                                const value = e.target.value; 
+
+                                                                if (!value) { 
+                                                                    setFieldValue('compania', "");
+                                                                    setFieldTouched('compania', true); 
+
+                                                                    setFieldValue('nombreCompania', "");
+                                                                    setFieldTouched('nombreCompania', true); 
+                                                                }
                                                             }}
 
                                                             onSearch={this.handleProveedoresTypeAheadSearch}
@@ -344,15 +360,18 @@ export default class DefinicionCuentasContables extends React.Component {
                                                         <AsyncTypeahead
                                                             id={"cuentaContable_typeAhead"}
                                                             {...this.state.cuentasTypeAheadOptions}
-                                                            defaultInputValue={this.props.item.descripcionCuentaContable}
+
+                                                            // nos aseguramos que este valor sea siempre un string; por ejemplo, no un null ... 
+                                                            defaultInputValue={this.props.item.descripcionCuentaContable ? this.props.item.descripcionCuentaContable : ''}
 
                                                             // fires when user selects an item from the list 
                                                             onChange={(selected) => {
                                                                 // en selected viene el item seleccionado por el usuario; 
                                                                 // casi siempre es un objeto 
                                                                 // como la selección puede ser multiple, selected es un array 
-                                                                const value = (selected.length > 0) ? selected[0].id : 0;
-                                                                const descripcion = (selected.length > 0) ? selected[0].descripcion : "";
+
+                                                                const value = (selected && selected.length > 0) ? selected[0].id : 0;
+                                                                const descripcion = (selected && selected.length > 0) ? selected[0].descripcion : "";
 
                                                                 setFieldValue('cuentaContableID', value);
                                                                 setFieldTouched('cuentaContableID', true); 

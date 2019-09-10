@@ -59,14 +59,18 @@ a:hover.navbar_custom_small_header, a:focus.navbar_custom_small_header {
     background-color: transparent !important;
 }
 
-nav ul li a.navbar_custom_small_node {
+/* nótese que la idea es que el link no cambie su color una vez activado */
+nav ul li a.navbar_custom_small_node, a:visited.navbar_custom_small_node {
     font-size: small;
     padding: 5px;
+    color: #9d9d9d !important;
 }
 
-nav ul li ul li a.navbar_custom_small_node {
+/* nótese que la idea es que el link no cambie su color una vez activado */
+nav ul li ul li a.navbar_custom_small_node, a:visited.navbar_custom_small_node {
     padding: 5px;
     font-size: small;
+    color: #9d9d9d !important;
 }
 
 nav ul li a.navbar_custom_xsmall_node {
@@ -79,7 +83,7 @@ nav ul li ul li a.navbar_custom_xsmall_node {
     font-size: 12px;
 }
 
-
+/* para que al pasar el mouse por el link, cambie de color y a italics  */
 nav ul li a:hover.navbar_custom_small_node {
     color: #428BCA !important;
     font-style: italic;
