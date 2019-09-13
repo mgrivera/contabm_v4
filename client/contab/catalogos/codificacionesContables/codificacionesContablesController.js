@@ -1,7 +1,7 @@
 
+
 import lodash from 'lodash';
 import { DialogModal } from '/client/imports/general/genericUIBootstrapModal/angularGenericModal'; 
-import { CuentasContables2 } from '/imports/collections/contab/cuentasContables2'; 
 import { Companias } from '/imports/collections/companias';
 import { CompaniaSeleccionada } from '/imports/collections/companiaSeleccionada';
 
@@ -16,10 +16,10 @@ angular.module("contabm.contab.catalogos").controller("Catalogos_Contab_Codifica
       let companiaSeleccionadaDoc = {};
 
       if (companiaSeleccionada) {
-          companiaSeleccionadaDoc = Companias.findOne(companiaSeleccionada.companiaID, { fields: { numero: true, nombre: true } });
+          companiaSeleccionadaDoc = Companias.findOne(companiaSeleccionada.companiaID, { fields: { numero: 1, nombre: 1, nombreCorto: 1, } });
       }
 
-      $scope.companiaSeleccionada = {};
+      $scope.companiaSeleccionada = {}; companiaSeleccionada
 
       if (companiaSeleccionadaDoc)
           $scope.companiaSeleccionada = companiaSeleccionadaDoc;
@@ -33,9 +33,9 @@ angular.module("contabm.contab.catalogos").controller("Catalogos_Contab_Codifica
       $scope.algunItemEditado = () => {
           let itemsEditados = false;
 
-          itemsEditados = _.find($scope.codificacionesContables, (x) => { return x.docState; }) ||
-                          _.find($scope.codificacionesContables_codigos, (x) => { return x.docState; }) ||
-                          _.find($scope.codificacionesContables_codigos_cuentasContables, (x) => { return x.docState; })
+          itemsEditados = lodash.find($scope.codificacionesContables, (x) => { return x.docState; }) ||
+                          lodash.find($scope.codificacionesContables_codigos, (x) => { return x.docState; }) ||
+                          lodash.find($scope.codificacionesContables_codigos_cuentasContables, (x) => { return x.docState; })
 
           return itemsEditados;
       }
@@ -56,7 +56,7 @@ angular.module("contabm.contab.catalogos").controller("Catalogos_Contab_Codifica
               return false;
           }
 
-          if (!codificacionSeleccionada || _.isEmpty(codificacionSeleccionada) || !codificacionSeleccionada.descripcion) {
+          if (!codificacionSeleccionada || lodash.isEmpty(codificacionSeleccionada) || !codificacionSeleccionada.descripcion) {
               DialogModal($modal, "<em>Codificaciones contables - Exportar a un archivo de texto</em>",
                                   "Ud. debe seleccionar la codificación que desea exportar. " +
                                   "Aparentemente, ahora no hay una codificación seleccionada en la lista.",
@@ -186,9 +186,9 @@ angular.module("contabm.contab.catalogos").controller("Catalogos_Contab_Codifica
                   let ciasContabDiferentes = false;
                   let error = false;
 
-                  let codificacion = _.find(codificacionContable, (x) => { return x.tipoRegistro === 1; });
+                  let codificacion = lodash.find(codificacionContable, (x) => { return x.tipoRegistro === 1; });
 
-                  if (!codificacion || _.isEmpty(codificacion)) {
+                  if (!codificacion || lodash.isEmpty(codificacion)) {
                       message = `Error inesperado: el contenido del archivo seleccionado no contiene un registru cuyo tipo sea 1;
                                  probablemente, el archivo no corresponde a una codificación contable que se ha exportado.<br /><br />
                                  La codificación contable a importar debe tener un registros con esas características.`;
@@ -293,7 +293,7 @@ angular.module("contabm.contab.catalogos").controller("Catalogos_Contab_Codifica
                    $scope.codigos_ui_grid.data = [];
                    $scope.codigosCuentasContables_ui_grid.data = [];
 
-                   if (_.isArray($scope.codificacionesContables))
+                   if (Array.isArray($scope.codificacionesContables))
                       $scope.codificaciones_ui_grid.data = $scope.codificacionesContables;
 
                    $scope.$apply();
@@ -307,7 +307,7 @@ angular.module("contabm.contab.catalogos").controller("Catalogos_Contab_Codifica
 
       $scope.importarDesdeContab = () => {
           // debe haber una codificación seleccionada; allí es donde vamos a importar los códigos en el file ...
-          if (!codificacionSeleccionada || _.isEmpty(codificacionSeleccionada)) {
+          if (!codificacionSeleccionada || lodash.isEmpty(codificacionSeleccionada)) {
               DialogModal($modal, "<em>Codificaciones contables</em>",
                                   "Debe haber una <em>codificación contable</em> seleccionada en la lista.<br /><br />" +
                                   "Este proceso intentará importar los códigos contables, desde el archivo que se indique, a la " +
@@ -458,13 +458,6 @@ angular.module("contabm.contab.catalogos").controller("Catalogos_Contab_Codifica
       };
 
 
-
-
-
-
-
-
-
       let codificaciones_ui_grid_api = null;
       let codificacionSeleccionada = {};
       $scope.codificacionSeleccionada = {};             // para mostrar la descripción de la codificación seleccionada
@@ -569,7 +562,7 @@ angular.module("contabm.contab.catalogos").controller("Catalogos_Contab_Codifica
       $scope.deleteItem = function (item) {
           if (item.docState && item.docState === 1)
               // si el item es nuevo, simplemente lo eliminamos del array
-              _.remove($scope.codificaciones, (x) => { return x._id === item._id; });
+              lodash.remove($scope.codificaciones, (x) => { return x._id === item._id; });
           else
               item.docState = 3;
 
@@ -578,7 +571,7 @@ angular.module("contabm.contab.catalogos").controller("Catalogos_Contab_Codifica
       };
 
       $scope.agregarCodificacion = function () {
-          if (!_.isArray($scope.codificacionesContables))
+          if (!Array.isArray($scope.codificacionesContables))
               $scope.codificacionesContables = [];
 
           let item = {
@@ -590,26 +583,12 @@ angular.module("contabm.contab.catalogos").controller("Catalogos_Contab_Codifica
           $scope.codificacionesContables.push(item);
 
           $scope.codificaciones_ui_grid.data = [];
-          if (_.isArray($scope.codificacionesContables))
+          if (Array.isArray($scope.codificacionesContables))
              $scope.codificaciones_ui_grid.data = $scope.codificacionesContables;
 
           $scope.codigos_ui_grid.data = [];
           $scope.codigos_ui_grid2.data = [];
       };
-
-
-
-
-
-
-
-
-
-
-
-
-
-
 
 
       let codigos_ui_grid_api = null;
@@ -641,7 +620,7 @@ angular.module("contabm.contab.catalogos").controller("Catalogos_Contab_Codifica
                   if (row.isSelected) {
                       codigoSeleccionado = row.entity;
 
-                      if (_.isArray(codigoSeleccionado.cuentasContables))
+                      if (Array.isArray(codigoSeleccionado.cuentasContables))
                          $scope.codigosCuentasContables_ui_grid.data = codigoSeleccionado.cuentasContables;
                   }
                   else
@@ -745,7 +724,7 @@ angular.module("contabm.contab.catalogos").controller("Catalogos_Contab_Codifica
       // permitimos agregar un registro al array de códigos contables, para la codificación contable seleccionada
       $scope.agregarCodigo = () => {
         //   debugger;
-          if (codificacionSeleccionada && !_.isEmpty(codificacionSeleccionada)) {
+          if (codificacionSeleccionada && !lodash.isEmpty(codificacionSeleccionada)) {
               $scope.codificacionesContables_codigos.push({
                   _id: new Mongo.ObjectID()._str,
                   codificacionContable_ID: codificacionSeleccionada._id,
@@ -801,7 +780,7 @@ angular.module("contabm.contab.catalogos").controller("Catalogos_Contab_Codifica
 
                       // refrescamos las cuentas contables en el ui-grid ...
                       $scope.codigosCuentasContables_ui_grid.data =
-                           _.filter($scope.codificacionesContables_codigos_cuentasContables,
+                           lodash.filter($scope.codificacionesContables_codigos_cuentasContables,
                                     (x) => { return x.codigoContable_ID == codigoSeleccionado._id; } );
                   }
                   else
@@ -856,7 +835,7 @@ angular.module("contabm.contab.catalogos").controller("Catalogos_Contab_Codifica
 
           enableSorting: true,
           showColumnFooter: false,
-          enableFiltering: true,
+          enableFiltering: false,
           selectionRowHeaderWidth: 0,
           rowHeight: 25,
 
@@ -890,8 +869,7 @@ angular.module("contabm.contab.catalogos").controller("Catalogos_Contab_Codifica
               name: 'id',
               field: 'id',
               displayName: 'Cuenta contable',
-              width: 140,
-              enableFiltering: true,
+              width: 180,
               headerCellClass: 'ui-grid-leftCell',
               cellClass: 'ui-grid-leftCell',
               cellFilter: 'cuentasContables_cuentaDescripcionCia',
@@ -906,8 +884,7 @@ angular.module("contabm.contab.catalogos").controller("Catalogos_Contab_Codifica
               cellTemplate: '<span ng-click="grid.appScope.deleteCodigoCuentaContable(row.entity)" class="fa fa-close redOnHover" style="padding-top: 8px; "></span>',
               enableCellEdit: false,
               enableSorting: false,
-              enableFiltering: false,
-              width: 25,
+              width: 25
           },
       ]
 
@@ -916,21 +893,21 @@ angular.module("contabm.contab.catalogos").controller("Catalogos_Contab_Codifica
       $scope.deleteCodigoCuentaContable = function(item) {
           if (item.docState && item.docState == 1) {
               // el item es nuevo; lo eliminamos del array
-              _.remove($scope.codificacionesContables_codigos_cuentasContables, (x) => { return x._id === item._id; });
+              lodash.remove($scope.codificacionesContables_codigos_cuentasContables, (x) => { return x._id === item._id; });
           }
           else {
               item.docState = 3;
           };
 
           // refrescamos las cuentas contables en el ui-grid ...
-          $scope.codigosCuentasContables_ui_grid.data = _.filter($scope.codificacionesContables_codigos_cuentasContables,
+          $scope.codigosCuentasContables_ui_grid.data = lodash.filter($scope.codificacionesContables_codigos_cuentasContables,
                                                                  (x) => { return x.codigoContable_ID == codigoSeleccionado._id; });
       }
 
 
+      $scope.cuentasContables = []; 
       let cuentaContableSeleccionada = {};
       let cuentasContables_ui_grid_api = null;
-      let angularInterval = null;           // para detener el interval que usamos más abajo
 
       $scope.cuentasContables_ui_grid = {
 
@@ -948,17 +925,7 @@ angular.module("contabm.contab.catalogos").controller("Catalogos_Contab_Codifica
 
               cuentasContables_ui_grid_api = gridApi;
 
-              // -----------------------------------------------------------------------------------------------------
-              // cuando el ui-grid está en un bootstrap tab y tiene más columnas de las que se pueden ver,
-              // al hacer horizontal scrolling los encabezados no se muestran sincronizados con las columnas;
-              // lo que sigue es un 'workaround'
-              // -----------------------------------------------------------------------------------------------------
-              angularInterval = $interval( function() {
-                cuentasContables_ui_grid_api.core.handleWindowResize();
-              }, 200);
-
               gridApi.selection.on.rowSelectionChanged($scope, function (row) {
-                //   debugger;
                   cuentaContableSeleccionada = {};
 
                   if (row.isSelected) {
@@ -967,10 +934,10 @@ angular.module("contabm.contab.catalogos").controller("Catalogos_Contab_Codifica
                       // intentamos agregar la cuenta contable que el usuario seleccionó en la lista, al array de cuentas contables
                       // del código contable seleccionado ...
 
-                      if (codigoSeleccionado && !_.isEmpty(codigoSeleccionado)) {
+                      if (codigoSeleccionado && !lodash.isEmpty(codigoSeleccionado)) {
 
                            // evitamos agregar al array una cuenta que ya exista (para el código seleccionado) ...
-                           if (!_.find($scope.codificacionesContables_codigos_cuentasContables,
+                           if (!lodash.find($scope.codificacionesContables_codigos_cuentasContables,
                                        (x) => { return x.codigoContable_ID == codigoSeleccionado._id &&
                                                        x.id === cuentaContableSeleccionada.id; } )) {
 
@@ -982,103 +949,43 @@ angular.module("contabm.contab.catalogos").controller("Catalogos_Contab_Codifica
                                        cia: companiaSeleccionadaDoc.numero,
                                        docState: 1,
                                    });
-                           };
+                           }
 
 
                            // refrescamos las cuentas contables en el ui-grid ...
                            $scope.codigosCuentasContables_ui_grid.data =
-                                _.filter($scope.codificacionesContables_codigos_cuentasContables,
+                                lodash.filter($scope.codificacionesContables_codigos_cuentasContables,
                                          (x) => { return x.codigoContable_ID == codigoSeleccionado._id; } );
-                      };
+                      }
                   }
                   else
                       return;
-              });
+              })
 
           },
           // para reemplazar el field '$$hashKey' con nuestro propio field, que existe para cada row ...
           rowIdentity: function (row) {
-              return row._id;
+              return row.id;
           },
 
           getRowIdentity: function (row) {
-              return row._id;
+              return row.id;
           }
       }
 
-      // para detener el angular $Interval que usamos en el ui-gris arriba, cuando el $scope es destruido ...
-      $scope.$on('$destroy', function() {
-          // Make sure that the interval is destroyed too
-          $interval.cancel(angularInterval);
-        })
-
-
       $scope.cuentasContables_ui_grid.columnDefs = [
-          {
-              name: 'cuenta',
-              field: 'cuenta',
-              displayName: 'Cuenta',
-              width: 150,
-              enableFiltering: true,
-              headerCellClass: 'ui-grid-leftCell',
-              cellClass: 'ui-grid-leftCell',
-              enableColumnMenu: false,
-              enableCellEdit: false,
-              enableSorting: true,
-              type: 'string'
-          },
+          
           {
               name: 'descripcion',
               field: 'descripcion',
               displayName: 'Descripción',
-              width: 250,
+              width: 280,
               enableFiltering: true,
               headerCellClass: 'ui-grid-leftCell',
               cellClass: 'ui-grid-leftCell',
               enableColumnMenu: false,
-              enableCellEdit: false,
               enableSorting: true,
               type: 'string'
-          },
-          {
-              name: 'totDet',
-              field: 'totDet',
-              displayName: 'Tot/Det',
-              width: 60,
-              enableFiltering: true,
-              headerCellClass: 'ui-grid-centerCell',
-              cellClass: 'ui-grid-centerCell',
-              enableColumnMenu: false,
-              enableCellEdit: false,
-              enableSorting: true,
-              type: 'string'
-          },
-          {
-              name: 'actSusp',
-              field: 'actSusp',
-              displayName: 'Act/Susp',
-              width: 80,
-              enableFiltering: true,
-              headerCellClass: 'ui-grid-centerCell',
-              cellClass: 'ui-grid-centerCell',
-              enableColumnMenu: false,
-              enableCellEdit: false,
-              enableSorting: true,
-              type: 'string'
-          },
-          {
-              name: 'cia',
-              field: 'cia',
-              displayName: 'Cia contab',
-              cellFilter: 'companiaAbreviaturaFilter',
-              width: 100,
-              enableFiltering: false,
-              headerCellClass: 'ui-grid-leftCell',
-              cellClass: 'ui-grid-leftCell',
-              enableColumnMenu: false,
-              enableCellEdit: false,
-              enableSorting: true,
-              type: 'number'
           },
       ]
 
@@ -1105,21 +1012,21 @@ angular.module("contabm.contab.catalogos").controller("Catalogos_Contab_Codifica
                                false).then();
 
             return;
-        };
+        }
 
         // obtenemos un clone de los datos a guardar ...
-        let editedItems = _.cloneDeep(_.filter($scope.codificacionesContables, (x) => { return x.docState; }));
-        let editedItems2 = _.cloneDeep(_.filter($scope.codificacionesContables_codigos, (x) => { return x.docState; }));
-        let editedItems3 = _.cloneDeep(_.filter($scope.codificacionesContables_codigos_cuentasContables, (x) => { return x.docState; }));
+        let editedItems = lodash.cloneDeep(lodash.filter($scope.codificacionesContables, (x) => { return x.docState; }));
+        let editedItems2 = lodash.cloneDeep(lodash.filter($scope.codificacionesContables_codigos, (x) => { return x.docState; }));
+        let editedItems3 = lodash.cloneDeep(lodash.filter($scope.codificacionesContables_codigos_cuentasContables, (x) => { return x.docState; }));
 
-          if ((!_.isArray(editedItems) || !editedItems.length) &&
-              (!_.isArray(editedItems2) || !editedItems2.length) &&
-              (!_.isArray(editedItems3) || !editedItems3.length)) {
+          if ((!Array.isArray(editedItems) || !editedItems.length) &&
+              (!Array.isArray(editedItems2) || !editedItems2.length) &&
+              (!Array.isArray(editedItems3) || !editedItems3.length)) {
               DialogModal($modal, "<em>Codificaciones contables</em>",
                                   "Aparentemente, <em>no se han efectuado cambios</em> en los registros. No hay nada que grabar.",
                                  false).then();
               return;
-          };
+          }
 
           $scope.showProgress = true;
 
@@ -1135,9 +1042,9 @@ angular.module("contabm.contab.catalogos").controller("Catalogos_Contab_Codifica
                       CodificacionesContables.simpleSchema().namedContext().validationErrors().forEach(function (error) {
                           errores.push("El valor '" + error.value + "' no es adecuado para el campo '" + error.name + "'; error de tipo '" + error.type + ".");
                       });
-                  };
-              };
-          });
+                  }
+              }
+          })
 
           editedItems2.forEach((editedItem) => {
               if (editedItem.docState != 3) {
@@ -1147,9 +1054,9 @@ angular.module("contabm.contab.catalogos").controller("Catalogos_Contab_Codifica
                       CodificacionesContables_codigos.simpleSchema().namedContext().validationErrors().forEach(function (error) {
                           errores.push("El valor '" + error.value + "' no es adecuado para el campo '" + error.name + "'; error de tipo '" + error.type + ".");
                       });
-                  };
-              };
-          });
+                  }
+              }
+          })
 
           editedItems3.forEach((editedItem) => {
               if (editedItem.docState != 3) {
@@ -1161,7 +1068,7 @@ angular.module("contabm.contab.catalogos").controller("Catalogos_Contab_Codifica
                       });
                   };
               };
-          });
+          })
 
           if (errores && errores.length) {
 
@@ -1181,9 +1088,7 @@ angular.module("contabm.contab.catalogos").controller("Catalogos_Contab_Codifica
 
               $scope.showProgress = false;
               return;
-          };
-
-        //   debugger;
+          }
 
           $scope.codificaciones_ui_grid.data = [];
           $scope.codigos_ui_grid.data = [];
@@ -1216,7 +1121,7 @@ angular.module("contabm.contab.catalogos").controller("Catalogos_Contab_Codifica
                   codificacionSeleccionada = {};
                   $scope.codificacionSeleccionada = {};
 
-                  if (_.isArray($scope.codificacionesContables))
+                  if (Array.isArray($scope.codificacionesContables))
                      $scope.codificaciones_ui_grid.data = $scope.codificacionesContables;
 
                   $scope.alerts.length = 0;
@@ -1259,57 +1164,122 @@ angular.module("contabm.contab.catalogos").controller("Catalogos_Contab_Codifica
                 $scope.showProgress = false;
                 // $scope.$apply();
               });
-      };
+      }
 
 
       $scope.showProgress = true;
 
-      Meteor.subscribe('codificacionesContables_completa', companiaSeleccionadaDoc.numero, () => {
-        //   debugger;
-          $scope.helpers({
-              codificacionesContables: () => {
+    Meteor.subscribe('codificacionesContables_completa', companiaSeleccionadaDoc.numero, () => {
+
+        $scope.helpers({
+            codificacionesContables: () => {
                 return CodificacionesContables.find({ cia: companiaSeleccionadaDoc.numero }, { sort: { descripcion: 1 } });
-              },
-              codificacionesContables_codigos: () => {
+            },
+            codificacionesContables_codigos: () => {
                 return CodificacionesContables_codigos.find({ cia: companiaSeleccionadaDoc.numero }, { sort: { descripcion: 1 } });
-              },
-              codificacionesContables_codigos_cuentasContables: () => {
+            },
+            codificacionesContables_codigos_cuentasContables: () => {
                 return CodificacionesContables_codigos_cuentasContables.find({ cia: companiaSeleccionadaDoc.numero }, { sort: { descripcion: 1 } });
-              },
-          });
+            },
+        });
 
-          $scope.codificaciones_ui_grid.data = [];
-          if (_.isArray($scope.codificacionesContables))
-             $scope.codificaciones_ui_grid.data = $scope.codificacionesContables;
 
-          $scope.alerts.length = 0;
-          $scope.alerts.push({
-              type: 'info',
-              msg: $scope.codificacionesContables.length.toString() + " registros han sido seleccionados ..."
-          });
+        // *cada vez* que leemos un grupo de registros desde el servidor, debemos leer las cuentas contables, para que estén 
+        // disponibles para agregar a la lista del ddl en el ui-grid
+        let listaCuentasContablesIDs = [];
 
-          // recuérdese que las cuentas contables están siempre en el cliente (richsilv:dumb-collections
-          // nos permite copiarlas al cliente y que permanezcan allí ...)
-          $scope.helpers({
-              cuentasContables: () => {
-                return CuentasContables2.find({ cia: companiaSeleccionadaDoc && companiaSeleccionadaDoc.numero ?
-                                                    companiaSeleccionadaDoc.numero : -99, totDet: 'D'},
-                                             { sort: { cuenta: 1 } });
-              }
-          });
+        // construimos la lista de cuentas contables. En este caso, no es muy simple, pues debemos leer las cuentas bancarias de la 
+        // compañía contab, en agencias, en bancos ... 
+        $scope.codificacionesContables_codigos_cuentasContables.forEach((item) => {
+            // primero la buscamos, para no repetirla 
+            // nótese que cada rubro siempre tendrá una cuenta contable, pues es requerida en el registro 
+            const cuenta = listaCuentasContablesIDs.find(x => x === item.id);
 
-          $scope.cuentasContables_ui_grid.data = $scope.cuentasContables;
+            if (!cuenta) {
+                listaCuentasContablesIDs.push(item.id);
+            }
+        })
 
-          $scope.showProgress = false;
-          $scope.$apply();
-      });
-}
-]);
+        leerCuentasContablesFromSql(listaCuentasContablesIDs)
+            .then((result) => {
+
+                // agregamos las cuentas contables leídas al arrary en el $scope. Además, hacemos el binding del ddl en el ui-grid 
+                const cuentasContablesArray = result.cuentasContables;
+
+                // agregamos el array de cuentas contables al $scope 
+                $scope.cuentasContables = cuentasContablesArray;
+
+                $scope.codificaciones_ui_grid.data = [];
+                if (Array.isArray($scope.codificacionesContables)) {
+                    $scope.codificaciones_ui_grid.data = $scope.codificacionesContables;
+                }
+
+                const message = `${$scope.codificacionesContables.length.toString()} registros de codificaciones 
+                                 contables (condi) han sido leídos desde la base de datos.`
+
+                $scope.alerts.length = 0;
+                $scope.alerts.push({
+                    type: 'info',
+                    msg: message
+                });
+
+                $scope.cuentasContables_ui_grid.data = $scope.cuentasContables;
+
+                $scope.showProgress = false;
+                $scope.$apply();
+            })
+            .catch((err) => {
+
+                $scope.alerts.length = 0;
+                $scope.alerts.push({
+                    type: 'danger',
+                    msg: "Se han encontrado errores al intentar leer las cuentas contables usadas por esta función:<br /><br />" + err.message
+                });
+
+                $scope.showProgress = false;
+                $scope.$apply();
+            })
+    })
+
+
+    $scope.agregarCuentasContablesLeidasDesdeSql = (cuentasArray) => {
+
+        // cuando el modal que permite al usuario leer cuentas contables desde el servidor se cierra, 
+        // recibimos las cuentas leídas y las agregamos al $scope, para que estén presentes en la lista del
+        // ddl de cuentas contables 
+
+        let cuentasContablesAgregadas = 0;
+
+        if (cuentasArray && Array.isArray(cuentasArray) && cuentasArray.length) {
+
+            for (const cuenta of cuentasArray) {
+
+                const existe = $scope.cuentasContables.some(x => x.id == cuenta.id);
+
+                if (existe) {
+                    continue;
+                }
+
+                $scope.cuentasContables.push(cuenta);
+                cuentasContablesAgregadas++;
+            }
+        }
+
+        if (cuentasContablesAgregadas) {
+            // hacemos el binding entre la lista y el ui-grid 
+            $scope.cuentasContables = lodash.sortBy($scope.cuentasContables, ['descripcion']);
+            $scope.cuentasContables_ui_grid.data = $scope.cuentasContables;
+
+            $scope.$apply();
+        }
+    }
+}])
+
 
 function validarCodigoContable(codificaciones, codigosContables, cuentasContables) {
     // debugger;
 
-    if (!codigosContables || !_.isArray(codigosContables) || codigosContables.length == 0)
+    if (!codigosContables || !Array.isArray(codigosContables) || codigosContables.length == 0)
         return { error: false };            // aparentemente, no hay nada que validar ...
 
     let mensajesError = [];
@@ -1321,7 +1291,7 @@ function validarCodigoContable(codificaciones, codigosContables, cuentasContable
     for (let key in codigos_groupByCodificacion) {
         // recorremos y validamos cada cuenta en una codificación particular
         let codigosSeleccionados = codigos_groupByCodificacion[key];
-        let codificacionSeleccionada = _.find(codificaciones, (x) => { return x._id === codigosSeleccionados[0].codificacionContable_ID; });
+        let codificacionSeleccionada = lodash.find(codificaciones, (x) => { return x._id === codigosSeleccionados[0].codificacionContable_ID; });
 
         codigos_groupByCodificacion[key].forEach((codigo) => {
 
@@ -1344,7 +1314,7 @@ function validarCodigoContable(codificaciones, codigosContables, cuentasContable
             // el código no debe repetirse ...
             if (!error) {
                 let codigosRepetidos = lodash.filter(codigosSeleccionados, (x) => { return x.codigo === codigo.codigo; });
-                if (_.isArray(codigosRepetidos) && codigosRepetidos.length > 1) {
+                if (Array.isArray(codigosRepetidos) && codigosRepetidos.length > 1) {
                     mensajesError.push(`El código '${codigo.codigo}' en la codificación '${codificacionSeleccionada.descripcion}'
                                         está repetido; es decir, ocurre más de una vez.`
                                       );
@@ -1377,7 +1347,7 @@ function validarCodigoContable(codificaciones, codigosContables, cuentasContable
                 };
 
                 // nótese como buscamos en los códigos de la misma códificación ...
-                let found = _.find(codigosSeleccionados, (x) => { return x.codigo === nivelPadre; });
+                let found = lodash.find(codigosSeleccionados, (x) => { return x.codigo === nivelPadre; });
 
                 if (!found) {
                     mensajesError.push(`No existe un código que agrupe al código '${codigo.codigo}', en la codificación
@@ -1391,7 +1361,7 @@ function validarCodigoContable(codificaciones, codigosContables, cuentasContable
                     error = true;
                 };
 
-                let cuentasContables = _.filter(cuentasContables, (x) => { return x.codigoContable_ID === codigo._id ; });
+                let cuentasContables = lodash.filter(cuentasContables, (x) => { return x.codigoContable_ID === codigo._id ; });
 
                 if (!error && !codigo.detalle && cuentasContables && cuentasContables.length) {
                     mensajesError.push(`El código '${codigo.codigo}', en la codificación '${codificacionSeleccionada.descripcion}',
@@ -1402,7 +1372,7 @@ function validarCodigoContable(codificaciones, codigosContables, cuentasContable
 
             if (codigo && codigo.codigo && codigo.detalle) {
                 // el código es de tipo detalle; no debe haber códigos por debajo ...
-                let found = _.chain(codigosSeleccionados)
+                let found = lodash.chain(codigosSeleccionados)
                              .find((x) => { return x.codigo && x.codigo.startsWith(codigo.codigo + " "); })
                              .value();
 
@@ -1421,4 +1391,27 @@ function validarCodigoContable(codificaciones, codigosContables, cuentasContable
         return { error: true, mensajesError: mensajesError };
 
     return { error: false };
-};
+}
+
+
+// leemos las cuentas contables que usa la función y las regresamos en un array 
+const leerCuentasContablesFromSql = function(listaCuentasContablesIDs) { 
+
+    return new Promise((resolve, reject) => { 
+
+        Meteor.call('contab.cuentasContables.readFromSqlServer', listaCuentasContablesIDs, (err, result) => {
+
+            if (err) {
+                reject(err); 
+                return; 
+            }
+
+            if (result.error) {
+                reject(result.error); 
+                return; 
+            }
+
+            resolve(result); 
+        })
+    })
+}

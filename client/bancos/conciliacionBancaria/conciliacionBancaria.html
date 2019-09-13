@@ -32,6 +32,16 @@
 
                     <li class="divider-vertical-small"></li>
                     <li><a href="#" ng-click="exportarExcel()" class="navbar_custom_small_node">Exportar&nbsp;&nbsp;<span class="fa fa-file-excel-o"></span></a></li>
+                
+                    <li class="divider-vertical-small"></li>
+                    <li>
+                        <a href="#" class="navbar_custom_small_node">
+                            <cuentas-contables-search-modal cia-contab-seleccionada="companiaSeleccionada"
+                                                            agregar-cuentas-contables-leidas-desde-sql="agregarCuentasContablesLeidasDesdeSql">
+                            </cuentas-contables-search-modal>
+                        </a>
+                    </li>
+                
                 </ul>
 
                 <ul class="nav navbar-nav navbar-right">
@@ -140,7 +150,7 @@
                                                   id="cuentaContable"
                                                   ng-model="conciliacionBancaria.cuentaContable"
                                                   ng-change="setIsEdited('cuentaContable')"
-                                                  ng-options="item.id as item.cuentaDescripcionCia for item in cuentasContables | orderBy:'cuentaDescripcionCia'"
+                                                  ng-options="item.id as item.descripcion for item in cuentasContables | orderBy:'descripcion'"
                                                   ng-model-options="{ updateOn: 'blur' }"
                                                   required></select>
                                       </div>

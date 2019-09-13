@@ -1,9 +1,10 @@
 
+
+import lodash from 'lodash'; 
 import numeral from 'numeral'; 
 
 import { Companias } from '/imports/collections/companias';
 import { CompaniaSeleccionada } from '/imports/collections/companiaSeleccionada';
-import { CuentasContables2 } from '/imports/collections/contab/cuentasContables2'; 
 import { Filtros } from '/imports/collections/general/filtros'; 
 
 import { mensajeErrorDesdeMethod_preparar } from '/client/imports/clientGlobalMethods/mensajeErrorDesdeMethod_preparar';
@@ -39,7 +40,7 @@ angular.module("contabm").controller("Catalogos_Nomina_CuentasContablesEmpleadoR
           
     $scope.companiaSeleccionada = {};
 
-    if (companiaSeleccionada && !_.isEmpty(companiaSeleccionada)) {
+    if (companiaSeleccionada && !lodash.isEmpty(companiaSeleccionada)) {
         $scope.companiaSeleccionada = companiaSeleccionada;
     }
     else {
@@ -56,10 +57,6 @@ angular.module("contabm").controller("Catalogos_Nomina_CuentasContablesEmpleadoR
         },
         departamentos: () => {
             return Departamentos.find({}, { sort: { descripcion: 1 } });
-        },
-        cuentasContables: () => {
-            return CuentasContables2.find({ cia: companiaSeleccionada ? companiaSeleccionada.numero : -999 },
-                { sort: { cuenta: 1 } })
         },
     })
 
@@ -111,11 +108,9 @@ angular.module("contabm").controller("Catalogos_Nomina_CuentasContablesEmpleadoR
         getRowIdentity: function (row) {
             return row._id;
         }
-    };
+    }
 
-    $scope.cuentasContablesLista = CuentasContables2.find({ cia: $scope.companiaSeleccionada.numero, totDet: 'D', actSusp: 'A' },
-                                                        { sort: { cuenta: true }}).fetch();
-    $scope.cuentasContablesLista.forEach((x) => { x.cuentaDescripcionCia = x.cuentaDescripcionCia(); })
+    $scope.cuentasContablesLista = []; 
 
     $scope.cuentasContables_ui_grid.columnDefs = [
         {
@@ -199,9 +194,9 @@ angular.module("contabm").controller("Catalogos_Nomina_CuentasContablesEmpleadoR
 
             editableCellTemplate: 'ui-grid/dropdownEditor',
             editDropdownIdLabel: 'id',
-            editDropdownValueLabel: 'cuentaDescripcionCia',
+            editDropdownValueLabel: 'descripcion',
             editDropdownOptionsArray: $scope.cuentasContablesLista,
-            cellFilter: 'mapDropdown:row.grid.appScope.cuentasContablesLista:"id":"cuentaDescripcionCia"',
+            cellFilter: 'mapDropdown:row.grid.appScope.cuentasContablesLista:"id":"descripcion"',
 
             enableColumnMenu: false,
             enableCellEdit: true,
@@ -229,13 +224,13 @@ angular.module("contabm").controller("Catalogos_Nomina_CuentasContablesEmpleadoR
             enableSorting: false,
             width: 25
         },
-    ];
+    ]
 
 
     $scope.deleteItem = function (item) {
         if (item.docState && item.docState === 1)
             // si el item es nuevo, simplemente lo eliminamos del array
-            _.remove($scope.cuentasContablesEmpleadoRubro, (x) => { return x._id === item._id; });
+            lodash.remove($scope.cuentasContablesEmpleadoRubro, (x) => { return x._id === item._id; });
         else
             item.docState = 3;
     };
@@ -314,7 +309,7 @@ angular.module("contabm").controller("Catalogos_Nomina_CuentasContablesEmpleadoR
     var filtroAnterior = Filtros.findOne({ nombre: 'nomina.cuentasContablesEmpleadoRubro', userId: Meteor.userId() });
 
     if (filtroAnterior) { 
-        $scope.filtro = _.clone(filtroAnterior.filtro);
+        $scope.filtro = lodash.cloneDeep(filtroAnterior.filtro);
     }
     // ------------------------------------------------------------------------------------------------------
 
@@ -370,23 +365,63 @@ angular.module("contabm").controller("Catalogos_Nomina_CuentasContablesEmpleadoR
 
             let meteorUserId = Meteor.userId();
             $scope.cuentasContablesEmpleadoRubro = [];
-            $scope.cuentasContablesEmpleadoRubro =
-                Temp_Consulta_Nomina_CuentasContablesEmpleadoRubro.find({ user: meteorUserId },
-                                                                        { sort: { rubro: 1, cuentaContable: 1, }}).
-                                                                    fetch();
+            $scope.cuentasContablesEmpleadoRubro = Temp_Consulta_Nomina_CuentasContablesEmpleadoRubro
+                                                        .find({ user: meteorUserId }, { sort: { rubro: 1, cuentaContable: 1, }})
+                                                        .fetch();
 
-            $scope.cuentasContables_ui_grid.data = $scope.cuentasContablesEmpleadoRubro;
+            // *cada vez* que leemos un grupo de registros desde el servidor, debemos leer las cuentas contables, para que estén 
+            // disponibles para agregar a la lista del ddl en el ui-grid
+            let listaCuentasContablesIDs = [];
 
-            $scope.alerts.length = 0;
-            $scope.alerts.push({
-                type: 'info',
-                msg: `${numeral($scope.cuentasContablesEmpleadoRubro.length).format('0,0')} registros
-                    (de ${numeral(recordCount).format('0,0')}) han sido seleccionados ...`
-            });
+            // construimos la lista de cuentas contables. En este caso, no es muy simple, pues debemos leer las cuentas bancarias de la 
+            // compañía contab, en agencias, en bancos ... 
+            $scope.cuentasContablesEmpleadoRubro.forEach((item) => {
+                // primero la buscamos, para no repetirla 
+                // nótese que cada rubro siempre tendrá una cuenta contable, pues es requerida en el registro 
+                const cuenta = listaCuentasContablesIDs.find(x => x === item.cuentaContable);
 
-            $scope.showProgress = false;
-            $scope.$apply();
-        });
+                if (!cuenta) {
+                    listaCuentasContablesIDs.push(item.cuentaContable);
+                }
+            })
+
+            leerCuentasContablesFromSql(listaCuentasContablesIDs)
+                .then((result) => {
+
+                    // agregamos las cuentas contables leídas al arrary en el $scope. Además, hacemos el binding del ddl en el ui-grid 
+                    const cuentasContablesArray = result.cuentasContables;
+
+                    // 1) agregamos el array de cuentas contables al $scope 
+                    $scope.cuentasContablesLista = cuentasContablesArray;
+
+                    // 2) hacemos el binding entre la lista y el ui-grid 
+                    $scope.cuentasContables_ui_grid.columnDefs[4].editDropdownOptionsArray = $scope.cuentasContablesLista;
+
+                    $scope.cuentasContables_ui_grid.data = $scope.cuentasContablesEmpleadoRubro;
+
+                    $scope.alerts.length = 0;
+                    $scope.alerts.push({
+                        type: 'info',
+                        msg: `${numeral($scope.cuentasContablesEmpleadoRubro.length).format('0,0')} registros
+                            (de ${numeral(recordCount).format('0,0')}) han sido seleccionados ...`
+                    });
+
+                    $scope.showProgress = false;
+                    $scope.$apply();
+                })
+                .catch((err) => {
+
+                    $scope.alerts.length = 0;
+                    $scope.alerts.push({
+                        type: 'danger',
+                        msg: "Se han encontrado errores al intentar leer las cuentas contables usadas por esta función:<br /><br />" + err.message
+                    });
+
+                    $scope.showProgress = false;
+                    $scope.$apply();
+                })
+            
+        })
     }
 
     $scope.leerMasRegistros = function () {
@@ -404,7 +439,7 @@ angular.module("contabm").controller("Catalogos_Nomina_CuentasContablesEmpleadoR
         $scope.showProgress = true;
 
         // eliminamos los items eliminados; del $scope y del collection
-        let editedItems = _.filter($scope.cuentasContablesEmpleadoRubro, function (item) { return item.docState; });
+        let editedItems = lodash.filter($scope.cuentasContablesEmpleadoRubro, function (item) { return item.docState; });
 
         // nótese como validamos cada item antes de intentar guardar (en el servidor)
         let isValid = false;
@@ -511,6 +546,36 @@ angular.module("contabm").controller("Catalogos_Nomina_CuentasContablesEmpleadoR
             subscriptionHandle.stop();
         }
     })
+
+    $scope.agregarCuentasContablesLeidasDesdeSql = (cuentasArray) => {
+
+        // cuando el modal que permite al usuario leer cuentas contables desde el servidor se cierra, 
+        // recibimos las cuentas leídas y las agregamos al $scope, para que estén presentes en la lista del
+        // ddl de cuentas contables 
+
+        let cuentasContablesAgregadas = 0;
+
+        if (cuentasArray && Array.isArray(cuentasArray) && cuentasArray.length) {
+
+            for (const cuenta of cuentasArray) {
+
+                const existe = $scope.cuentasContablesLista.some(x => x.id == cuenta.id);
+
+                if (existe) {
+                    continue;
+                }
+
+                $scope.cuentasContablesLista.push(cuenta);
+                cuentasContablesAgregadas++;
+            }
+        }
+
+        if (cuentasContablesAgregadas) {
+            // hacemos el binding entre la lista y el ui-grid 
+            $scope.cuentasContablesLista = lodash.sortBy($scope.cuentasContablesLista, ['descripcion']);
+            $scope.cuentasContables_ui_grid.columnDefs[4].editDropdownOptionsArray = $scope.cuentasContablesLista;
+        }
+    }
 }])
 
 const leerListaEmpleados = (ciaContabSeleccionadaID) => { 
@@ -528,6 +593,28 @@ const leerListaEmpleados = (ciaContabSeleccionadaID) => {
             }
     
             resolve(result)
+        })
+    })
+}
+
+// leemos las cuentas contables que usa la función y las regresamos en un array 
+const leerCuentasContablesFromSql = function(listaCuentasContablesIDs) { 
+
+    return new Promise((resolve, reject) => { 
+
+        Meteor.call('contab.cuentasContables.readFromSqlServer', listaCuentasContablesIDs, (err, result) => {
+
+            if (err) {
+                reject(err); 
+                return; 
+            }
+
+            if (result.error) {
+                reject(result.error); 
+                return; 
+            }
+
+            resolve(result); 
         })
     })
 }

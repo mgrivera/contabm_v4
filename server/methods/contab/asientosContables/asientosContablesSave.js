@@ -85,11 +85,16 @@ Meteor.methods(
             // 4.30 para llevar a utc; restamos 4.30 para eliminar este efecto ...
             let asientoContable_sql = lodash.cloneDeep(asientoContable);
 
+            console.log(" fecha asiento contable (insert): ", asientoContable_sql.fecha); 
+
             asientoContable_sql.fecha = moment(asientoContable.fecha).subtract(TimeOffset, 'hours').toDate();
             asientoContable_sql.ingreso = moment(asientoContable.ingreso).subtract(TimeOffset, 'hours').toDate();
             asientoContable_sql.ultAct = moment(asientoContable.ultAct).subtract(TimeOffset, 'hours').toDate();
 
-            // sequelize ignora algunas propiedades que no estén en el modelo; por eso no las eliminamos antes; ej: _id, partidas, etc.
+            delete asientoContable_sql.partidas; 
+
+            console.log(" fecha asiento contable (insert): ", asientoContable_sql.fecha); 
+
             response = Async.runSync(function(done) {
                 AsientosContables_sql.create(asientoContable_sql)
                     .then(function(result) { done(null, result); })
@@ -97,8 +102,9 @@ Meteor.methods(
                     .done();
             });
 
-            if (response.error)
+            if (response.error) { 
                 throw new Meteor.Error(response.error && response.error.message ? response.error.message : response.error.toString());
+            }
 
             // el registro, luego de ser grabado en sql, es regresado en response.result.dataValues ...
             const savedItem = response.result.dataValues;
@@ -115,8 +121,9 @@ Meteor.methods(
                         .done();
                 });
 
-                if (response.error)
+                if (response.error) { 
                     throw new Meteor.Error(response.error && response.error.message ? response.error.message : response.error.toString());
+                }
             })
 
             asientoContable.numeroAutomatico = savedItem.numeroAutomatico;
@@ -126,9 +133,12 @@ Meteor.methods(
         if (asientoContable.docState == 2) {
             delete asientoContable.docState;
 
-            lodash.remove(asientoContable.partidas, (p) => { return p.docState == 3; });
-            asientoContable.partidas.forEach((partida) => { delete partida.docState; });
-
+            if (asientoContable.partidas) { 
+                // intentamos eliminar alguna partida que el usuario haya decidido eliminar 
+                lodash.remove(asientoContable.partidas, (p) => { return p.docState == 3; });
+                asientoContable.partidas.forEach((partida) => { delete partida.docState; });
+            }
+            
             asientoContable.ultAct = new Date();
             asientoContable.usuario = usuario.emails[0].address;
 
@@ -140,9 +150,15 @@ Meteor.methods(
             // para compensar la conversión que ocurre en las fechas al grabar a sql server, restamos 4.3 horas a cada una ...
             let asientoContable_sql = lodash.cloneDeep(asientoContable);
 
+            console.log(" asiento contable (update): ", asientoContable_sql.fecha); 
+
             asientoContable_sql.fecha = moment(asientoContable.fecha).subtract(TimeOffset, 'hours').toDate();
             asientoContable_sql.ingreso = moment(asientoContable.ingreso).subtract(TimeOffset, 'hours').toDate();
             asientoContable_sql.ultAct = moment(asientoContable.ultAct).subtract(TimeOffset, 'hours').toDate();
+
+            delete asientoContable_sql.partidas; 
+
+            console.log(" asiento contable (update): ", asientoContable_sql.fecha); 
 
             response = Async.runSync(function(done) {
                 AsientosContables_sql.update(asientoContable_sql, { where: { numeroAutomatico: asientoContable.numeroAutomatico }})
@@ -162,24 +178,28 @@ Meteor.methods(
                     .done();
             });
 
-            if (response.error)
+            if (response.error) { 
                 throw new Meteor.Error(response.error && response.error.message ? response.error.message : response.error.toString());
+            }
 
             // ---------------------------------------------------------------------------------------------------
             // finalmente, actualizamos las partidas del asiento contable
-            asientoContable.partidas.forEach((partida) => {
-                partida.numeroAutomatico = asientoContable.numeroAutomatico;
-
-                response = Async.runSync(function(done) {
-                    dAsientosContables_sql.create(partida)
-                        .then(function(result) { done(null, result); })
-                        .catch(function (err) { done(err, null); })
-                        .done();
-                });
-
-                if (response.error)
-                    throw new Meteor.Error(response.error && response.error.message ? response.error.message : response.error.toString());
-            });
+            if (asientoContable.partidas) { 
+                asientoContable.partidas.forEach((partida) => {
+                    partida.numeroAutomatico = asientoContable.numeroAutomatico;
+    
+                    response = Async.runSync(function(done) {
+                        dAsientosContables_sql.create(partida)
+                            .then(function(result) { done(null, result); })
+                            .catch(function (err) { done(err, null); })
+                            .done();
+                    });
+    
+                    if (response.error) { 
+                        throw new Meteor.Error(response.error && response.error.message ? response.error.message : response.error.toString());
+                    }
+                })
+            }
         }
 
 
@@ -192,8 +212,9 @@ Meteor.methods(
                     .done();
             });
 
-            if (response.error)
+            if (response.error) { 
                 throw new Meteor.Error(response.error && response.error.message ? response.error.message : response.error.toString());
+            }
         }
 
         return {

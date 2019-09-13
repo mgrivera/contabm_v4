@@ -32,9 +32,6 @@ Meteor.methods(
             throw new Meteor.Error(response.error && response.error.message ? response.error.message : response.error.toString());
         }
 
-        // lo primero que hacemos es determinar si el número se genera de acuerdo al tipo del asiento
-        let numeracionAsientosSeparadaFlag = response.result[0].NumeracionAsientosSeparadaFlag;
-
         let rubrosCuentasContables = response.result; 
         
         return JSON.stringify(rubrosCuentasContables);

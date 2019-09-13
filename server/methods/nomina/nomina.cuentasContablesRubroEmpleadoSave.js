@@ -5,11 +5,11 @@ Meteor.methods(
 {
     'nomina.cuentasContablesEmpleadoRubroSave': function (items) {
 
-        if (!_.isArray(items) || items.length == 0) {
+        if (!lodash.isArray(items) || items.length == 0) {
             throw new Meteor.Error("Aparentemente, no se han editado los datos en la forma. No hay nada que actualizar.");
         }
 
-        var inserts = _.chain(items).
+        var inserts = lodash.chain(items).
                       filter(function (item) { return item.docState && item.docState == 1; }).
                       map(function (item) { delete item.docState; return item; }).
                       value();
@@ -41,10 +41,10 @@ Meteor.methods(
                 if (error)
                     throw new Meteor.Error("validationErrors", error.invalidKeys.toString());
             });
-        });
+        })
 
 
-        var updates = _.chain(items).
+        var updates = lodash.chain(items).
                         filter(function (item) { return item.docState && item.docState == 2; }).
                         map(function (item) { delete item.docState; return item; }).                // eliminamos docState del objeto
                         map(function (item) { return { _id: item._id, object: item }; }).           // separamos el _id del objeto
@@ -74,8 +74,8 @@ Meteor.methods(
                 //The list of errors is available on `error.invalidKeys` or by calling Books.simpleSchema().namedContext().invalidKeys()
                 if (error)
                     throw new Meteor.Error("validationErrors", error.invalidKeys.toString());
-            });
-        });
+            })
+        })
 
 
         var removes = lodash(items).
@@ -96,7 +96,7 @@ Meteor.methods(
                 throw new Meteor.Error(response.error && response.error.message ? response.error.message : response.error.toString());
 
             Temp_Consulta_Nomina_CuentasContablesEmpleadoRubro.remove({ _id: item._id });
-        });
+        })
 
         return "Ok, los datos han sido actualizados en la base de datos.";
     }

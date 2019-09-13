@@ -227,7 +227,7 @@ angular.module("contabm").filter('monedaSimboloFilter', function () {
 
 angular.module("contabm").filter('cuentasContables_cuentaDescripcionCia', function () {
     return function (cuentaContableID) {
-        // debugger;
+
         if (!cuentaContableID)
             return "";
 
@@ -241,7 +241,7 @@ angular.module("contabm").filter('cuentasContables_cuentaDescripcionCia', functi
 
 angular.module("contabm").filter('cuentasContables_soloCuenta', function () {
     return function (cuentaContableID) {
-        // debugger;
+ 
         if (!cuentaContableID)
             return "";
 

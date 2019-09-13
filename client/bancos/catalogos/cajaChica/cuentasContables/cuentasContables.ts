@@ -6,7 +6,6 @@ import { Meteor } from 'meteor/meteor';
 
 import { CompaniaSeleccionada } from '../../../../../imports/collections/companiaSeleccionada';
 import { Companias } from '../../../../../imports/collections/companias';
-import { CuentasContables2 } from '../../../../../imports/collections/contab/cuentasContables2'; 
 
 import { CajaChica_RubrosCuentasContables_SimpleSchema } from '../../../../../imports/collections/bancos/cajaChica.cajasChicas'; 
 import { mensajeErrorDesdeMethod_preparar } from '../../../../imports/clientGlobalMethods/mensajeErrorDesdeMethod_preparar';
@@ -94,35 +93,11 @@ angular.module("contabm.contab.catalogos").controller("Catalogos_Bancos_CajaChic
         }
     }
 
-    // mostramos un mensaje al usuario si la tabla cuentasContables2 no existe en el client 
-    if (CuentasContables2.find().count() === 0) { 
-        let message = `Aparentemente, la <em>tabla de cuentas contables</em> no existe en el navegador. Por esta razón, 
-                       es probable que Ud. no vea las cuentas contables en la lista.<br /><br />
-                       Para corregir esta situación, Ud. debe ejecutar la opción <em>contab / generales / persistir cuentas contables</em>. <br />
-                       Luego puede regresar a esta función para editar o consultar los asientos contables.`; 
 
-        $scope.alerts.length = 0;
-        $scope.alerts.push({ type: 'warning', msg: message }); 
-    }
-
-
-    // ahora construimos una lista enorme con las cuentas contables, desde cuentasContables2, que siempre está en el client; esta lista tiene 
-    // una descripción para que se muestre cuando el usuario abre el ddl en el ui-grid ... 
+    // la lista de cuentas contables para el ddl contendrá *solo* las que se han usado realmente, en los records que se han grabado
+    // la lista es llenada más abajo, usando un meteor method que lee y regrea las cuentas desde el servidor 
     $scope.cuentasContablesLista = []; 
-    CuentasContables2.find({ 
-        cia: ($scope.companiaSeleccionada && $scope.companiaSeleccionada.numero ? $scope.companiaSeleccionada.numero : 0), 
-        totDet: 'D', 
-        actSusp: 'A' 
-    },
-    { 
-        sort: { cuenta: true } 
-    }).
-    forEach((cuenta) => {
-        // cuentaDescripcionCia() es un 'helper' definido en el collection CuentasContables ...
-        $scope.cuentasContablesLista.push({ id: cuenta.id, cuentaDescripcionCia: cuenta.cuentaDescripcionCia() });
-    }); 
 
-    
     $scope.cajaChica_rubros = []; 
 
     $scope.items_ui_grid.columnDefs = [
@@ -178,10 +153,10 @@ angular.module("contabm.contab.catalogos").controller("Catalogos_Bancos_CajaChic
             headerCellClass: 'ui-grid-leftCell',
             cellClass: 'ui-grid-leftCell',
 
-            cellFilter: 'mapDropdown:row.grid.appScope.cuentasContablesLista:"id":"cuentaDescripcionCia"',
+            cellFilter: 'mapDropdown:row.grid.appScope.cuentasContablesLista:"id":"descripcion"',
             editableCellTemplate: 'ui-grid/dropdownEditor',
             editDropdownIdLabel: 'id',
-            editDropdownValueLabel: 'cuentaDescripcionCia',
+            editDropdownValueLabel: 'descripcion',
             editDropdownOptionsArray: $scope.cuentasContablesLista,
 
             enableColumnMenu: false,
@@ -360,9 +335,53 @@ angular.module("contabm.contab.catalogos").controller("Catalogos_Bancos_CajaChic
 
                     // ahora que tenemos los rubros, los mostramos en el ddl para el campo rubro en la lista 
                     $scope.items_ui_grid.columnDefs[2].editDropdownOptionsArray = $scope.cajaChica_rubros; 
-                    
-                    $scope.showProgress = false;
-                    $scope.$apply();
+
+                    // =================================================================================================================
+                    // ahora leemos las cuentas contables (desde sql) que el usuario ha usado hasta ahora, en los records que ha grabado, 
+                    // para que estén disponibles en el ddl en el ui-grid 
+
+                    // para que estén desde el inicio, leemos las cuentas contables que el usuario ha registrado antes aqui 
+                    let listaCuentasContablesIDs = [];
+
+                    // construimos la lista de cuentas contables. En este caso, no es muy simple, pues debemos leer las cuentas bancarias de la 
+                    // compañía contab, en agencias, en bancos ... 
+                    $scope.cajaChica_rubrosCuentasContables.forEach((rubro) => {
+                        // primero la buscamos, para no repetirla 
+                        // nótese que cada rubro siempre tendrá una cuenta contable, pues es requerida en el registro 
+                        const cuenta = listaCuentasContablesIDs.find(x => x === rubro.cuentaContableID);
+
+                        if (!cuenta) {
+                            listaCuentasContablesIDs.push(rubro.cuentaContableID as never);
+                        }
+                    })
+
+                    leerCuentasContablesFromSql(listaCuentasContablesIDs)
+                        .then((result: any) => {
+
+                            // agregamos las cuentas contables leídas al arrary en el $scope. Además, hacemos el binding del ddl en el ui-grid 
+                            const cuentasContablesArray = result.cuentasContables;
+
+                            // 1) agregamos el array de cuentas contables al $scope 
+                            $scope.cuentasContablesLista = cuentasContablesArray;
+
+                            // 2) hacemos el binding entre la lista y el ui-grid 
+                            $scope.items_ui_grid.columnDefs[3].editDropdownOptionsArray = $scope.cuentasContablesLista;
+
+                            $scope.showProgress = false;
+                            $scope.$apply();
+                        })
+                        .catch((err) => {
+
+                            $scope.alerts.length = 0;
+                            $scope.alerts.push({
+                                type: 'danger',
+                                msg: "Se han encontrado errores al intentar leer las cuentas contables usadas por esta función:<br /><br />" + err.message
+                            });
+
+                            $scope.showProgress = false;
+                            $scope.$apply();
+                        })
+
                 }, 
                 (err) => { 
                     let errorMessage = mensajeErrorDesdeMethod_preparar(err);
@@ -391,6 +410,37 @@ angular.module("contabm.contab.catalogos").controller("Catalogos_Bancos_CajaChic
             $scope.$apply();
         }
     )
+
+    $scope.agregarCuentasContablesLeidasDesdeSql = (cuentasArray) => { 
+
+        // cuando el modal que permite al usuario leer cuentas contables desde el servidor se cierra, 
+        // recibimos las cuentas leídas y las agregamos al $scope, para que estén presentes en la lista del
+        // ddl de cuentas contables 
+
+        let cuentasContablesAgregadas = 0; 
+
+        if (cuentasArray && Array.isArray(cuentasArray) && cuentasArray.length) { 
+
+            for (const cuenta of cuentasArray) { 
+
+                const existe = $scope.cuentasContablesLista.some(x => x.id == cuenta.id); 
+
+                if (existe) { 
+                    continue; 
+                }
+
+                $scope.cuentasContablesLista.push(cuenta); 
+                cuentasContablesAgregadas++; 
+            }
+        }
+
+        if (cuentasContablesAgregadas) { 
+            // hacemos el binding entre la lista y el ui-grid 
+            $scope.cuentasContablesLista = lodash.sortBy($scope.cuentasContablesLista, ['descripcion']);
+
+            $scope.items_ui_grid.columnDefs[3].editDropdownOptionsArray = $scope.cuentasContablesLista;
+        }
+    }
 }
 ])
 
@@ -416,6 +466,28 @@ function leerRubrosDesdeSqlServer() {
                 reject(err); 
             }
     
+            resolve(result); 
+        })
+    })
+}
+
+// leemos las cuentas contables que usa la función y las regresamos en un array 
+const leerCuentasContablesFromSql = function(listaCuentasContablesIDs) { 
+
+    return new Promise((resolve, reject) => { 
+
+        Meteor.call('contab.cuentasContables.readFromSqlServer', listaCuentasContablesIDs, (err, result) => {
+
+            if (err) {
+                reject(err); 
+                return; 
+            }
+
+            if (result.error) {
+                reject(result.error); 
+                return; 
+            }
+
             resolve(result); 
         })
     })

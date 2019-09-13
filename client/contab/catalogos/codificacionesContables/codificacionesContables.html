@@ -130,9 +130,9 @@
                        'Códigos contables de tipo detalle para la codificación contable: ' + codificacionSeleccionada.descripcion : ''}}
                 </div>
 
-                <div class="col-sm-12 col-sm-offset-0">
+                <div class="col-sm-12">
 
-                    <div class="col-sm-4 col-sm-offset-0">
+                    <div class="col-sm-4">
                         <nav class="navbar navbar-default navbar_custom_small_toolBar" role="navigation">
                             <div class="container-fluid">
                                 <div class="navbar-collapse collapse">
@@ -152,7 +152,7 @@
                         </div>
                     </div>
 
-                    <div class="col-sm-3 col-sm-offset-0">
+                    <div class="col-sm-3">
 
                         <nav class="navbar navbar-default navbar_custom_small_toolBar" role="navigation">
                             <div class="container-fluid">
@@ -175,17 +175,23 @@
 
                     </div>
 
-                    <div class="col-sm-5 col-sm-offset-0">
+                    <div class="col-sm-5">
 
                         <nav class="navbar navbar-default navbar_custom_small_toolBar" role="navigation">
                             <div class="container-fluid">
                                 <div class="navbar-collapse collapse">
                                     <ul class="nav navbar-nav">
-                                        <li><a href="#" class="navbar_custom_small_header">Cuentas contables </a></li>
-                                        <!-- <li><a href="#" class="navbar_custom_small_node_withBackground" ng-click="nuevo()">Nuevo <span class="fa fa-file-o"></span></a></li>
-                                        <li><a href="#" class="navbar_custom_small_node_withBackground" ng-click="save()">Grabar <span class="fa fa-save"></span></a></li> -->
+                                        <li><a class="navbar_custom_small_header">Cuentas contables</a></li>
+                                        
+                                        <li>
+                                            <a href="#" class="navbar_custom_small_node_withBackground">
+                                                <cuentas-contables-search-modal cia-contab-seleccionada="companiaSeleccionada"
+                                                                                agregar-cuentas-contables-leidas-desde-sql="agregarCuentasContablesLeidasDesdeSql">
+                                                </cuentas-contables-search-modal>
+                                            </a>
+                                        </li>
                                     </ul>
-
+                
                                 </div>
                             </div>
                         </nav>

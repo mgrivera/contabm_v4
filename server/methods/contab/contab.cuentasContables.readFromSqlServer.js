@@ -9,7 +9,7 @@ Meteor.methods(
     'contab.cuentasContables.readFromSqlServer': function (listaCuentasContablesIDs) {
 
         new SimpleSchema({
-            listaCuentasContablesIDs: { type: Array, optional: false, }, 
+            listaCuentasContablesIDs: { type: Array, optional: false, minCount: 0, }, 
             'listaCuentasContablesIDs.$': { type: Number, }, 
         }).validate({ listaCuentasContablesIDs });
 

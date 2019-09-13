@@ -36,7 +36,15 @@
 
                                 <li><a href="#" ng-click="grabar()" class="navbar_custom_small_node">Grabar&nbsp;&nbsp;<span class="fa fa-floppy-o"></span></a></li>
                                 <li><a href="#" ng-click="refresh0()" class="navbar_custom_small_node">Refresh&nbsp;&nbsp;<span class="fa fa-refresh"></span></a></li>
-                                <li class="divider-vertical-small" ng-if="origen == 'edicion'"></li>
+                                
+                                <li class="divider-vertical-small"></li>
+                                <li>
+                                    <a href="#" class="navbar_custom_small_node">
+                                        <cuentas-contables-search-modal cia-contab-seleccionada="companiaSeleccionada"
+                                            agregar-cuentas-contables-leidas-desde-sql="agregarCuentasContablesLeidasDesdeSql">
+                                        </cuentas-contables-search-modal>
+                                    </a>
+                                </li>
                             </ul>
                         </div>
                     </div>
@@ -68,7 +76,7 @@
                             <label>Cuenta contable 'puente' de caja chica</label>
                             <select class="form-control input-sm myinput-sm"
                                     ng-model="cajaChica_parametros.cuentaContablePuenteID"
-                                    ng-options="item.id as item.cuentaDescripcionCia for item in cuentasContablesLista"
+                                    ng-options="item.id as item.descripcion for item in cuentasContablesLista"
                                     ng-change="setIsEdited()"
                                     ng-model-options="{ updateOn: 'blur' }">
                             </select>

@@ -1,5 +1,7 @@
 
-import { CuentasContables2 } from '/imports/collections/contab/cuentasContables2'; 
+
+import lodash from 'lodash'; 
+
 import { Companias } from '/imports/collections/companias';
 import { CompaniaSeleccionada } from '/imports/collections/companiaSeleccionada';
 import { ParametrosBancos } from '/imports/collections/bancos/parametrosBancos'; 
@@ -68,11 +70,7 @@ angular.module("contabm.bancos.catalogos").controller("Catalogos_ParametrosBanco
           getRowIdentity: function (row) {
               return row._id;
           }
-      };
-
-      $scope.cuentasContablesLista = CuentasContables2.find({ cia: companiaSeleccionadaDoc.numero, totDet: 'D', actSusp: 'A' },
-                                                            { sort: { cuenta: true }}).fetch();
-      $scope.cuentasContablesLista.forEach((x) => { x.cuentaDescripcionCia = x.cuentaDescripcionCia(); })
+      }
 
       $scope.parametros_ui_grid.columnDefs = [
           {
@@ -173,9 +171,9 @@ angular.module("contabm.bancos.catalogos").controller("Catalogos_ParametrosBanco
 
               editableCellTemplate: 'ui-grid/dropdownEditor',
               editDropdownIdLabel: 'id',
-              editDropdownValueLabel: 'cuentaDescripcionCia',
+              editDropdownValueLabel: 'descripcion',
               editDropdownOptionsArray: $scope.cuentasContablesLista,
-              cellFilter: 'mapDropdown:row.grid.appScope.cuentasContablesLista:"id":"cuentaDescripcionCia"',
+              cellFilter: 'mapDropdown:row.grid.appScope.cuentasContablesLista:"id":"descripcion"',
 
               enableColumnMenu: false,
               enableCellEdit: true,
@@ -306,9 +304,100 @@ angular.module("contabm.bancos.catalogos").controller("Catalogos_ParametrosBanco
 
                 $scope.parametros_ui_grid.data = $scope.parametros;
 
-                $scope.showProgress = false;
-                $scope.$apply();
+                // para que estén desde el inicio, leemos las cuentas contables que el usuario ha registrado antes aqui 
+                let listaCuentasContablesIDs = [];
+
+                // construimos la lista de cuentas contables. En este caso, no es muy simple, pues debemos leer las cuentas bancarias de la 
+                // compañía contab, en agencias, en bancos ... 
+                $scope.parametros.forEach((item) => {
+                    // primero la buscamos, para no repetirla 
+                    // nótese que cada rubro siempre tendrá una cuenta contable, pues es requerida en el registro 
+                    const cuenta = listaCuentasContablesIDs.find(x => x === item.cuentaContableITF);
+
+                    if (!cuenta) {
+                        listaCuentasContablesIDs.push(item.cuentaContableITF);
+                    }
+                })
+
+                leerCuentasContablesFromSql(listaCuentasContablesIDs)
+                    .then((result) => {
+
+                        // agregamos las cuentas contables leídas al arrary en el $scope. Además, hacemos el binding del ddl en el ui-grid 
+                        const cuentasContablesArray = result.cuentasContables;
+
+                        // 1) agregamos el array de cuentas contables al $scope 
+                        $scope.cuentasContablesLista = cuentasContablesArray;
+
+                        // 2) hacemos el binding entre la lista y el ui-grid 
+                        $scope.parametros_ui_grid.columnDefs[7].editDropdownOptionsArray = $scope.cuentasContablesLista;
+
+                        $scope.showProgress = false;
+                        $scope.$apply();
+                    })
+                    .catch((err) => {
+
+                        $scope.alerts.length = 0;
+                        $scope.alerts.push({
+                            type: 'danger',
+                            msg: "Se han encontrado errores al intentar leer las cuentas contables usadas por esta función:<br /><br />" + err.message
+                        });
+
+                        $scope.showProgress = false;
+                        $scope.$apply();
+                    })
             }
-      });
+      })
+
+    $scope.agregarCuentasContablesLeidasDesdeSql = (cuentasArray) => {
+
+        // cuando el modal que permite al usuario leer cuentas contables desde el servidor se cierra, 
+        // recibimos las cuentas leídas y las agregamos al $scope, para que estén presentes en la lista del
+        // ddl de cuentas contables 
+
+        let cuentasContablesAgregadas = 0;
+
+        if (cuentasArray && Array.isArray(cuentasArray) && cuentasArray.length) {
+
+            for (const cuenta of cuentasArray) {
+
+                const existe = $scope.cuentasContablesLista.some(x => x.id == cuenta.id);
+
+                if (existe) {
+                    continue;
+                }
+
+                $scope.cuentasContablesLista.push(cuenta);
+                cuentasContablesAgregadas++;
+            }
+        }
+
+        if (cuentasContablesAgregadas) {
+            // hacemos el binding entre la lista y el ui-grid 
+            $scope.cuentasContablesLista = lodash.sortBy($scope.cuentasContablesLista, ['descripcion']);
+
+            $scope.parametros_ui_grid.columnDefs[7].editDropdownOptionsArray = $scope.cuentasContablesLista;
+        }
+    }
+}])
+
+// leemos las cuentas contables que usa la función y las regresamos en un array 
+const leerCuentasContablesFromSql = function(listaCuentasContablesIDs) { 
+
+    return new Promise((resolve, reject) => { 
+
+        Meteor.call('contab.cuentasContables.readFromSqlServer', listaCuentasContablesIDs, (err, result) => {
+
+            if (err) {
+                reject(err); 
+                return; 
+            }
+
+            if (result.error) {
+                reject(result.error); 
+                return; 
+            }
+
+            resolve(result); 
+        })
+    })
 }
-]);

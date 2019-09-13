@@ -1,6 +1,7 @@
 
 import { sequelize } from '/server/sqlModels/_globals/_loadThisFirst/_globals';
 import moment from 'moment';
+import lodash from 'lodash'; 
 import SimpleSchema from 'simpl-schema';
 import { TimeOffset } from '/globals/globals'; 
 
@@ -50,12 +51,16 @@ Meteor.methods(
         if (pago.docState == 1) {
             delete pago.docState;
 
-            let pago_sql = _.clone(pago);
+            let pago_sql = lodash.cloneDeep(pago);
+
+            console.log("pago (insert): ", pago_sql.fecha); 
             // ----------------------------------------------------------------------------------------------------------------
             // para compensar la conversión que ocurre en las fechas al grabar a sql server, restamos 4.3 horas a cada una ...
             pago_sql.fecha = pago_sql.fecha ? moment(pago_sql.fecha).subtract(TimeOffset, 'hours').toDate() : null;
             pago_sql.ingreso = pago_sql.ingreso ? moment(pago_sql.ingreso).subtract(TimeOffset, 'hours').toDate() : null;
             pago_sql.ultAct = pago_sql.ultAct ? moment(pago_sql.ultAct).subtract(TimeOffset, 'hours').toDate() : null;
+
+            console.log("pago (insert): ", pago_sql.fecha); 
 
             // sequelize ignora algunas propiedades que no estén en el modelo; por eso no las eliminamos antes;
             // ej: _id, arrays de faltas y sueldos, etc.
@@ -78,7 +83,9 @@ Meteor.methods(
         if (pago.docState == 2) {
             delete pago.docState;
 
-            let pago_sql = _.clone(pago);
+            let pago_sql = lodash.cloneDeep(pago);
+
+            console.log("pago (update): ", pago_sql.fecha); 
 
             // ----------------------------------------------------------------------------------------------------------------
             // para compensar la conversión que ocurre en las fechas al grabar a sql server, restamos 4.3 horas a cada una ...
@@ -87,6 +94,8 @@ Meteor.methods(
 
             pago_sql.ultAct = moment(new Date()).subtract(TimeOffset, 'hours').toDate();
             pago_sql.usuario = usuario.emails[0].address;
+
+            console.log("pago (update): ", pago_sql.fecha); 
 
             response = Async.runSync(function(done) {
                 Pagos_sql.update(pago_sql, {

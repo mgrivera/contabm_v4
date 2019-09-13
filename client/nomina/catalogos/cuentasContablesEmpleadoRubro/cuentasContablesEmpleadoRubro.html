@@ -136,13 +136,20 @@
                         <li><a class="navbar_custom_small_header">Nómina - Cuentas contables</a></li>
                         <li><a href="#" class="navbar_custom_small_node_withBackground" ng-click="nuevo()">Nuevo <span class="fa fa-file-o"></span></a></li>
                         <li><a href="#" class="navbar_custom_small_node_withBackground" ng-click="save()">Grabar <span class="fa fa-save"></span></a></li>
+
+                        <li class="divider-vertical-small"></li>
+                        <li>
+                            <a href="#" class="navbar_custom_small_node_withBackground">
+                                <cuentas-contables-search-modal cia-contab-seleccionada="companiaSeleccionada"
+                                                                agregar-cuentas-contables-leidas-desde-sql="agregarCuentasContablesLeidasDesdeSql">
+                                </cuentas-contables-search-modal>
+                            </a>
+                        </li>
                     </ul>
 
                     <ul class="nav navbar-nav navbar-right">
                         <li><a href="#" ng-click="leerMasRegistros()" class="navbar_custom_small_node_withBackground">Más ...</a></li>
                         <li><a href="#" ng-click="leerTodosLosRegistros()" class="navbar_custom_small_node_withBackground">Todo</a></li>
-                        <!-- <li class="divider-vertical-small"></li>
-                        <li><a href="#" ng-click="regresar()" class="navbar_custom_small_node_withBackground">Regresar ...</a></li> -->
                     </ul>
 
                 </div>
