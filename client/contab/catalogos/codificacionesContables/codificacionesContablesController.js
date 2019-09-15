@@ -4,6 +4,7 @@ import lodash from 'lodash';
 import { DialogModal } from '/client/imports/general/genericUIBootstrapModal/angularGenericModal'; 
 import { Companias } from '/imports/collections/companias';
 import { CompaniaSeleccionada } from '/imports/collections/companiaSeleccionada';
+import { CuentasContablesClient } from '/client/imports/clientCollections/cuentasContables'; 
 
 angular.module("contabm.contab.catalogos").controller("Catalogos_Contab_CodificacionesContables_Controller",
 ['$scope', '$meteor', '$modal', 'uiGridConstants', '$interval', function ($scope, $meteor, $modal, uiGridConstants, $interval) {
@@ -656,6 +657,7 @@ angular.module("contabm.contab.catalogos").controller("Catalogos_Contab_Codifica
               enableCellEdit: false,
               enableColumnMenu: false,
               enableSorting: false,
+              enableFiltering: false,
               width: 25
           },
           {
@@ -872,7 +874,7 @@ angular.module("contabm.contab.catalogos").controller("Catalogos_Contab_Codifica
               width: 180,
               headerCellClass: 'ui-grid-leftCell',
               cellClass: 'ui-grid-leftCell',
-              cellFilter: 'cuentasContables_cuentaDescripcionCia',
+              cellFilter: 'cuentaContable_mostrarDescripcion', 
               enableColumnMenu: false,
               enableCellEdit: false,
               enableSorting: true,
@@ -1200,14 +1202,14 @@ angular.module("contabm.contab.catalogos").controller("Catalogos_Contab_Codifica
             }
         })
 
-        leerCuentasContablesFromSql(listaCuentasContablesIDs)
+        leerCuentasContablesFromSql(listaCuentasContablesIDs, $scope.companiaSeleccionada.numero)
             .then((result) => {
 
                 // agregamos las cuentas contables leídas al arrary en el $scope. Además, hacemos el binding del ddl en el ui-grid 
                 const cuentasContablesArray = result.cuentasContables;
 
                 // agregamos el array de cuentas contables al $scope 
-                $scope.cuentasContables = cuentasContablesArray;
+                $scope.cuentasContables = lodash.sortBy(cuentasContablesArray, [ 'descripcion' ]);;
 
                 $scope.codificaciones_ui_grid.data = [];
                 if (Array.isArray($scope.codificacionesContables)) {
@@ -1262,6 +1264,14 @@ angular.module("contabm.contab.catalogos").controller("Catalogos_Contab_Codifica
 
                 $scope.cuentasContables.push(cuenta);
                 cuentasContablesAgregadas++;
+
+                // -------------------------------------------------------------------------------------------------
+                // agregamos las cuentas contables al client collection (minimongo) de cuentas contables 
+                const cuentaClientCollection = CuentasContablesClient.findOne({ id: cuenta.id }); 
+                if (!cuentaClientCollection) { 
+                    CuentasContablesClient.insert(cuenta); 
+                }
+                // -------------------------------------------------------------------------------------------------
             }
         }
 
@@ -1395,7 +1405,7 @@ function validarCodigoContable(codificaciones, codigosContables, cuentasContable
 
 
 // leemos las cuentas contables que usa la función y las regresamos en un array 
-const leerCuentasContablesFromSql = function(listaCuentasContablesIDs) { 
+const leerCuentasContablesFromSql = function(listaCuentasContablesIDs, companiaContabSeleccionadaID) { 
 
     return new Promise((resolve, reject) => { 
 
@@ -1410,6 +1420,26 @@ const leerCuentasContablesFromSql = function(listaCuentasContablesIDs) {
                 reject(result.error); 
                 return; 
             }
+
+            const cuentasContables = result.cuentasContables; 
+
+            // 1) agregamos al cache (client only minimongo) cuentas que se recibieron desde el server
+            cuentasContables.forEach(x => { 
+                const cuenta = CuentasContablesClient.findOne({ id: x.id }); 
+                if (!cuenta) { 
+                    CuentasContablesClient.insert(x); 
+                }
+            })
+            
+
+            // 2) agregamos a la lista recibida desde el server, cuentas que existen en el cache (client only monimongo)
+            // nótese que agregamos *solo* las cuentas para la cia seleccionada; en el cache puden haber de varias cias
+            CuentasContablesClient.find({ cia: companiaContabSeleccionadaID }).fetch().forEach(x => { 
+                const cuenta = cuentasContables.find(cuenta => cuenta.id == x.id); 
+                if (!cuenta) { 
+                    cuentasContables.push(x); 
+                }
+            })
 
             resolve(result); 
         })

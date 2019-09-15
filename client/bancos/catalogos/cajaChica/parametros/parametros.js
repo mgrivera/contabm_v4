@@ -5,14 +5,15 @@ import * as lodash from 'lodash';
 
 import { Meteor } from 'meteor/meteor';
 
-import { CompaniaSeleccionada } from '../../../../../imports/collections/companiaSeleccionada';
-import { Companias } from '../../../../../imports/collections/companias';
-import { TiposAsientoContable } from '../../../../../imports/collections/contab/tiposAsientoContable'; 
+import { CompaniaSeleccionada } from '/imports/collections/companiaSeleccionada';
+import { Companias } from '/imports/collections/companias';
+import { TiposAsientoContable } from '/imports/collections/contab/tiposAsientoContable'; 
 
-import { CajaChica_Parametros_SimpleSchema } from '../../../../../imports/collections/bancos/cajaChica.cajasChicas'; 
-import { mensajeErrorDesdeMethod_preparar } from '../../../../imports/clientGlobalMethods/mensajeErrorDesdeMethod_preparar';
+import { CajaChica_Parametros_SimpleSchema } from '/imports/collections/bancos/cajaChica.cajasChicas'; 
+import { mensajeErrorDesdeMethod_preparar } from '/client/imports/clientGlobalMethods/mensajeErrorDesdeMethod_preparar';
 
-import { DialogModal } from 'client/imports/general/genericUIBootstrapModal/angularGenericModal'; 
+import { DialogModal } from '/client/imports/general/genericUIBootstrapModal/angularGenericModal'; 
+import { CuentasContablesClient } from '/client/imports/clientCollections/cuentasContables'; 
 
 angular.module("contabm.contab.catalogos").controller("Catalogos_Bancos_CajaChica_Parametros_Controller",
 ['$scope', '$modal', function ($scope, $modal) {
@@ -29,7 +30,7 @@ angular.module("contabm.contab.catalogos").controller("Catalogos_Bancos_CajaChic
     // ------------------------------------------------------------------------------------------------
     // leemos la compañía seleccionada
     let companiaSeleccionada = CompaniaSeleccionada.findOne({ userID: Meteor.userId() });
-    let ciaContab = {} as any;
+    let ciaContab = {};
 
     if (companiaSeleccionada) { 
         ciaContab = Companias.findOne(companiaSeleccionada.companiaID);
@@ -94,7 +95,7 @@ angular.module("contabm.contab.catalogos").controller("Catalogos_Bancos_CajaChic
 
         $scope.showProgress = true;
         leerItemsDesdeSqlServer($scope.companiaSeleccionada.numero).then(
-            (result: any) => { 
+            (result) => { 
                 $scope.cajaChica_parametros = JSON.parse(result);
 
                 $scope.showProgress = false;
@@ -128,7 +129,7 @@ angular.module("contabm.contab.catalogos").controller("Catalogos_Bancos_CajaChic
 
         // nótese como validamos cada item antes de intentar guardar (en el servidor)
         let isValid = false;
-        let errores: string[] = [];
+        let errores = [];
 
 
         isValid = CajaChica_Parametros_SimpleSchema.namedContext().validate(editedItem);
@@ -170,7 +171,7 @@ angular.module("contabm.contab.catalogos").controller("Catalogos_Bancos_CajaChic
                 });
 
                 leerItemsDesdeSqlServer($scope.companiaSeleccionada.numero).then(
-                    (result: any) => { 
+                    (result) => { 
                         $scope.cajaChica_parametros = JSON.parse(result);
                         
                         $scope.showProgress = false;
@@ -199,7 +200,7 @@ angular.module("contabm.contab.catalogos").controller("Catalogos_Bancos_CajaChic
             });
 
             leerItemsDesdeSqlServer($scope.companiaSeleccionada.numero).then(
-                (result: any) => { 
+                (result) => { 
                     $scope.cajaChica_parametros = JSON.parse(result);
             
                     $scope.showProgress = false;
@@ -230,7 +231,7 @@ angular.module("contabm.contab.catalogos").controller("Catalogos_Bancos_CajaChic
 
     $scope.showProgress = true;
     leerItemsDesdeSqlServer($scope.companiaSeleccionada.numero).then(
-        (result: any) => { 
+        (result) => { 
             $scope.cajaChica_parametros = JSON.parse(result);
 
             // =================================================================================================================
@@ -242,17 +243,17 @@ angular.module("contabm.contab.catalogos").controller("Catalogos_Bancos_CajaChic
 
 
             if ($scope.cajaChica_parametros && $scope.cajaChica_parametros.cuentaContablePuenteID) {
-                listaCuentasContablesIDs.push($scope.cajaChica_parametros.cuentaContablePuenteID as never);
+                listaCuentasContablesIDs.push($scope.cajaChica_parametros.cuentaContablePuenteID);
             }
 
-            leerCuentasContablesFromSql(listaCuentasContablesIDs)
-                .then((result: any) => {
+            leerCuentasContablesFromSql(listaCuentasContablesIDs, $scope.companiaSeleccionada.numero)
+                .then((result) => {
 
                     // agregamos las cuentas contables leídas al arrary en el $scope. Además, hacemos el binding del ddl en el ui-grid 
                     const cuentasContablesArray = result.cuentasContables;
 
                     // 1) agregamos el array de cuentas contables al $scope 
-                    $scope.cuentasContablesLista = cuentasContablesArray;
+                    $scope.cuentasContablesLista = lodash.sortBy(cuentasContablesArray, [ 'descripcion' ]);;
 
                     $scope.showProgress = false;
                     $scope.$apply();
@@ -301,6 +302,14 @@ angular.module("contabm.contab.catalogos").controller("Catalogos_Bancos_CajaChic
                     continue; 
                 }
 
+                // -------------------------------------------------------------------------------------------------
+                // agregamos las cuentas contables al client collection (minimongo) de cuentas contables 
+                const cuentaClientCollection = CuentasContablesClient.findOne({ id: cuenta.id }); 
+                if (!cuentaClientCollection) { 
+                    CuentasContablesClient.insert(cuenta); 
+                }
+                // -------------------------------------------------------------------------------------------------
+
                 $scope.cuentasContablesLista.push(cuenta); 
                 cuentasContablesAgregadas++; 
             }
@@ -330,7 +339,7 @@ function leerItemsDesdeSqlServer(ciaContabID) {
 }
 
 // leemos las cuentas contables que usa la función y las regresamos en un array 
-const leerCuentasContablesFromSql = function(listaCuentasContablesIDs) { 
+const leerCuentasContablesFromSql = function(listaCuentasContablesIDs, companiaContabSeleccionadaID) { 
 
     return new Promise((resolve, reject) => { 
 
@@ -345,6 +354,25 @@ const leerCuentasContablesFromSql = function(listaCuentasContablesIDs) {
                 reject(result.error); 
                 return; 
             }
+
+            const cuentasContables = result.cuentasContables; 
+
+            // 1) agregamos al cache (client only minimongo) cuentas que se recibieron desde el server
+            cuentasContables.forEach(x => { 
+                const cuenta = CuentasContablesClient.findOne({ id: x.id }); 
+                if (!cuenta) { 
+                    CuentasContablesClient.insert(x); 
+                }
+            })
+            
+            // 2) agregamos a la lista recibida desde el server, cuentas que existen en el cache (client only monimongo)
+            // nótese que agregamos *solo* las cuentas para la cia seleccionada; en el cache puden haber de varias cias
+            CuentasContablesClient.find({ cia: companiaContabSeleccionadaID }).fetch().forEach(x => { 
+                const cuenta = cuentasContables.find(cuenta => cuenta.id == x.id); 
+                if (!cuenta) { 
+                    cuentasContables.push(x); 
+                }
+            })
 
             resolve(result); 
         })

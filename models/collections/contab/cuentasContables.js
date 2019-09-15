@@ -4,15 +4,13 @@ import lodash from 'lodash';
 import { Mongo } from 'meteor/mongo';
 import SimpleSchema from 'simpl-schema';
 
-import { Companias } from '/imports/collections/companias';
-
 validarCuenta = function() {
     if (this.isSet && this.value) {
         let intValue = parseInt(this.value);
         if (!lodash.isInteger(intValue)) {
             return "Error: la cuenta contable debe siempre ser un valor numérico.";
-        };
-    };
+        }
+    }
 
     // validamos aquí que:
     // 1) una cuenta de tipo detalle tenga más de 1 nivel
@@ -32,11 +30,11 @@ validarCuenta = function() {
                     return `Error: una cuenta de tipo detalle (${this.value}) no debe tener menos de dos niveles.`;
                 };
                 break;
-        };
-    };
+        }
+    }
 
     return true;
-};
+}
 
 // CuentasContables = new Mongo.Collection("cuentasContables");
 CuentasContables = new Mongo.Collection('cuentasContables');
@@ -47,7 +45,6 @@ if (Meteor.isServer) {
 }
 
 let schema = new SimpleSchema({
-    _id: { type: String, optional: false },
     id: { type: Number, label: "ID", optional: false },
     cuenta: { type: String, label: "Cuenta contable", optional: false, min: 1, max: 25, custom: validarCuenta, },
     descripcion: { type: String, label: "Descripción", optional: false, min: 1, max: 40, },
@@ -64,11 +61,10 @@ let schema = new SimpleSchema({
     totDet: { type: String, label: "Tipo (total/detalle)", optional: false, min: 1, max: 1, },
     actSusp: { type: String, label: "Activa/Suspendida", optional: false, min: 1, max: 1,  },
     cuentaEditada: { type: String, label: "Cuenta editada", optional: false, min: 1, max: 30,  },
-    grupo: { type: Number, label: "Grupo", optional: false },
-    cia: { type: Number, label: "Cia contab", optional: false },
-    docState: { type: Number, optional: true },
-    existeEnOrigen: { type: Boolean, optional: true },      // cuando el usuario elmina un registro en sql server, lo eliminamos en mongo ...
-});
-
+    grupo: { type: Number, label: "Grupo", optional: false, }, 
+    presupuestarFlag: { type: Boolean, label: "Presupuestar?", optional: true, },  
+    cia: { type: Number, label: "Cia contab", optional: false, },
+    docState: { type: Number, optional: true, },
+})
 
 CuentasContables.attachSchema(schema);

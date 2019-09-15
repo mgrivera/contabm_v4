@@ -7,6 +7,7 @@ import { Companias } from '/imports/collections/companias';
 import { Monedas } from '/imports/collections/monedas'; 
 import { Bancos } from '/imports/collections/bancos/bancos';
 import { Chequeras } from '/imports/collections/bancos/chequeras'; 
+import { CuentasContablesClient } from '/client/imports/clientCollections/cuentasContables'; 
 
 import { DialogModal } from '/client/imports/general/genericUIBootstrapModal/angularGenericModal'; 
 import { mensajeErrorDesdeMethod_preparar } from '/client/imports/clientGlobalMethods/mensajeErrorDesdeMethod_preparar'; 
@@ -1352,14 +1353,14 @@ angular.module("contabm.bancos.catalogos").controller("Catalogos_CuentasBancaria
         })
     })
 
-    leerCuentasContablesFromSql(listaCuentasContablesIDs)
+    leerCuentasContablesFromSql(listaCuentasContablesIDs, $scope.companiaSeleccionada.numero)
         .then((result) => {
 
             // agregamos las cuentas contables leídas al arrary en el $scope. Además, hacemos el binding del ddl en el ui-grid 
             const cuentasContablesArray = result.cuentasContables;
 
             // 1) agregamos el array de cuentas contables al $scope 
-            $scope.cuentasContablesLista = cuentasContablesArray; 
+            $scope.cuentasContablesLista = lodash.sortBy(cuentasContablesArray, [ 'descripcion' ]);;
 
             // 2) hacemos el binding entre la lista y el ui-grid 
             $scope.cuentasBancarias_ui_grid.columnDefs[6].editDropdownOptionsArray = $scope.cuentasContablesLista; 
@@ -1395,6 +1396,14 @@ angular.module("contabm.bancos.catalogos").controller("Catalogos_CuentasBancaria
                     continue; 
                 }
 
+                // -------------------------------------------------------------------------------------------------
+                // agregamos las cuentas contables al client collection (minimongo) de cuentas contables 
+                const cuentaClientCollection = CuentasContablesClient.findOne({ id: cuenta.id }); 
+                if (!cuentaClientCollection) { 
+                    CuentasContablesClient.insert(cuenta); 
+                }
+                // -------------------------------------------------------------------------------------------------
+
                 $scope.cuentasContablesLista.push(cuenta); 
                 cuentasContablesAgregadas++; 
             }
@@ -1412,7 +1421,7 @@ angular.module("contabm.bancos.catalogos").controller("Catalogos_CuentasBancaria
 
 
 // leemos las cuentas contables que usa la función y las regresamos en un array 
-const leerCuentasContablesFromSql = function(listaCuentasContablesIDs) { 
+const leerCuentasContablesFromSql = function(listaCuentasContablesIDs, companiaContabSeleccionadaID) { 
 
     return new Promise((resolve, reject) => { 
 
@@ -1427,6 +1436,25 @@ const leerCuentasContablesFromSql = function(listaCuentasContablesIDs) {
                 reject(result.error); 
                 return; 
             }
+
+            const cuentasContables = result.cuentasContables; 
+
+            // 1) agregamos al cache (client only minimongo) cuentas que se recibieron desde el server
+            cuentasContables.forEach(x => { 
+                const cuenta = CuentasContablesClient.findOne({ id: x.id }); 
+                if (!cuenta) { 
+                    CuentasContablesClient.insert(x); 
+                }
+            })
+            
+            // 2) agregamos a la lista recibida desde el server, cuentas que existen en el cache (client only monimongo)
+            // nótese que agregamos *solo* las cuentas para la cia seleccionada; en el cache puden haber de varias cias
+            CuentasContablesClient.find({ cia: companiaContabSeleccionadaID }).fetch().forEach(x => { 
+                const cuenta = cuentasContables.find(cuenta => cuenta.id == x.id); 
+                if (!cuenta) { 
+                    cuentasContables.push(x); 
+                }
+            })
 
             resolve(result); 
         })

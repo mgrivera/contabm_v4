@@ -703,7 +703,7 @@ function ($scope, $stateParams, $state, $meteor, $modal, uiGridConstants) {
             enableFiltering: true,
             headerCellClass: 'ui-grid-leftCell',
             cellClass: 'ui-grid-leftCell',
-            cellFilter: 'cuentasContables_cuentaDescripcionCia',
+            cellFilter: 'cuentaContable_mostrarDescripcion',
 
             editableCellTemplate: 'ui-grid/dropdownEditor',
             editDropdownIdLabel: 'id',

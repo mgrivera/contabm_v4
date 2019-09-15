@@ -5,7 +5,6 @@ import { Companias } from '/imports/collections/companias';
 Meteor.publish('cuentasContables', function (todasLasCiasContab) {
 
     // determinamos la compañía seleccionada, pues algunos catálogos que se publiquen deben corresponder a ésta ...
-    let empresaUsuariaSeleccionada = null;
     let ciaContabSeleccionada = null;
 
     if (this.userId) {

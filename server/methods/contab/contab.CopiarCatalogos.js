@@ -97,9 +97,9 @@ Meteor.methods(
                                         { current: currentProcess, max: numberOfProcess, progress: numeral(cantidadRecs / numberOfItems).format("0 %") });
                     reportar = 0;
                 };
-            };
+            }
             // -------------------------------------------------------------------------------------------------------
-        });
+        })
 
 
 
@@ -168,10 +168,10 @@ Meteor.methods(
                                         { myuserId: this.userId, app: 'contab', process: 'copiarCatalogos' },
                                         { current: currentProcess, max: numberOfProcess, progress: numeral(cantidadRecs / numberOfItems).format("0 %") });
                     reportar = 0;
-                };
-            };
+                }
+            }
             // -------------------------------------------------------------------------------------------------------
-        });
+        })
 
         // ---------------------------------------------------------------------------------------------------
         // Cuentas contables - copiamos a mongo desde contab
@@ -202,7 +202,6 @@ Meteor.methods(
         // si el usuario eliminó items en sql server, la idea es que se eliminen también aquí; usamos el field existeEnOrigen
         // para saber cuales items no existen y eliminarlos en mongo ...
         CuentasContables.update({ }, { $set: { existeEnOrigen: false }}, { multi: true, });
-
 
         response.result.rows.forEach((item) => {
             // para cada catálogos, hacemos un 'upsert'; primero leemos a ver si existe; de ser así, usamos el _id del doc que existe ...
@@ -260,10 +259,10 @@ Meteor.methods(
                                         { myuserId: this.userId, app: 'contab', process: 'copiarCatalogos' },
                                         { current: currentProcess, max: numberOfProcess, progress: numeral(cantidadRecs / numberOfItems).format("0 %") });
                     reportar = 0;
-                };
-            };
+                }
+            }
             // -------------------------------------------------------------------------------------------------------
-        });
+        })
 
         // al final, los registros que no existen en sql server son eliminados en mongo ...
         CuentasContables.remove({ existeEnOrigen: false });
@@ -472,4 +471,4 @@ Meteor.methods(
 
         return "Ok, los catálogos han sido cargados desde <em>Contab</em> en forma satisfactoria.";
     }
-});
+})

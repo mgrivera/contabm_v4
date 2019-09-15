@@ -4,8 +4,9 @@ import numeral from "numeral";
 import moment from "moment";
 import { Monedas } from '/imports/collections/monedas';
 import { Companias } from '/imports/collections/companias';
-import { CuentasContables2 } from '/imports/collections/contab/cuentasContables2'; 
 import { GruposContables } from '/imports/collections/contab/gruposContables'; 
+
+import { CuentasContablesClient } from '/client/imports/clientCollections/cuentasContables'; 
 
 // ---------------------------------------------------------------------------------------
 // ui-grid: para formatear fields numéricos y dates
@@ -225,33 +226,21 @@ angular.module("contabm").filter('monedaSimboloFilter', function () {
     };
 })
 
-angular.module("contabm").filter('cuentasContables_cuentaDescripcionCia', function () {
+// TODO: pasar el catálogo de cuentas en el $scope para leer la cuenta y regresar el filter 
+// TODO: pasar el catálogo de cuentas en el $scope para leer la cuenta y regresar el filter 
+angular.module("contabm").filter('cuentaContable_mostrarDescripcion', function () {
     return function (cuentaContableID) {
 
-        if (!cuentaContableID)
+        if (!cuentaContableID) { 
             return "";
+        }
 
-        // nótese que CuentasContables2 es un 'dumb' collection que sirve para tener un cache de
-        // CuentasContables en el client. Además, 'cuentaDescripcionCia' es un helper en
-        // CuentasContables2 ...
-        var cuentaContable = CuentasContables2.findOne({ id: cuentaContableID });
-        return !cuentaContable ? "Indefinido" : cuentaContable.cuentaDescripcionCia();
+        // usamos el client collection (minimongo) para leer la cuenta y regresar su descripción 
+        const cuenta = CuentasContablesClient.findOne({ id: cuentaContableID }); 
+        return cuenta ? cuenta.descripcion : `${cuentaContableID} - Indefinida`;
     };
 })
 
-angular.module("contabm").filter('cuentasContables_soloCuenta', function () {
-    return function (cuentaContableID) {
- 
-        if (!cuentaContableID)
-            return "";
-
-        // nótese que CuentasContables2 es un 'dumb' collection que sirve para tener un cache de
-        // CuentasContables en el client. Además, 'cuentaDescripcionCia' es un helper en
-        // CuentasContables2 ...
-        var cuentaContable = CuentasContables2.findOne({ id: cuentaContableID });
-        return !cuentaContable ? "Indefinido" : cuentaContable.cuenta;
-    };
-})
 
 angular.module("contabm").filter('mesesAnoFiscal_ano', function () {
     return function (ano) {

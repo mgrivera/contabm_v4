@@ -1,135 +1,86 @@
 
 
 import lodash from 'lodash';
-import { AsientosContables_sql, dAsientosContables_sql } from '/server/imports/sqlModels/contab/asientosContables'; 
 import { CuentasContables_sql } from '/server/imports/sqlModels/contab/cuentasContables'; 
+import { dAsientosContables_sql } from '/server/imports/sqlModels/contab/asientosContables'; 
 
 Meteor.methods(
 {
     'contab.cuentasContablesSave': function (items) {
 
-        if (!_.isArray(items) || items.length == 0) {
+        if (!Array.isArray(items) || items.length == 0) {
             throw new Meteor.Error("Aparentemente, no se han editado los datos en la forma. No hay nada que actualizar.");
         }
 
-        var inserts = _.chain(items).
+        var inserts = lodash.chain(items).
                       filter(function (item) { return item.docState && item.docState == 1; }).
                       map(function (item) { delete item.docState; return item; }).
                       value();
 
 
-        inserts.forEach(function (item) {
-            // ej: _id, arrays de faltas y sueldos, etc.
+        for (const item of inserts) {
+
+            // al poner 0 evitamos que sequelize use Identity-Insert y use ese valor como pk (que ahora no es la idea)
+            item.id = 0;   
+
+            const validarCuenta = validarCuentaContable(item); 
+
+            if (validarCuenta.error) { 
+                return { 
+                    error: true, 
+                    message: validarCuenta.message, 
+                }
+            }
+
             let response = null;
 
-            let item_sql = lodash.clone(item);
-            delete item_sql._id;
-
             response = Async.runSync(function(done) {
-                CuentasContables_sql.create(item_sql)
+                CuentasContables_sql.create(item)
                     .then(function(result) { done(null, result); })
                     .catch(function (err) { done(err, null); })
                     .done();
             });
 
             if (response.error) { 
-                console.log("Error al intentar grabar a sql la cuenta: ", item_sql); 
                 throw new Meteor.Error(response.error && response.error.message ? response.error.message : response.error.toString());
             }
                 
-
             // el registro, luego de ser grabado en sql, es regresado en response.result.dataValues ...
             let savedItem = response.result.dataValues;
 
             item.id = savedItem.id;     // recuperamos el id (pk) de la cuenta; pues se le asignó un valor en sql ...
-
-            // actualizamos el collection en mongo ...
-            CuentasContables.insert(item, function (error, result) {
-                if (error) { 
-                    console.log("Error al intentar grabar a mongo la cuenta: ", item); 
-                    throw new Meteor.Error("validationErrors", error.invalidKeys.toString());
-                } 
-            });
-        });
+        }
 
 
-        var updates = _.chain(items).
-                        filter(function (item) { return item.docState && item.docState == 2; }).
-                        map(function (item) { delete item.docState; return item; }).                // eliminamos docState del objeto
-                        map(function (item) { return { _id: item._id, object: item }; }).           // separamos el _id del objeto
-                        map(function (item) { delete item.object._id; return item; }).             // eliminamos _id del objeto (arriba lo separamos)
-                        value();
+        var updates = lodash.chain(items)
+                            .filter(function (item) { return item.docState && item.docState == 2; })
+                            .map(function (item) { delete item.docState; return item; })               // eliminamos docState del objeto
+                            .value();
 
-        updates.forEach(function (item) {
+        for (const item of updates) {
+
+            const validarCuenta = validarCuentaContable(item); 
+
+            if (validarCuenta.error) { 
+                return { 
+                    error: true, 
+                    message: validarCuenta.message, 
+                }
+            }
 
             let response = null;
 
-            // una cuenta de tipo total no debe tener asientos
-            if (item.object && item.object.totDet && item.object.totDet == "T") {
-                let cuentaContable = item.object;
-                response = Async.runSync(function(done) {
-                    dAsientosContables_sql.count({ where: { cuentaContableID: cuentaContable.id }})
-                        .then(function(result) { done(null, result); })
-                        .catch(function (err) { done(err, null); })
-                        .done();
-                });
-
-                if (response.error)
-                    throw new Meteor.Error(response.error && response.error.message ? response.error.message : response.error.toString());
-
-
-                if (response.result > 0)
-                    throw new Meteor.Error(`Error: la cuenta contable <b>${cuentaContable.cuenta}</b> tiene asientos
-                                            contables asociados; no puede ser de tipo <em><b>total</b></em>.`);
-            };
-
-            // una cuenta de tipo detalle no debe tener otras cuentas asociadas (ie: hijas) ...
-            if (item.object && item.object.totDet && item.object.totDet == "D") {
-                let cuentaContable = item.object;
-                response = Async.runSync(function(done) {
-                    CuentasContables_sql.count({ where: { $and:
-                        [
-                            { cuenta: { $like: `${cuentaContable.cuenta}%` }},
-                            { cuenta: { $ne: cuentaContable.cuenta }},
-                            { cia: cuentaContable.cia }
-                        ] }})
-                        .then(function(result) { done(null, result); })
-                        .catch(function (err) { done(err, null); })
-                        .done();
-                });
-
-                if (response.error)
-                    throw new Meteor.Error(response.error && response.error.message ? response.error.message : response.error.toString());
-
-
-                if (response.result > 0)
-                    throw new Meteor.Error(`Error: la cuenta contable <b>${cuentaContable.cuenta}</b> tiene cuentas
-                                            contables asociadas; no puede ser de tipo <em><b>detalle</b></em>.`);
-            };
-
-
-
-            let item_sql = lodash.clone(item.object);
-            delete item_sql._id;
-
             response = Async.runSync(function(done) {
-                CuentasContables_sql.update(item_sql, { where: { id: item_sql.id }})
+                CuentasContables_sql.update(item, { where: { id: item.id }})
                     .then(function(result) { done(null, result); })
                     .catch(function (err) { done(err, null); })
                     .done();
-            });
+            })
 
-            if (response.error)
+            if (response.error) { 
                 throw new Meteor.Error(response.error && response.error.message ? response.error.message : response.error.toString());
-
-
-            // actualizamos el collection en mongo ...
-            CuentasContables.update({ _id: item._id }, { $set: item.object }, {}, function (error, result) {
-                //The list of errors is available on `error.invalidKeys` or by calling Books.simpleSchema().namedContext().invalidKeys()
-                if (error)
-                    throw new Meteor.Error("validationErrors", error.invalidKeys.toString());
-            });
-        });
+            }
+        }
 
 
         // ordenamos por numNiveles (en forma descendente) para que siempre validemos primero las cuentas de más
@@ -140,7 +91,7 @@ Meteor.methods(
                       orderBy(['numNiveles'], ['desc']).
                       value();
 
-        removes.forEach(function (item) {
+        for (const item of removes) {
 
             let response = null;
 
@@ -150,16 +101,23 @@ Meteor.methods(
                     .then(function(result) { done(null, result); })
                     .catch(function (err) { done(err, null); })
                     .done();
-            });
+            })
 
-            if (response.error)
+            if (response.error) { 
                 throw new Meteor.Error(response.error && response.error.message ? response.error.message : response.error.toString());
+            }
 
+            console.log("cantidad de asientos ", response.result); 
 
-            if (response.result > 0)
-                throw new Meteor.Error(`Error: la cuenta contable <b>${item.cuenta}</b> tiene asientos
-                                        contables asociados; no puede ser eliminada.`);
+            if (response.result > 0) { 
+                const message = `Error: la cuenta contable <b>${item.cuenta}</b> 
+                                 tiene asientos contables asociados; no puede ser eliminada.`; 
 
+                return { 
+                    error: true, 
+                    message: message, 
+                }
+            }
 
             // el usuario no debe eliminar cuentas con cuentas contables asociadas ('hijas')
             response = Async.runSync(function(done) {
@@ -172,15 +130,27 @@ Meteor.methods(
                     .then(function(result) { done(null, result); })
                     .catch(function (err) { done(err, null); })
                     .done();
-            });
+            })
 
-            if (response.error)
+            if (response.error) { 
                 throw new Meteor.Error(response.error && response.error.message ? response.error.message : response.error.toString());
+            }
 
+            console.log("cantidad de cuentas asociadas ", response.result); 
+            console.log("(response.result > 0): ", (response.result > 0)); 
 
-            if (response.result > 0)
-                throw new Meteor.Error(`Error: la cuenta contable <b>${item.cuenta}</b> tiene cuentas
-                                        contables asociadas; no puede ser eliminada.`);
+            if (response.result > 0) { 
+
+                console.log("Ok, error por cuentas asociadas ", (response.result)); 
+
+                const message = `Error: la cuenta contable <b>${item.cuenta}</b> tiene cuentas contables asociadas; 
+                                 no puede ser eliminada..`; 
+
+                return { 
+                    error: true, 
+                    message: message, 
+                }
+            }
 
             // finalmente, si la cuenta no falla las validaciones, la eliminamos ...
             response = Async.runSync(function(done) {
@@ -188,16 +158,154 @@ Meteor.methods(
                     .then(function(result) { done(null, result); })
                     .catch(function (err) { done(err, null); })
                     .done();
-            });
+            })
 
             if (response.error) {
                 throw new Meteor.Error(response.error && response.error.message ? response.error.message : response.error.toString());
             }
+        }
 
-            // actualizamos el collection en mongo ...
-            CuentasContables.remove({ _id: item._id });
-        });
+        console.log("Ok, llegamos al final en el method ..."); 
 
-        return "Ok, los datos han sido actualizados en la base de datos.";
+        return { 
+            error: false, 
+            message: "Ok, los datos han sido actualizados en la base de datos.", 
+        }
     }
-});
+})
+
+function validarCuentaContable(cuenta) { 
+
+    // una cuenta de tipo total no debe tener asientos
+    if (cuenta.totDet == "T") {
+        response = Async.runSync(function(done) {
+            dAsientosContables_sql.count({ where: { cuentaContableID: cuenta.id }})
+                .then(function(result) { done(null, result); })
+                .catch(function (err) { done(err, null); })
+                .done();
+        })
+
+        if (response.error) { 
+            throw new Meteor.Error(response.error && response.error.message ? response.error.message : response.error.toString());
+        }
+            
+        if (response.result > 0) { 
+            const message = `Error: la cuenta contable <b>${cuentaContable.cuenta}</b> tiene asientos
+                             contables asociados; no puede ser de tipo <em><b>total</b></em>.`
+
+            return { 
+                error: true, 
+                message: message, 
+            }
+        }
+    }
+
+    // una cuenta de tipo detalle no debe tener otras cuentas asociadas (ie: hijas) ...
+    if (cuenta.totDet == "D") {
+        response = Async.runSync(function(done) {
+            CuentasContables_sql.count({ where: { $and:
+                [
+                    { cuenta: { $like: `${cuenta.cuenta}%` }},
+                    { cuenta: { $ne: cuenta.cuenta }},
+                    { cia: cuenta.cia }
+                ] }})
+                .then(function(result) { done(null, result); })
+                .catch(function (err) { done(err, null); })
+                .done();
+        })
+
+        if (response.error) { 
+            throw new Meteor.Error(response.error && response.error.message ? response.error.message : response.error.toString());
+        }
+
+        if (response.result > 0) { 
+            const message = `Error: la cuenta contable <b>${cuenta.cuenta}</b> tiene cuentas
+                             contables asociadas; no puede ser de tipo <em><b>detalle</b></em>.`
+
+            return { 
+                error: true, 
+                message: message, 
+            }
+        }
+    }
+
+    // una cuenta con más de dos niveles debe tener un padre 
+    if (cuenta.numNiveles > 1) {
+
+        // construimos el nivel anterior 
+        let nivelAnterior = ""; 
+        for (let j = 1; j < cuenta.numNiveles; j++) { 
+            switch (j) { 
+                case 1: 
+                    nivelAnterior = cuenta.nivel1; 
+                    break; 
+                case 2: 
+                    nivelAnterior += cuenta.nivel2; 
+                    break; 
+                case 3: 
+                    nivelAnterior += cuenta.nivel3; 
+                    break; 
+                case 4: 
+                    nivelAnterior += cuenta.nivel4; 
+                    break; 
+                case 5: 
+                    nivelAnterior += cuenta.nivel5; 
+                    break; 
+                case 6: 
+                    nivelAnterior += cuenta.nivel6; 
+                    break;
+                default: 
+                    return { 
+                        error: true, 
+                        message: `Error: aparentemente, la cuenta contable ${cuenta} no está bien construida. <br />
+                                  Por favor revise. Recuerde que una cuenta contable no puede tener más de 7 niveles.`,
+                    } 
+                
+            }
+        }
+
+        // buscamos el nivel anterior de la cuenta; debe exisitr para cuentas de dos o más niveles 
+        response = Async.runSync(function(done) {
+            CuentasContables_sql.findOne({ where: { $and:
+                [
+                    { cuenta: { $eq: nivelAnterior }},
+                    { cia: cuenta.cia }
+                ] }})
+                .then(function(result) { done(null, result); })
+                .catch(function (err) { done(err, null); })
+                .done();
+        })
+
+        if (response.error) { 
+            throw new Meteor.Error(response.error && response.error.message ? response.error.message : response.error.toString());
+        }
+
+        const cuentaContableParent = response.result; 
+
+        if (!cuentaContableParent) { 
+            const message = `Error: Ud. está intentando agregar la cuenta contable <b>${cuenta.cuenta}</b>, 
+                             pero la cuenta <b>${nivelAnterior}</b> no existe.<br /> 
+                             Por favor revise.`
+
+            return { 
+                error: true, 
+                message: message, 
+            }
+        }
+
+        if (cuentaContableParent.totDet == "D") { 
+            const message = `Error: Ud. está intentando agregar la cuenta contable <b>${cuenta.cuenta}</b>, y de tipo detalle, 
+                             pero la cuenta <b>${nivelAnterior}</b> ya es de tipo detalle.<br /> 
+                             Por favor revise.`
+
+            return { 
+                error: true, 
+                message: message, 
+            }
+        }
+    }
+
+    return { 
+        error: false, 
+    }
+}

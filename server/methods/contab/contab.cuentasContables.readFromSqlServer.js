@@ -39,7 +39,7 @@ Meteor.methods(
 
         // ---------------------------------------------------------------------------------------------------
         // leemos los pagos desde sql server, que cumplan el criterio indicado
-        let query = `Select c.ID as id, (c.Cuenta + ' ' + c.Descripcion) as descripcion 
+        let query = `Select c.ID as id, (c.Cuenta + ' ' + c.Descripcion) as descripcion, Cia as cia  
                      From CuentasContables c
                      Where ${where}  
                      Order By c.Cuenta, c.Descripcion

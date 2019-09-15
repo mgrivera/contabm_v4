@@ -32,6 +32,16 @@
                 <li>
                     <a href="#" class="navbar_custom_small_node" ng-click="save()">Grabar <span class="fa fa-save"></span></a>
                 </li>
+
+                <li class="divider-vertical-small"></li>
+
+                <li>
+                    <a href="#" class="navbar_custom_small_node">
+                            <cuentas-contables-search-modal cia-contab-seleccionada="companiaSeleccionada"
+                                                            agregar-cuentas-contables-leidas-desde-sql="agregarCuentasContablesLeidasDesdeSql">   
+                            </cuentas-contables-search-modal>
+                    </a>
+                </li>
             </ul>
 
         </div>
@@ -67,7 +77,7 @@
                                 <label>Cuenta contable de nómina</label>
                                 <select class="form-control"
                                         ng-model="parametrosNomina.cuentaContableNomina" 
-                                        ng-options="item.id as item.cuentaDescripcionCia for item in cuentasContablesLista | orderBy:'cuentaDescripcionCia'"
+                                        ng-options="item.id as item.descripcion for item in cuentasContablesLista | orderBy:'descripcion'"
                                         ng-change="setIsEdited()" 
                                         ng-model-options="{ updateOn: 'blur' }">
                                 </select>

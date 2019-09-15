@@ -21,6 +21,24 @@
     </div>
 </div>
 
+<div class="row">
+    <div class="col-sm-10 col-sm-offset-1" style="text-align: right; ">
+        Buscar: 
+        <input type="text" 
+               ng-model="filtro.search" 
+
+               popover="Indique parte del número de cuenta, o su descripción, para buscar. Ejemplo: 'banco', para cuentas de bancos; '10101' para cuentas que contienen ese número; etc. Nota: para leer y traer todas las cuentas, deje el campo en blanco y haga click en el butón." 
+               popover-trigger="mouseenter" 
+               popover-placement="left"
+
+               placeholder="ejemplo: bancos, activos, gastos, caja, ...">
+        <button type="button" ng-click="aplicarFiltro()">Buscar</button>
+    </div>
+</div>
+
+
+<li ng-if="origen == 'edicion'"><a href="#" class="navbar_custom_small_node_withBackground" ng-click="grabarEliminaciones()" popover="Cick para grabar los registros marcados para ser eliminados." popover-trigger="mouseenter">Grabar <span class="fa fa-save"></span></a></li>
+
 
 <div class="row" style="text-align: center; ">
     <div class="col-sm-10 col-sm-offset-1">
@@ -47,12 +65,6 @@
                         </li>
 
                     </ul>
-
-                    <ul class="nav navbar-nav navbar-right">
-                        <li><a ui-sref="contab.PersistirCuentasContables" class="navbar_custom_small_node_withBackground">Persistir ...</a></li>
-                        <!-- <li><a href="#" class="navbar_custom_small_node_withBackground" ng-click="agregarPartida()">Nuevo <span class="fa fa-file-o"></span></a></li> -->
-                    </ul>
-
                 </div>
             </div>
         </nav>
