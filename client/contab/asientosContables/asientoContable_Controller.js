@@ -8,9 +8,12 @@ import { Monedas } from '/imports/collections/monedas';
 import { Companias } from '/imports/collections/companias';
 import { CompaniaSeleccionada } from '/imports/collections/companiaSeleccionada';
 import { TiposAsientoContable } from '/imports/collections/contab/tiposAsientoContable'; 
+
+// TODO: eliminar al final. Debemos revisar upload un asiento from disk file ... 
 import { CuentasContables2 } from '/imports/collections/contab/cuentasContables2';  
 import { ParametrosGlobalBancos } from '/imports/collections/bancos/parametrosGlobalBancos'; 
 import { AsientosContables_SimpleSchema } from '/imports/collections/contab/asientosContables'; 
+import { CuentasContablesClient } from '/client/imports/clientCollections/cuentasContables'; 
 
 import { DialogModal } from '/client/imports/general/genericUIBootstrapModal/angularGenericModal'; 
 import { mensajeErrorDesdeMethod_preparar } from '/client/imports/clientGlobalMethods/mensajeErrorDesdeMethod_preparar'; 
@@ -306,11 +309,6 @@ function ($scope, $stateParams, $state, $meteor, $modal, uiGridConstants) {
             return;
         }
 
-        let asientoContableNuevo = false; 
-        if ($scope.asientoContable && $scope.asientoContable.docState || $scope.asientoContable.docState == 1) {
-            asientoContableNuevo = true; 
-        }
-
         var reader = new FileReader();
         let message = "";
 
@@ -319,160 +317,232 @@ function ($scope, $stateParams, $state, $meteor, $modal, uiGridConstants) {
                 var content = e.target.result;
                 let asientoContable = JSON.parse(content);
 
-                if (asientoContableNuevo) { 
-                    if (asientoContable.tipo) { 
-                        $scope.asientoContable.tipo = asientoContable.tipo;
-                    }
-                    
-                    $scope.asientoContable.descripcion = "";
-    
-                    if (asientoContable.descripcion) { 
-                        $scope.asientoContable.descripcion = asientoContable.descripcion > 250 ?
-                                                         asientoContable.descripcion.substr(0, 250) :
-                                                         asientoContable.descripcion; 
-                    }
-                    
-                    $scope.asientoContable.moneda = asientoContable.moneda ? asientoContable.moneda : 0;
-                    $scope.asientoContable.monedaOriginal = asientoContable.monedaOriginal ? asientoContable.monedaOriginal : 0;
-                    $scope.asientoContable.factorDeCambio = asientoContable.factorDeCambio ? asientoContable.factorDeCambio : 0;
-    
-                    // si no viene la moneda, puede venir su simbolo (scrwebm)
-                    if (!$scope.asientoContable.moneda && asientoContable.monedaSimbolo) {
-                        let moneda = Monedas.findOne({ simbolo: asientoContable.monedaSimbolo });
-                        if (moneda) {
-                            $scope.asientoContable.moneda = moneda.moneda;
-                        }
-                    }
-    
-                    if (!$scope.asientoContable.monedaOriginal && asientoContable.monedaOriginalSimbolo) {
-                        let monedaOriginal = Monedas.findOne({ simbolo: asientoContable.monedaOriginalSimbolo });
-                        if (monedaOriginal) {
-                            $scope.asientoContable.monedaOriginal = monedaOriginal.moneda;
-                        }
-                    }
-                }
+                // 1) leemos, desde el servidor, las cuentas contables cuyo *id* viene en cada partida del asiento 
+                const partidas = Array.isArray(asientoContable.partidas) ? asientoContable.partidas : []; 
+                let listaCuentasContablesIDs = [];
 
-                if (Array.isArray(asientoContable.partidas)) {
+                partidas.forEach((c) => {
+                    if (c.cuentaContableID) {
+                        // primero la buscamos en el minimongo collection 
+                        const cuentaMiniMongo = CuentasContablesClient.findOne({ id: c.cuentaContableID }); 
 
-                    if (!Array.isArray($scope.asientoContable.partidas)) { 
-                        $scope.asientoContable.partidas = [];
-                    }
+                        if (!cuentaMiniMongo) {
+                            // ahora buscamos en la lista 
+                            const cuentaLista = listaCuentasContablesIDs.find(x => x === c.cuentaContableID); 
 
-                    // si existe una partida tipo 0 (docState == 0), la eliminamos y la agregamos al final. Este row está listo
-                    // para que el usuario agregue una partida sin siquiera hacer un click en Nuevo. La idea es que, cada vez que 
-                    // el usuario usa un row del tipo 0, se agrega uno en forma automática. 
-                    // Al Grabar, este row (no usado) es ignorado ... 
-                    lodash.remove($scope.asientoContable.partidas, (x) => { return x.docState === 0; }); 
-                        
-                    asientoContable.partidas.forEach((p) => {
-
-                        // permitimos que el usuario haya agregado partidas (al asiento nuevo ....)
-                        let ultimaPartida = lodash.last( lodash.sortBy($scope.asientoContable.partidas, (x) => { return x.partida; }) );
-
-                        let partida = {
-                            _id: new Mongo.ObjectID()._str,
-                            partida: 10,
-                            debe: 0,
-                            haber: 0,
-                            docState: 1
-                        };
-
-                        if (ultimaPartida && !lodash.isEmpty(ultimaPartida)) {
-                            partida.partida = ultimaPartida.partida + 10;
-                        }
-
-                        // la idea es resolver: el asiento que viene desde scrwebm no trae una cuentaContableID (ej: 2500) sino,
-                        // más bien, la cuenta contable (ej: cuentaContable: '1 001 001 01')
-                        partida.cuentaContableID = p.cuentaContableID ? p.cuentaContableID : null;
-
-                        // la descripción en la partida no debe ser mayor a 75 chars 
-                        partida.descripcion = "";
-
-                        if (p.descripcion) { 
-                            partida.descripcion = p.descripcion > 75 ?
-                                                  p.descripcion.substr(0, 75) :
-                                                  p.descripcion; 
-                        }
-
-                        // la referencia en la partida no debe ser mayor a 20 chars ... 
-                        partida.referencia = "";
-
-                        if (p.referencia) { 
-                            partida.referencia = p.referencia > 20 ?
-                                                  p.referencia.substr(0, 20) :
-                                                  p.referencia; 
-                        }
-
-                        partida.debe = p.debe ? p.debe : 0;
-                        partida.haber = p.haber ? p.haber : 0;
-                        partida.centroCosto = p.centroCosto ? p.centroCosto : null;
-                        partida.docState = 1;
-
-                        // puede venir el código de la cuenta (scrwebm); cuando el asiento viene desde otra aplicación, 
-                        // como scrwebm, vendrá el código de la cuenta y no su id (pk en sql server) 
-                        if (!partida.cuentaContableID && p.cuentaContable) {
-                            let codigoCuenta = p.cuentaContable.trim();
-                            codigoCuenta = codigoCuenta.replace(/ /g, '');
-                            let cuentaContable = CuentasContables2.findOne({ cuenta: codigoCuenta });
-
-                            if (cuentaContable) {
-                                partida.cuentaContableID = cuentaContable.id;
+                            if (!cuentaLista) { 
+                                listaCuentasContablesIDs.push(c.cuentaContableID);
                             }
                         }
+                    }
+                })
 
-                        $scope.asientoContable.partidas.push(partida);
+                // 2) leemos, desde el servidor, las cuentas contables cuya *cuenta* viene en cada partida del asiento 
+                // TODO: debemos pasar esta lista a un promise que busque las cuentas por cuenta y cia, en vez de id 
+                let listaCuentasContablesCuentas = [];
+
+                partidas.forEach((c) => {
+                    if (c.cuentaContable) {
+                        listaCuentasContablesCuentas.push(c.cuentaContable);
+                    }
+                })
+
+                leerCuentasContablesFromSql__porIDYCuenta(listaCuentasContablesIDs, listaCuentasContablesCuentas, $scope.companiaSeleccionada.numero)
+                    .then((result) => {
+
+                        // al regresar aquí, ya las cuentas contables están en minimongo; estás serán las que se muestren en la lista 
+                        // en el ddl del ui-grid 
+
+                        // finalmente, en esta función se importan todos los datos del asiento, en el asiento (nuevo o editado) 
+                        importarAsientoContable3(asientoContable)
                     })
+                    .catch((err) => { 
 
-                    // cuando ya hemos agregado todas las partidas que vienen en el archivo, agregamos una partida tipo 0, 
-                    // para que esté disponible al usuario para agregar una nueva, sin siquiera hacer un click en Nuevo ... 
-                    $scope.agregarPartida(); 
-                }
+                        message = err.message ? err.message : err.toString();
+
+                        DialogModal($modal, "<em>Asientos contables - Importar asientos contables</em>",
+                                            "Ha ocurrido un error al intentar ejecutar esta función:<br />" +
+                                            message,
+                                            false).then();
+
+                        $scope.showProgress = false;
+                        $scope.$apply();
+                    })
             }
+
             catch(err) {
                 message = err.message ? err.message : err.toString();
-            }
-            finally {
-                if (message) { 
-                    DialogModal($modal, "<em>Asientos contables - Importar asientos contables</em>",
-                                        "Ha ocurrido un error al intentar ejecutar esta función:<br />" +
-                                        message,
-                                        false).then();
-                }
-                else {
-                    $scope.partidas_ui_grid.data = [];
-                    if (Array.isArray($scope.asientoContable.partidas))
-                        $scope.partidas_ui_grid.data = $scope.asientoContable.partidas;
-                }
 
-                let inputFile = angular.element("#fileInput");
-                if (inputFile && inputFile[0] && inputFile[0].value) { 
-                    // para que el input type file "limpie" el file indicado por el usuario
-                    inputFile[0].value = null;
-                }
+                DialogModal($modal, "<em>Asientos contables - Importar asientos contables</em>",
+                                    "Ha ocurrido un error al intentar ejecutar esta función:<br />" +
+                                    message,
+                                    false).then();
 
-                if (asientoContableNuevo) { 
-                    DialogModal($modal, "<em>Asientos contables - Importar asiento</em>",
-                            `Ok, el asiento contable ha sido importado en un <em>asiento nuevo</em>. 
-                             Ud. puede hacer modificaciones y <em>Grabar</em>.<br /><br /> 
-                             La fecha del asiento, sin embargo, no ha sido inicializada. 
-                             Ud. debe indicar una y <em>salir del campo</em>, 
-                             para que el programa lea y asigne el <em>factor de cambio</em> más reciente.`,
-                            false).then();
-                } else { 
-                    DialogModal($modal, "<em>Asientos contables - Importar asiento</em>",
-                            `Ok, el asiento contable ha sido importado en un asiento <em>que ya existía</em>. <br /><br /> 
-                             <b>Solo</b> las partidas del asiento han sido importadas y agregadas a las que ya existían.<br /> 
-                             Ud. puede revisar los cambios, hacer otras modificaciones y <em>Grabar</em> el asiento.
-                             `,
-                            false).then();
-                }
-                  
+                $scope.showProgress = false;
                 $scope.$apply();
             }
         }
 
+        $scope.showProgress = true; 
         reader.readAsText(userSelectedFile);
     }
+
+    function importarAsientoContable3(asientoContable) {
+        // importamos los datos guardados en el archivo de texto al asiento, nuevo o editado ... 
+
+        let asientoContableNuevo = false;
+        if ($scope.asientoContable && $scope.asientoContable.docState || $scope.asientoContable.docState == 1) {
+            asientoContableNuevo = true;
+        }
+
+        // si el asiento contable es nuevo, lo importamos todo. si ya existe, importamos y afectamos *solo* sus partidas 
+        if (asientoContableNuevo) {
+            if (asientoContable.tipo) {
+                $scope.asientoContable.tipo = asientoContable.tipo;
+            }
+
+            $scope.asientoContable.descripcion = "";
+
+            if (asientoContable.descripcion) {
+                $scope.asientoContable.descripcion = asientoContable.descripcion > 250 ?
+                    asientoContable.descripcion.substr(0, 250) :
+                    asientoContable.descripcion;
+            }
+
+            $scope.asientoContable.moneda = asientoContable.moneda ? asientoContable.moneda : 0;
+            $scope.asientoContable.monedaOriginal = asientoContable.monedaOriginal ? asientoContable.monedaOriginal : 0;
+            $scope.asientoContable.factorDeCambio = asientoContable.factorDeCambio ? asientoContable.factorDeCambio : 0;
+
+            // si no viene la moneda, puede venir su simbolo (scrwebm)
+            if (!$scope.asientoContable.moneda && asientoContable.monedaSimbolo) {
+                let moneda = Monedas.findOne({ simbolo: asientoContable.monedaSimbolo });
+                if (moneda) {
+                    $scope.asientoContable.moneda = moneda.moneda;
+                }
+            }
+
+            if (!$scope.asientoContable.monedaOriginal && asientoContable.monedaOriginalSimbolo) {
+                let monedaOriginal = Monedas.findOne({ simbolo: asientoContable.monedaOriginalSimbolo });
+                if (monedaOriginal) {
+                    $scope.asientoContable.monedaOriginal = monedaOriginal.moneda;
+                }
+            }
+        }
+
+        if (Array.isArray(asientoContable.partidas)) {
+
+            if (!Array.isArray($scope.asientoContable.partidas)) {
+                $scope.asientoContable.partidas = [];
+            }
+
+            // si existe una partida tipo 0 (docState == 0), la eliminamos y la agregamos al final. Este row está listo
+            // para que el usuario agregue una partida sin siquiera hacer un click en Nuevo. La idea es que, cada vez que 
+            // el usuario usa un row del tipo 0, se agrega uno en forma automática. 
+            // Al Grabar, este row (no usado) es ignorado ... 
+            lodash.remove($scope.asientoContable.partidas, (x) => { return x.docState === 0; });
+
+            asientoContable.partidas.forEach((p) => {
+
+                // permitimos que el usuario haya agregado partidas (al asiento nuevo ....)
+                let ultimaPartida = lodash.last(lodash.sortBy($scope.asientoContable.partidas, (x) => { return x.partida; }));
+
+                let partida = {
+                    numeroAutomatico: $scope.asientoContable.numeroAutomatico,
+                    partida: 10,
+                    debe: 0,
+                    haber: 0,
+                    docState: 1
+                };
+
+                if (ultimaPartida && !lodash.isEmpty(ultimaPartida)) {
+                    partida.partida = ultimaPartida.partida + 10;
+                }
+
+                // la idea es resolver: el asiento que viene desde scrwebm no trae una cuentaContableID (ej: 2500) sino,
+                // más bien, la cuenta contable (ej: cuentaContable: '1 001 001 01')
+                partida.cuentaContableID = p.cuentaContableID ? p.cuentaContableID : null;
+
+                // la descripción en la partida no debe ser mayor a 75 chars 
+                partida.descripcion = "";
+
+                if (p.descripcion) {
+                    partida.descripcion = p.descripcion > 75 ?
+                        p.descripcion.substr(0, 75) :
+                        p.descripcion;
+                }
+
+                // la referencia en la partida no debe ser mayor a 20 chars ... 
+                partida.referencia = "";
+
+                if (p.referencia) {
+                    partida.referencia = p.referencia > 20 ?
+                        p.referencia.substr(0, 20) :
+                        p.referencia;
+                }
+
+                partida.debe = p.debe ? p.debe : 0;
+                partida.haber = p.haber ? p.haber : 0;
+                partida.centroCosto = p.centroCosto ? p.centroCosto : null;
+                partida.docState = 1;
+
+                // puede venir el código de la cuenta (scrwebm); cuando el asiento viene desde otra aplicación, 
+                // como scrwebm, vendrá el código de la cuenta y no su id (pk en sql server). Debemos buscar el id 
+                // en minimongo y agregar a la partida  
+                if (!partida.cuentaContableID && p.cuentaContable) {
+                    const cuentaContable = CuentasContablesClient.findOne({ cuenta: p.cuentaContable, cia: $scope.companiaSeleccionada.numero });
+
+                    if (cuentaContable) {
+                        partida.cuentaContableID = cuentaContable.id;
+                    }
+                }
+
+                $scope.asientoContable.partidas.push(partida);
+            })
+
+            // cuando ya hemos agregado todas las partidas que vienen en el archivo, agregamos una partida tipo 0, 
+            // para que esté disponible al usuario para agregar una nueva, sin siquiera hacer un click en Nuevo ... 
+            $scope.agregarPartida();
+        }
+
+        // 1) agregamos las cuentas contables en minimongo al scope 
+        $scope.cuentasContablesLista = CuentasContablesClient.find({ cia: $scope.companiaSeleccionada.numero }, 
+                                                                   { sort: { descripcion: 1 }}).fetch(); 
+
+        // 2) hacemos el binding entre la lista y el ui-grid 
+        $scope.partidas_ui_grid.columnDefs[2].editDropdownOptionsArray = $scope.cuentasContablesLista;  
+
+        $scope.partidas_ui_grid.data = [];
+        if (Array.isArray($scope.asientoContable.partidas)) {
+            $scope.partidas_ui_grid.data = $scope.asientoContable.partidas;
+        }
+
+        let inputFile = angular.element("#fileInput");
+        if (inputFile && inputFile[0] && inputFile[0].value) {
+            // para que el input type file "limpie" el file indicado por el usuario
+            inputFile[0].value = null;
+        }
+
+        if (asientoContableNuevo) {
+            DialogModal($modal, "<em>Asientos contables - Importar asiento</em>",
+                `Ok, el asiento contable ha sido importado en un <em>asiento nuevo</em>. 
+                        Ud. puede hacer modificaciones y <em>Grabar</em>.<br /><br /> 
+                        La fecha del asiento, sin embargo, no ha sido inicializada. 
+                        Ud. debe indicar una y <em>salir del campo</em>, 
+                        para que el programa lea y asigne el <em>factor de cambio</em> más reciente.`,
+                false).then();
+        } else {
+            DialogModal($modal, "<em>Asientos contables - Importar asiento</em>",
+                `Ok, el asiento contable ha sido importado en un asiento <em>que ya existía</em>. <br /><br /> 
+                        <b>Solo</b> las partidas del asiento han sido importadas y agregadas a las que ya existían.<br /> 
+                        Ud. puede revisar los cambios, hacer otras modificaciones y <em>Grabar</em> el asiento.
+                        `,
+                false).then();
+        }
+
+        $scope.showProgress = false;
+        $scope.$apply();
+    }
+
 
     $scope.cuadrarAsientoContable = () => {
         // recorremos las partidas del asiento y 'cuadramos' en la partida que el usuario ha seleccionado ...
@@ -656,14 +726,14 @@ function ($scope, $stateParams, $state, $meteor, $modal, uiGridConstants) {
         },
         // para reemplazar el field '$$hashKey' con nuestro propio field, que existe para cada row ...
         rowIdentity: function (row) {
-            return `${row.numeroAutomatico.toString()}-${row.partida.toString()}`; 
+            return row.partida.toString(); 
         },
         getRowIdentity: function (row) {
-            return `${row.numeroAutomatico.toString()}-${row.partida.toString()}`; 
+            return row.partida.toString(); 
         }
     }
 
-    let cuentasContablesLista = Array.isArray($scope.$parent.cuentasContablesLista) ? $scope.$parent.cuentasContablesLista : [];
+    $scope.cuentasContablesLista = []; 
     $scope.centrosCosto = $scope.$parent.centrosCosto; 
     $scope.centrosCostoActivos = $scope.$parent.centrosCosto.filter(x => !x.suspendido); 
 
@@ -703,12 +773,13 @@ function ($scope, $stateParams, $state, $meteor, $modal, uiGridConstants) {
             enableFiltering: true,
             headerCellClass: 'ui-grid-leftCell',
             cellClass: 'ui-grid-leftCell',
-            cellFilter: 'cuentaContable_mostrarDescripcion',
+            // cellFilter: 'cuentaContable_mostrarDescripcion',
 
             editableCellTemplate: 'ui-grid/dropdownEditor',
             editDropdownIdLabel: 'id',
-            editDropdownValueLabel: 'cuentaDescripcionCia',
-            editDropdownOptionsArray: cuentasContablesLista,
+            editDropdownValueLabel: 'descripcion',
+            editDropdownOptionsArray: $scope.cuentasContablesLista,
+            cellFilter: 'mapDropdown:row.grid.appScope.cuentasContablesLista:"id":"descripcion"',
 
             enableColumnMenu: false,
             enableCellEdit: true,
@@ -815,14 +886,13 @@ function ($scope, $stateParams, $state, $meteor, $modal, uiGridConstants) {
         $scope.centrosCosto = $scope.$parent.centrosCosto;
         $scope.partidas_ui_grid.columnDefs[7].editDropdownOptionsArray = $scope.centrosCosto;
 
-        cuentasContablesLista = Array.isArray($scope.$parent.cuentasContablesLista) ? $scope.$parent.cuentasContablesLista : [];
-        $scope.partidas_ui_grid.columnDefs[2].editDropdownOptionsArray = cuentasContablesLista;
+        $scope.partidas_ui_grid.columnDefs[2].editDropdownOptionsArray = $scope.cuentasContablesLista;
     })
 
     $scope.deleteItem = function (item) {
         if (item.docState && item.docState === 1)
             // si el item es nuevo, simplemente lo eliminamos del array
-            lodash.remove($scope.asientoContable.partidas, (x) => { return x._id === item._id; });
+            lodash.remove($scope.asientoContable.partidas, (x) => { return x.partida === item.partida; });
         else
             item.docState = 3;
 
@@ -1145,7 +1215,7 @@ function ($scope, $stateParams, $state, $meteor, $modal, uiGridConstants) {
             return;
         }
 
-        var modalInstance = $modal.open({
+        $modal.open({
             templateUrl: 'client/contab/asientosContables/cuentasContablesSearch/buscarCuentasContables_modal.html',
             controller: 'BuscarCuentasContables_Modal_Controller',
             size: 'md',
@@ -1280,6 +1350,14 @@ function ($scope, $stateParams, $state, $meteor, $modal, uiGridConstants) {
             // para que el asiento nuevo venga con una partida y el usuario no tenga que hacer un click en Nuevo ... 
             $scope.agregarPartida();        
 
+            // si en minimongo hay cuentas, caso normal, las mostramos en la lista del ddl en ui-grid 
+            // 1) agregamos las cuentas contables en minimongo al scope 
+            $scope.cuentasContablesLista = CuentasContablesClient.find({ cia: $scope.companiaSeleccionada.numero }, 
+                                                                       { sort: { descripcion: 1 }}).fetch(); 
+
+            // 2) hacemos el binding entre la lista y el ui-grid 
+            $scope.partidas_ui_grid.columnDefs[2].editDropdownOptionsArray = $scope.cuentasContablesLista;  
+
             $scope.partidas_ui_grid.data = [];
             $scope.partidas_ui_grid.data = $scope.asientoContable.partidas;
             
@@ -1349,26 +1427,109 @@ function ($scope, $stateParams, $state, $meteor, $modal, uiGridConstants) {
             // 2) que el asiento no corresponda a un mes cerrado (y su fecha sea cambiada a uno que no lo es)
             _fechaOriginalAsientoContable = $scope.asientoContable ? $scope.asientoContable.fecha : null;
 
-            $scope.partidas_ui_grid.data = [];
+            // para leer, desde el servidor, las cuentas contables usadas en el asiento. Deben estar en una lista para que se 
+            // muestren en el ddl del ui-grid de partidas 
 
-            if (Array.isArray($scope.asientoContable.partidas)) {
-                $scope.partidas_ui_grid.data = $scope.asientoContable.partidas;
-            }
+            // =================================================================================================================
+            // para que estén desde el inicio, leemos las cuentas contables que el usuario ha registrado antes aqui 
+            const partidas = Array.isArray($scope.asientoContable.partidas) ? $scope.asientoContable.partidas : []; 
+            let listaCuentasContablesIDs = [];
 
-            const result2 = revisarSumasIguales($scope.asientoContable.partidas);
+            partidas.forEach((c) => {
+                if (c.cuentaContableID) {
+                    // primero la buscamos, para no repetirla 
+                    const cuenta = listaCuentasContablesIDs.find(x => x === c.cuentaContableID); 
 
-            if (result2.error) {
-                let message = result.message.replace(/\/\//gi, "");
-                $scope.alerts.push({ type: 'warning', msg: message });
-            }
+                    if (!cuenta) { 
+                        listaCuentasContablesIDs.push(c.cuentaContableID);
+                    }
+                }
+            })
 
-            $scope.$parent.alerts.length = 0;
-            $scope.showProgress = false;
-            $scope.$apply();
+            leerCuentasContablesFromSql(listaCuentasContablesIDs, $scope.companiaSeleccionada.numero)
+                .then((result) => {
+
+                    // agregamos las cuentas contables leídas al arrary en el $scope. Además, hacemos el binding del ddl en el ui-grid 
+                    const cuentasContablesArray = result.cuentasContables;
+
+                    // 1) agregamos el array de cuentas contables al $scope 
+                    $scope.cuentasContablesLista = lodash.sortBy(cuentasContablesArray, [ 'descripcion' ]);;
+
+                    // 2) hacemos el binding entre la lista y el ui-grid 
+                    $scope.partidas_ui_grid.columnDefs[2].editDropdownOptionsArray = $scope.cuentasContablesLista;     
+
+                    $scope.partidas_ui_grid.data = [];
+
+                    if (Array.isArray($scope.asientoContable.partidas)) {
+                        $scope.partidas_ui_grid.data = $scope.asientoContable.partidas;
+                    }
+
+                    const result2 = revisarSumasIguales($scope.asientoContable.partidas);
+
+                    if (result2.error) {
+                        let message = result.message.replace(/\/\//gi, "");
+                        $scope.alerts.push({ type: 'warning', msg: message });
+                    }
+
+                    $scope.$parent.alerts.length = 0;
+                    $scope.showProgress = false;
+
+                    $scope.$apply();
+                })
+                .catch((err) => {
+
+                    $scope.alerts.length = 0;
+                    $scope.alerts.push({
+                        type: 'danger',
+                        msg: "Se han encontrado errores al intentar leer las cuentas contables usadas por esta función:<br /><br />" + err.message
+                    });
+
+                    $scope.showProgress = false;
+                    $scope.$apply();
+                })
         })
     }
-  }
-])
+  
+    $scope.agregarCuentasContablesLeidasDesdeSql = (cuentasArray) => { 
+
+        // cuando el modal que permite al usuario leer cuentas contables desde el servidor se cierra, 
+        // recibimos las cuentas leídas y las agregamos al $scope, para que estén presentes en la lista del
+        // ddl de cuentas contables 
+
+        let cuentasContablesAgregadas = 0; 
+
+        if (cuentasArray && Array.isArray(cuentasArray) && cuentasArray.length) { 
+
+            for (const cuenta of cuentasArray) { 
+
+                const existe = $scope.cuentasContablesLista.some(x => x.id == cuenta.id); 
+
+                if (existe) { 
+                    continue; 
+                }
+
+                // -------------------------------------------------------------------------------------------------
+                // agregamos las cuentas contables al client collection (minimongo) de cuentas contables 
+                const cuentaClientCollection = CuentasContablesClient.findOne({ id: cuenta.id }); 
+                if (!cuentaClientCollection) { 
+                    CuentasContablesClient.insert(cuenta); 
+                }
+                // -------------------------------------------------------------------------------------------------
+
+                $scope.cuentasContablesLista.push(cuenta); 
+                cuentasContablesAgregadas++; 
+            }
+        }
+
+        if (cuentasContablesAgregadas) { 
+            // hacemos el binding entre la lista y el ui-grid 
+            $scope.cuentasContablesLista = lodash.sortBy($scope.cuentasContablesLista, ['descripcion']);
+
+            $scope.partidas_ui_grid.columnDefs[2].editDropdownOptionsArray = $scope.cuentasContablesLista;   
+        }
+    }
+
+}])
 
 function montoConMasDeDosDecimales(partidas) {
     // verificamos que ninguna de las partidas en el array, tenga más de dos decimales en su monto
@@ -1386,4 +1547,98 @@ function montoConMasDeDosDecimales(partidas) {
     })
 
     return montoMas2Decimales;
+}
+
+
+// leemos las cuentas contables que usa la función y las regresamos en un array 
+const leerCuentasContablesFromSql = function(listaCuentasContablesIDs, companiaContabSeleccionadaID) { 
+
+    return new Promise((resolve, reject) => { 
+
+        Meteor.call('contab.cuentasContables.readFromSqlServer', listaCuentasContablesIDs, (err, result) => {
+
+            if (err) {
+                reject(err); 
+                return; 
+            }
+
+            if (result.error) {
+                reject(result.error); 
+                return; 
+            }
+
+            const cuentasContables = result.cuentasContables; 
+
+            // 1) agregamos al cache (client only minimongo) cuentas que se recibieron desde el server
+            cuentasContables.forEach(x => { 
+                const cuenta = CuentasContablesClient.findOne({ id: x.id }); 
+                if (!cuenta) { 
+                    CuentasContablesClient.insert(x); 
+                }
+            })
+            
+            // 2) agregamos a la lista recibida desde el server, cuentas que existen en el cache (client only monimongo)
+            // nótese que agregamos *solo* las cuentas para la cia seleccionada; en el cache puden haber de varias cias
+            CuentasContablesClient.find({ cia: companiaContabSeleccionadaID }).fetch().forEach(x => { 
+                const cuenta = cuentasContables.find(cuenta => cuenta.id == x.id); 
+                if (!cuenta) { 
+                    cuentasContables.push(x); 
+                }
+            })
+
+            resolve(result); 
+        })
+    })
+}
+
+
+
+// cuando importamos un asiento desde un archivo de texto, debemos leer sus cuentas. En ese caso, pueden venir ids, si 
+// el asiento fue exportado desde contab, o cuentas (no ids) si el asiento fue exportado desde otra aplicación, ejemplo: scrweb
+
+// con la función que sigue, leemos las cuentas desde el servidor, desde una lista de ids o cuentas 
+const leerCuentasContablesFromSql__porIDYCuenta = function(listaCuentasContablesIDs, 
+                                                           listaCuentasContablesNumerosCuenta, 
+                                                           companiaContabSeleccionadaID) { 
+
+    return new Promise((resolve, reject) => { 
+
+        Meteor.call('contab.cuentasContables.readFromSqlServer_porIDYCuenta', listaCuentasContablesIDs, 
+                                                                              listaCuentasContablesNumerosCuenta, 
+                                                                              companiaContabSeleccionadaID, 
+        
+                                                                              (err, result) => {
+
+            if (err) {
+                reject(err); 
+                return; 
+            }
+
+            if (result.error) {
+                reject(result.error); 
+                return; 
+            }
+
+            const cuentasContables = result.cuentasContables; 
+
+            // 1) agregamos al cache (client only minimongo) cuentas que se recibieron desde el server
+            cuentasContables.forEach(x => { 
+                const cuenta = CuentasContablesClient.findOne({ id: x.id }); 
+                if (!cuenta) { 
+                    CuentasContablesClient.insert(x); 
+                }
+            })
+            
+            // 2) agregamos a la lista recibida desde el server, cuentas que existen en el cache (client only monimongo)
+            // nótese que agregamos *solo* las cuentas para la cia seleccionada; en el cache puden haber de varias cias
+            CuentasContablesClient.find({ cia: companiaContabSeleccionadaID }).fetch().forEach(x => { 
+                const cuenta = cuentasContables.find(cuenta => cuenta.id == x.id); 
+                if (!cuenta) { 
+                    cuentasContables.push(x); 
+                }
+            })
+
+            resolve(result); 
+        })
+    })
 }

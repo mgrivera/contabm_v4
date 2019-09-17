@@ -108,7 +108,7 @@ Meteor.methods(
             where = "(1 = 1) And ";
         }
             
-        where += `(Cia = ${ciaContab.toString()})`;
+        where += `(a.Cia = ${ciaContab.toString()})`;
 
         if (filtro2.soloAsientosNumeroNegativo) {
             if (where) { 
@@ -144,7 +144,7 @@ Meteor.methods(
             where += `(a.AsientoTipoCierreAnualFlag Is Null Or a.AsientoTipoCierreAnualFlag = 0)`;
         }
 
-        if (filtro2.cuentasContables.length > 0) {
+        if (filtro2.cuentaContable && filtro2.cuentaContable.length > 0) {
 
             if (where) { 
                 where += " And ";
@@ -153,17 +153,12 @@ Meteor.methods(
                 where += "(1 = 1) And ";
             }
 
-            let cuentasContablesLista = "";
-
-            filtro2.cuentasContables.forEach((c) => {
-                if (!cuentasContablesLista)
-                    cuentasContablesLista = "(" + c.toString();
-                else
-                    cuentasContablesLista += ", " + c.toString();
-            })
-
-            cuentasContablesLista += ")";
-            where += ` (d.CuentaContableID In ${cuentasContablesLista})`;
+            if (filtro2.cuentaContable.indexOf('*') > -1) {
+                // eliminamos los asteriscos si al usuario se le ocurrió agregarlos 
+                filtro2.cuentaContable = filtro2.cuentaContable.replace(new RegExp("\\*", 'g'), "");
+            }
+                
+            where += ` (c.Cuenta Like '%${filtro2.cuentaContable}%' Or c.Descripcion Like '%${filtro2.cuentaContable}%')`;
         }
 
         if (filtro2.soloConCentrosCostoAsignado) {
@@ -276,6 +271,7 @@ Meteor.methods(
                     a.asientoTipoCierreAnualFlag, a.FactorDeCambio as factorDeCambio,
                     COUNT(d.NumeroAutomatico) As cantidadPartidas, SUM(d.debe) As totalDebe, SUM(d.Haber) As totalHaber
                     From Asientos a Left Outer Join dAsientos d On a.NumeroAutomatico = d.NumeroAutomatico 
+                    Left Outer Join CuentasContables c On d.CuentaContableID = c.ID  
                     ${centrosCosto_sqlJoin}
                     Where ${where} And ${whereMontosConMasDeDosDecimales}
                     Group by a.NumeroAutomatico, a.Numero, a.Fecha, a.Tipo, a.Descripcion,
