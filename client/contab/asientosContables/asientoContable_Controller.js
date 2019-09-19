@@ -107,14 +107,14 @@ function ($scope, $stateParams, $state, $meteor, $modal, uiGridConstants) {
                 $scope.showProgress = false;
                 $scope.$apply();
                 return;
-            };
+            }
 
             $scope.asientoContable.factorDeCambio = result.factorCambio;
             $scope.setIsEdited();
 
             $scope.showProgress = false;
             $scope.$apply();
-        });
+        })
     }
 
     $scope.regresarALista = function () {
@@ -1330,6 +1330,7 @@ function ($scope, $stateParams, $state, $meteor, $modal, uiGridConstants) {
             $scope.asientoContable = {  numeroAutomatico: 0,
                                         mes: 0,
                                         ano: 0,
+                                        fecha: new Date(),
                                         mesFiscal: 0,
                                         anoFiscal: 0,
                                         numero: 0,
@@ -1361,6 +1362,9 @@ function ($scope, $stateParams, $state, $meteor, $modal, uiGridConstants) {
             
             $scope.$parent.alerts.length = 0;
             $scope.showProgress = false;
+
+            // finalmente, ejecutamos fechaChanged() para que leea el cambio más reciente a la fecha 
+            $scope.fechaChanged(); 
         }
         else {
             asientoContable_leerById_desdeSqlServer(parseInt($scope.id));

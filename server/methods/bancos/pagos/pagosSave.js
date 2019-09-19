@@ -53,14 +53,12 @@ Meteor.methods(
 
             let pago_sql = lodash.cloneDeep(pago);
 
-            console.log("pago (insert): ", pago_sql.fecha); 
             // ----------------------------------------------------------------------------------------------------------------
             // para compensar la conversión que ocurre en las fechas al grabar a sql server, restamos 4.3 horas a cada una ...
             pago_sql.fecha = pago_sql.fecha ? moment(pago_sql.fecha).subtract(TimeOffset, 'hours').toDate() : null;
             pago_sql.ingreso = pago_sql.ingreso ? moment(pago_sql.ingreso).subtract(TimeOffset, 'hours').toDate() : null;
             pago_sql.ultAct = pago_sql.ultAct ? moment(pago_sql.ultAct).subtract(TimeOffset, 'hours').toDate() : null;
 
-            console.log("pago (insert): ", pago_sql.fecha); 
 
             // sequelize ignora algunas propiedades que no estén en el modelo; por eso no las eliminamos antes;
             // ej: _id, arrays de faltas y sueldos, etc.
