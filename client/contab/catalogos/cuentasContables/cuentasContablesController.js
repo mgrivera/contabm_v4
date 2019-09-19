@@ -8,9 +8,9 @@ import { DialogModal } from '/client/imports/general/genericUIBootstrapModal/ang
 import { mensajeErrorDesdeMethod_preparar } from '/client/imports/clientGlobalMethods/mensajeErrorDesdeMethod_preparar'; 
 import { GruposContables } from '/imports/collections/contab/gruposContables'; 
 import { Filtros } from '/imports/collections/general/filtros'; 
+import { CuentasContables_SimpleSchema } from '/imports/collections/contab/cuentasContables'; 
 
-angular.module("contabm.contab.catalogos").controller("Catalogos_CuentasContables_Controller",
-['$scope', '$meteor', '$modal', function ($scope, $meteor, $modal) {
+angular.module("contabm.contab.catalogos").controller("Catalogos_CuentasContables_Controller", ['$scope', '$modal', function ($scope, $modal) {
 
     $scope.showProgress = false;
 
@@ -93,7 +93,7 @@ angular.module("contabm.contab.catalogos").controller("Catalogos_CuentasContable
                 });
       };
       // ------------------------------------------------------------------------------------------------
-
+      $scope.cuentasContables = []; 
 
       let cuentasContables_ui_grid_api = null;
       let itemSeleccionado = {};
@@ -160,6 +160,7 @@ angular.module("contabm.contab.catalogos").controller("Catalogos_CuentasContable
               enableCellEdit: false,
               enableColumnMenu: false,
               enableSorting: false,
+              enableFiltering: false, 
               width: 25
           },
           {
@@ -289,7 +290,7 @@ angular.module("contabm.contab.catalogos").controller("Catalogos_CuentasContable
     $scope.deleteItem = function (item) {
         if (item.docState && item.docState === 1) { 
             // si el item es nuevo, simplemente lo eliminamos del array
-            lodash.remove($scope.cuentasContables, (x) => { return x._id === item._id; });
+            lodash.remove($scope.cuentasContables, (x) => { return x.id === item.id; });
         }
         else if (item.docState && item.docState === 3) {
             // permitimos hacer un 'undelete' de un item que antes se había eliminado en la lista (antes de grabar) ...
@@ -337,11 +338,11 @@ angular.module("contabm.contab.catalogos").controller("Catalogos_CuentasContable
 
         editedItems.forEach((item) => {
             if (item.docState != 3) {
-                isValid = CuentasContables.simpleSchema().namedContext().validate(item);
+                isValid = CuentasContables_SimpleSchema.namedContext().validate(item);
 
                 if (!isValid) {
-                    CuentasContables.simpleSchema().namedContext().validationErrors().forEach(function (error) {
-                        errores.push("El valor '" + error.value + "' no es adecuado para el campo <b><em>" + CuentasContables.simpleSchema().label(error.name) + "</b></em>; error de tipo '" + error.type + ".");
+                    CuentasContables_SimpleSchema.namedContext().validationErrors().forEach(function (error) {
+                        errores.push("El valor '" + error.value + "' no es adecuado para el campo <b><em>" + CuentasContables_SimpleSchema.label(error.name) + "</b></em>; error de tipo '" + error.type + ".");
                     });
                 }
             }

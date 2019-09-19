@@ -1,7 +1,6 @@
 
-import lodash from 'lodash';
 
-import { Mongo } from 'meteor/mongo';
+import lodash from 'lodash';
 import SimpleSchema from 'simpl-schema';
 
 validarCuenta = function() {
@@ -36,15 +35,7 @@ validarCuenta = function() {
     return true;
 }
 
-// CuentasContables = new Mongo.Collection("cuentasContables");
-CuentasContables = new Mongo.Collection('cuentasContables');
-
-if (Meteor.isServer) {
-    // indicamos a mongo que queremos un índice ..
-    CuentasContables._ensureIndex({ id: 1 });
-}
-
-let schema = new SimpleSchema({
+export const CuentasContables_SimpleSchema = new SimpleSchema({
     id: { type: Number, label: "ID", optional: false },
     cuenta: { type: String, label: "Cuenta contable", optional: false, min: 1, max: 25, custom: validarCuenta, },
     descripcion: { type: String, label: "Descripción", optional: false, min: 1, max: 40, },
@@ -66,5 +57,3 @@ let schema = new SimpleSchema({
     cia: { type: Number, label: "Cia contab", optional: false, },
     docState: { type: Number, optional: true, },
 })
-
-CuentasContables.attachSchema(schema);

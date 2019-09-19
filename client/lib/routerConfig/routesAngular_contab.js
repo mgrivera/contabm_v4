@@ -96,12 +96,6 @@ angular.module("contabm").config(['$urlRouterProvider', '$stateProvider', '$loca
             controller: 'SeleccionarCompaniaController',
             parent: 'contab'
         })
-        .state('contab.PersistirCuentasContables', {
-            url: '/persistirCuentasContables',
-            templateUrl: 'client/contab/persistirCuentasContables/persistirCuentasContables.html',
-            controller: 'Contab_PersistirCuentasContables_Controller',
-            parent: 'contab'
-        })
         .state('contab.reconversionMonetaria', {
             url: '/reconversionMonetaria',
             templateUrl: 'client/contab/reconversion/reconversion.html',

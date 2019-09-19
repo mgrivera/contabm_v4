@@ -7,7 +7,6 @@ import { Monedas } from '../../../imports/collections/monedas';
 import { Companias } from '../../../imports/collections/companias';
 import { CompaniaSeleccionada } from '../../../imports/collections/companiaSeleccionada';
 import { Filtros } from '../../../imports/collections/general/filtros'; 
-import { CuentasContables2 } from '../../../imports/collections/contab/cuentasContables2'; 
 
 import { mensajeErrorDesdeMethod_preparar } from '../../imports/clientGlobalMethods/mensajeErrorDesdeMethod_preparar'; 
 
@@ -52,33 +51,25 @@ function ($scope, $stateParams, $state, $meteor, $modal) {
         },
     })
 
-    // mostramos un mensaje al usuario si la tabla cuentasContables2 no existe en el client 
-    if (CuentasContables2.find().count() === 0) { 
-        let message = `Aparentemente, la <em>tabla de cuentas contables</em> no existe en el navegador. Por esta razón, 
-                       es probable que Ud. no vea las cuentas contables en la lista.<br /><br />
-                       Para corregir esta situación, Ud. debe ejecutar la opción <em>contab / generales / persistir cuentas contables</em>. <br />
-                       Luego puede regresar a esta función para editar o consultar los asientos contables.`; 
-
-        $scope.alerts.length = 0;
-        $scope.alerts.push({ type: 'warning', msg: message }); 
-    }
-
-
     // ahora construimos una lista enorme con las cuentas contables, desde cuentasContables2, que siempre está en el client; esta lista tiene 
     // una descripción para que se muestre cuando el usuario abre el ddl en el ui-grid ... 
     $scope.cuentasContablesLista = []; 
-    CuentasContables2.find({ 
-        cia: ($scope.companiaSeleccionada && $scope.companiaSeleccionada.numero ? $scope.companiaSeleccionada.numero : 0), 
-        totDet: 'D', 
-        actSusp: 'A' 
-    },
-    { 
-        sort: { cuenta: true } 
-    }).
-    forEach((cuenta) => {
-        // cuentaDescripcionCia() es un 'helper' definido en el collection CuentasContables ...
-        $scope.cuentasContablesLista.push({ id: cuenta.id, cuentaDescripcionCia: cuenta.cuentaDescripcionCia() });
-    }); 
+
+    // NOTA IMPORTANTE: dejamos de usar este cache en el client. Si vamos a dejar este proceso, reconversión, debemos ajustar como 
+    // hicimos con todos los que hacen usao del catálogo de cuentas contables 
+
+    // CuentasContables2.find({ 
+    //     cia: ($scope.companiaSeleccionada && $scope.companiaSeleccionada.numero ? $scope.companiaSeleccionada.numero : 0), 
+    //     totDet: 'D', 
+    //     actSusp: 'A' 
+    // },
+    // { 
+    //     sort: { cuenta: true } 
+    // }).
+    // forEach((cuenta) => {
+    //     // cuentaDescripcionCia() es un 'helper' definido en el collection CuentasContables ...
+    //     $scope.cuentasContablesLista.push({ id: cuenta.id, cuentaDescripcionCia: cuenta.cuentaDescripcionCia() });
+    // }); 
 
     // para limpiar el filtro, simplemente inicializamos el $scope.filtro ...
     $scope.limpiarFiltro = function () {

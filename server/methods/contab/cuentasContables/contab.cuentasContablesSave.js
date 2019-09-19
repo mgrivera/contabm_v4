@@ -107,8 +107,6 @@ Meteor.methods(
                 throw new Meteor.Error(response.error && response.error.message ? response.error.message : response.error.toString());
             }
 
-            console.log("cantidad de asientos ", response.result); 
-
             if (response.result > 0) { 
                 const message = `Error: la cuenta contable <b>${item.cuenta}</b> 
                                  tiene asientos contables asociados; no puede ser eliminada.`; 
@@ -136,13 +134,7 @@ Meteor.methods(
                 throw new Meteor.Error(response.error && response.error.message ? response.error.message : response.error.toString());
             }
 
-            console.log("cantidad de cuentas asociadas ", response.result); 
-            console.log("(response.result > 0): ", (response.result > 0)); 
-
             if (response.result > 0) { 
-
-                console.log("Ok, error por cuentas asociadas ", (response.result)); 
-
                 const message = `Error: la cuenta contable <b>${item.cuenta}</b> tiene cuentas contables asociadas; 
                                  no puede ser eliminada..`; 
 
@@ -165,8 +157,6 @@ Meteor.methods(
             }
         }
 
-        console.log("Ok, llegamos al final en el method ..."); 
-
         return { 
             error: false, 
             message: "Ok, los datos han sido actualizados en la base de datos.", 
@@ -175,6 +165,35 @@ Meteor.methods(
 })
 
 function validarCuentaContable(cuenta) { 
+
+    let response = null; 
+
+    // no deben haber dos cuentas iguales para la misma cia contab 
+    response = Async.runSync(function(done) {
+        CuentasContables_sql.count({ where: { $and:
+            [
+                { cuenta: { $eq: cuenta.cuenta }},
+                { id: { $ne: cuenta.id }},
+                { cia: { $eq: cuenta.cia }}, 
+            ] }})
+            .then(function(result) { done(null, result); })
+            .catch(function (err) { done(err, null); })
+            .done();
+    })
+
+    if (response.error) { 
+        throw new Meteor.Error(response.error && response.error.message ? response.error.message : response.error.toString());
+    }
+        
+    if (response.result > 0) { 
+        const message = `Error: aparentemente, la cuenta contable <b>${cuenta.cuenta}</b> ha sido agregada antes.<br />
+                         Por favor revise.`
+
+        return { 
+            error: true, 
+            message: message, 
+        }
+    }
 
     // una cuenta de tipo total no debe tener asientos
     if (cuenta.totDet == "T") {
@@ -190,7 +209,7 @@ function validarCuentaContable(cuenta) {
         }
             
         if (response.result > 0) { 
-            const message = `Error: la cuenta contable <b>${cuentaContable.cuenta}</b> tiene asientos
+            const message = `Error: la cuenta contable <b>${cuenta.cuenta}</b> tiene asientos
                              contables asociados; no puede ser de tipo <em><b>total</b></em>.`
 
             return { 

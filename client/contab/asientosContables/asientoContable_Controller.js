@@ -9,8 +9,6 @@ import { Companias } from '/imports/collections/companias';
 import { CompaniaSeleccionada } from '/imports/collections/companiaSeleccionada';
 import { TiposAsientoContable } from '/imports/collections/contab/tiposAsientoContable'; 
 
-// TODO: eliminar al final. Debemos revisar upload un asiento from disk file ... 
-import { CuentasContables2 } from '/imports/collections/contab/cuentasContables2';  
 import { ParametrosGlobalBancos } from '/imports/collections/bancos/parametrosGlobalBancos'; 
 import { AsientosContables_SimpleSchema } from '/imports/collections/contab/asientosContables'; 
 import { CuentasContablesClient } from '/client/imports/clientCollections/cuentasContables'; 

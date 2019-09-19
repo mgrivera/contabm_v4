@@ -10,7 +10,6 @@ import { GruposContables } from '/imports/collections/contab/gruposContables';
 
 import { MesesDelAnoFiscal } from '/imports/collections/contab/mesesAnoFiscal'; 
 import { MesesDelAnoFiscal_sql } from '/server/imports/sqlModels/contab/contab'; 
-import { CuentasContables_sql } from '/server/imports/sqlModels/contab/cuentasContables'; 
 
 Meteor.methods(
 {
@@ -38,7 +37,7 @@ Meteor.methods(
         let reportarCada = Math.floor(numberOfItems / 20);
         let reportar = 0;
         let cantidadRecs = 0;
-        let numberOfProcess = 10;
+        let numberOfProcess = 5;
         let currentProcess = 1;
         EventDDP.matchEmit('contab_copiarCatalogos_reportProgress',
                             { myuserId: this.userId, app: 'contab', process: 'copiarCatalogos' },
@@ -173,101 +172,7 @@ Meteor.methods(
             // -------------------------------------------------------------------------------------------------------
         })
 
-        // ---------------------------------------------------------------------------------------------------
-        // Cuentas contables - copiamos a mongo desde contab
-        // ---------------------------------------------------------------------------------------------------
-        response = Async.runSync(function(done) {
-            CuentasContables_sql.findAndCountAll({ raw: true })
-                .then(function(result) { done(null, result); })
-                .catch(function (err) { done(err, null); })
-                .done();
-        });
-
-        if (response.error)
-            throw new Meteor.Error(response.error && response.error.message ? response.error.message : response.error.toString());
-
-
-        // -------------------------------------------------------------------------------------------------------------
-        // para reportar progreso solo 20 veces; si hay menos de 20 registros, reportamos siempre ...
-        numberOfItems = response.result.count;
-        reportarCada = Math.floor(numberOfItems / 20);
-        reportar = 0;
-        cantidadRecs = 0;
-        currentProcess++;
-        EventDDP.matchEmit('contab_copiarCatalogos_reportProgress',
-                            { myuserId: this.userId, app: 'contab', process: 'copiarCatalogos' },
-                            { current: currentProcess, max: numberOfProcess, progress: '0 %' });
-        // -------------------------------------------------------------------------------------------------------------
-
-        // si el usuario eliminó items en sql server, la idea es que se eliminen también aquí; usamos el field existeEnOrigen
-        // para saber cuales items no existen y eliminarlos en mongo ...
-        CuentasContables.update({ }, { $set: { existeEnOrigen: false }}, { multi: true, });
-
-        response.result.rows.forEach((item) => {
-            // para cada catálogos, hacemos un 'upsert'; primero leemos a ver si existe; de ser así, usamos el _id del doc que existe ...
-
-            let itemExisteID = CuentasContables.findOne({ id: item.id }, { fields: { _id: true }});
-
-            let cuentaContable = {
-                _id: itemExisteID ? itemExisteID._id : new Mongo.ObjectID()._str,
-                id: item.id,
-                cuenta: item.cuenta,
-                descripcion: item.descripcion,
-
-                totDet: item.totDet,
-                nivel1: item.nivel1,
-                nivel2: item.nivel2,
-                nivel3: item.nivel3,
-                nivel4: item.nivel4,
-                nivel5: item.nivel5,
-                nivel6: item.nivel6,
-                nivel7: item.nivel7,
-
-                numNiveles: item.numNiveles,
-
-                totDet: item.totDet,
-                actSusp: item.actSusp,
-                cuentaEditada: item.cuentaEditada,
-                grupo: item.grupo,
-                cia: item.cia,
-                existeEnOrigen: true,
-            };
-
-            // aquí intentamos usar un upsert, pero sin éxito; recurrimos a un insert o update, de acuerdo a si el doc fue encontrado arriba
-            if (itemExisteID && itemExisteID._id) {
-                // solo para 'dumb collections' (como cuentas contables); no podemos hacer update; solo remove/insert ...
-                CuentasContables.remove({ _id: itemExisteID._id });
-                CuentasContables.insert(cuentaContable);
-            }
-            else
-                CuentasContables.insert(cuentaContable);
-
-
-            // -------------------------------------------------------------------------------------------------------
-            // vamos a reportar progreso al cliente; solo 20 veces ...
-            cantidadRecs++;
-            if (numberOfItems <= 20) {
-                // hay menos de 20 registros; reportamos siempre ...
-                EventDDP.matchEmit('contab_copiarCatalogos_reportProgress',
-                                    { myuserId: this.userId, app: 'contab', process: 'copiarCatalogos' },
-                                    { current: currentProcess, max: numberOfProcess, progress: numeral(cantidadRecs / numberOfItems).format("0 %") });
-            }
-            else {
-                reportar++;
-                if (reportar === reportarCada) {
-                    EventDDP.matchEmit('contab_copiarCatalogos_reportProgress',
-                                        { myuserId: this.userId, app: 'contab', process: 'copiarCatalogos' },
-                                        { current: currentProcess, max: numberOfProcess, progress: numeral(cantidadRecs / numberOfItems).format("0 %") });
-                    reportar = 0;
-                }
-            }
-            // -------------------------------------------------------------------------------------------------------
-        })
-
-        // al final, los registros que no existen en sql server son eliminados en mongo ...
-        CuentasContables.remove({ existeEnOrigen: false });
-
-
+        
         // ---------------------------------------------------------------------------------------------------
         // Grupos contables - copiamos a mongo desde contab
         // ---------------------------------------------------------------------------------------------------

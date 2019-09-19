@@ -5,7 +5,6 @@ accounts-ui-unstyled@1.4.0
 alanning:roles@1.2.16
 aldeed:collection2-core@2.0.1
 allow-deny@1.1.0
-amplify@1.0.0
 angular-templates@1.0.3
 angular-templates-runtime@0.0.1
 autoupdate@1.4.0
@@ -86,7 +85,6 @@ reactive-dict@1.2.0
 reactive-var@1.0.11
 reload@1.2.0
 retry@1.1.0
-richsilv:dumb-collections@1.1.5
 routepolicy@1.0.12
 server-render@0.3.1
 service-configuration@1.0.11

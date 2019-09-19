@@ -25,7 +25,6 @@ matb33:collection-hooks@=0.8.1
 meteorhacks:async@=1.0.0
 ostrio:meteor-root@=1.0.3
 raix:eventddp@=0.0.2
-richsilv:dumb-collections@=1.1.5
 session@1.1.7
 twbs:bootstrap@=3.3.5
 accounts-password@1.5.0

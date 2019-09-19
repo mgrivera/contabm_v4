@@ -1,3 +1,4 @@
+// // @ts-check
 
 import moment from 'moment';
 import numeral from 'numeral';
@@ -5,9 +6,6 @@ import lodash from 'lodash';
 
 import { Dropbox } from 'dropbox';
 import fetch from 'isomorphic-fetch';
-
-// para crear path como 'dir/sub dir/sub dir/...'; nota: node 10 ya trae ésto, pero nuestra versión de meteor no tiene node 10 ... 
-import mkdirp from 'mkdirp';
 
 import JSZip from 'jszip';
 import Docxtemplater from 'docxtemplater';
@@ -31,6 +29,7 @@ import { Bancos } from '/imports/collections/bancos/bancos';
 import { Chequeras_sql } from '/server/imports/sqlModels/bancos/movimientosBancarios'; 
 import { Monedas_sql } from '/server/imports/sqlModels/monedas'; 
 
+import { CuentasContables_sql } from '/server/imports/sqlModels/contab/cuentasContables'; 
 import { AsientosContables_sql, dAsientosContables_sql } from '/server/imports/sqlModels/contab/asientosContables'; 
 
 import { Companias } from '/imports/collections/companias';
@@ -49,6 +48,7 @@ Meteor.methods(
 
         // nos aseguramos que el usuario tenga un nombre en la tabla de usuarios 
         const usuario = Meteor.user(); 
+        let message = ""; 
 
         // el template debe ser siempre un documento word ...
         if (!fileName || !fileName.endsWith('.docx')) {
@@ -103,8 +103,6 @@ Meteor.methods(
                 .catch(function (err) { done(err, null); })
                 .done();
         })
-
-        let message = ''; 
 
         if (response.error) { 
             throw new Meteor.Error(response.error && response.error.message ? response.error.message : response.error.toString());
@@ -198,8 +196,8 @@ Meteor.methods(
             let partidas = [];
 
             partidasAsientoContable.forEach((x) => {
-                // buscamos la cuenta contable; debe existir en mongo ...
-                let cuentaContable = CuentasContables.findOne({ id: x.cuentaContableID });
+                // leemos la cuenta en sql; debe existir 
+                const cuentaContable = leerCuentaContable(x.cuentaContableID);
 
                 let p = {
                     cuentaContable: cuentaContable ? cuentaContable.cuentaEditada : 'Indefinida',
@@ -435,7 +433,7 @@ Meteor.methods(
         let fileName2 = fileName.replace('.docx', `_${nombreUsuario2}_${fileId}.docx`);
 
         // finalmente, escribimos el archivo resultado, al directorio tmp 
-        filePath2 = path.join(folderPath, "tmp", fileName2); 
+        let filePath2 = path.join(folderPath, "tmp", fileName2); 
 
         // en windows, path regresa back en vez de forward slashes ... 
         filePath2 = filePath2.replace(/\\/g,"/");
@@ -507,20 +505,19 @@ Meteor.methods(
 })
 
 
-function crearFileName(fileName, dir, usuario) { 
+function leerCuentaContable(id) { 
 
-    let nombreUsuario = usuario.emails[0].address;
-
-    let nombreUsuario2 = nombreUsuario.replace(/\./g, "_");           // nombre del usuario: reemplazamos un posible '.' por un '_' 
-    nombreUsuario2 = nombreUsuario2.replace(/\@/g, "_");              // nombre del usuario: reemplazamos un posible '@' por un '_' 
-
-    let fileName2 = fileName.replace('.docx', `_${nombreUsuario2}.docx`);
-
-    // finalmente, escribimos el archivo resultado, al directorio tmp 
-    filePath2 = path.join(dir, fileName2); 
-
-    // en windows, path regresa back en vez de forward slashes ... 
-    filePath2 = filePath2.replace(/\\/g,"/");
-
-    return filePath2; 
+    const response = Async.runSync(function(done) {
+        CuentasContables_sql.findById(id)
+            .then(function(result) { done(null, result); })
+            .catch(function (err) { done(err, null); })
+            .done();
+    })
+    
+    if (response.error) { 
+        throw new Meteor.Error(response.error && response.error.message ? response.error.message : response.error.toString());
+    }
+    
+    const cuentaContable = response.result;
+    return cuentaContable;  
 }

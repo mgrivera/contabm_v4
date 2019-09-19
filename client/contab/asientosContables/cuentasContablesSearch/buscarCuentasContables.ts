@@ -1,10 +1,6 @@
 
 
-
-import * as lodash from 'lodash';
 import * as angular from 'angular';
-
-import { CuentasContables2 } from '../../../../imports/collections/contab/cuentasContables2';  
 
 angular.module("contabm").controller('BuscarCuentasContables_Modal_Controller',
 ['$scope', '$modalInstance', 'companiaContabSeleccionada', 'partidaSeleccionada', 
@@ -29,11 +25,7 @@ function ($scope, $modalInstance, companiaContabSeleccionada, partidaSeleccionad
         $modalInstance.dismiss("Cancel");
     }
 
-    let cuentasContables = CuentasContables2.find({ totDet: 'D', actSusp: 'A', cia: companiaContabSeleccionada.numero, }, 
-                                                  { fields: { _id: 1, id: 1, cuenta: 1, descripcion: 1, }, 
-                                                    sort: { cuenta: 1, }}).
-                                             fetch(); 
-
+    let cuentasContables = []; 
 
     let cuentasContables_ui_grid_api = null;
     let itemSeleccionado: any = {};
