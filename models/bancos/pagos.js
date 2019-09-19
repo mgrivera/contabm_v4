@@ -7,7 +7,7 @@ let pagos_SimpleSchema = new SimpleSchema({
     proveedor: { type: Number, label: 'Compañía (proveedor o cliente)', optional: false },
     moneda: { type: Number, label: 'Moneda', optional: false },
     numeroPago: { type: String, label: 'Número del pago', optional: true },
-    anticipoFlag: { type: Boolean, label: 'Anticipo?', defaultValue: false, optional: false },
+    anticipoFlag: { type: Boolean, label: 'Anticipo?', optional: false },
     fecha: { type: Date, label: 'Fecha', optional: false, },
     monto: { type: Number, label: 'Monto', optional: true },
     concepto: { type: String, label: 'Concepto', optional: false },

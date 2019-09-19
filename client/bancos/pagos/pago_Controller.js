@@ -58,9 +58,12 @@ angular.module("contabm").controller("Bancos_Pagos_Pago_Controller",
 
     $scope.setIsEdited = function (value) {
 
-        if (value === 'compania' && $scope.pago.proveedor) {
-            // leemos la compañía para intentar inicializar el valor miSuFlag
 
+        if (value === 'compania' && $scope.pago.proveedor) {
+
+            $scope.showProgress = true; 
+
+            // leemos la compañía para intentar inicializar el valor miSuFlag
             Meteor.call('leerDatosCompaniaParaFactura', $scope.pago.proveedor,
                 $scope.companiaSeleccionada.numero, (err, result) => {
 
@@ -117,6 +120,9 @@ angular.module("contabm").controller("Bancos_Pagos_Pago_Controller",
                     if (infoProveedor && infoProveedor.datosProveedor && infoProveedor.datosProveedor.concepto) {
                         $scope.pago.concepto = infoProveedor.datosProveedor.concepto;
                     }
+
+                    $scope.showProgress = false;
+                    $scope.$apply();
                 }
             })
         }
@@ -600,9 +606,15 @@ angular.module("contabm").controller("Bancos_Pagos_Pago_Controller",
             let usuario =  Meteor.user();
 
             $scope.pago = {};
-            let pago = {
+            $scope.pago = {
                 claveUnica: 0,
+                proveedor: null, 
                 fecha: new Date(),
+
+                miSuFlag: null, 
+                moneda: null, 
+                anticipoFlag: false, 
+                concepto: '', 
 
                 ingreso: new Date(),
                 ultAct: new Date(),
@@ -611,9 +623,6 @@ angular.module("contabm").controller("Bancos_Pagos_Pago_Controller",
 
                 docState: 1,
             };
-
-            // para hacer un clean al objecto y, por ejemplo, se agreguen los default values 
-            $scope.pago = Pagos.simpleSchema().clean(pago); 
 
             $scope.alerts.length = 0;
             $scope.showProgress = false;
