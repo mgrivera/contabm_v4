@@ -6,7 +6,6 @@ import * as lodash from 'lodash';
 import { Monedas } from '../../../imports/collections/monedas';
 import { Monedas_sql } from '../../imports/sqlModels/monedas';
 import { Companias } from '../../../imports/collections/companias';
-import { Proveedores_sql } from '../../imports/sqlModels/bancos/proveedores'; 
 import { Bancos_sql, Agencias_sql, CuentasBancarias_sql } from '../../imports/sqlModels/bancos/movimientosBancarios'; 
 import { FormasDePago_sql } from '../../imports/sqlModels/bancos/formasDePago'; 
 import { Bancos } from '../../../imports/collections/bancos/bancos';
@@ -18,6 +17,7 @@ import { TiposProveedor, FormasDePago } from '../../../imports/collections/banco
 import { ParametrosGlobalBancos } from '../../../imports/collections/bancos/parametrosGlobalBancos'; 
 
 import { FlattenBancos } from '../../../imports/general/bancos/flattenBancos'; 
+import { ensureValueIsDate } from 'server/imports/general/generalFunctions'; 
 
 Meteor.methods(
 {
@@ -520,7 +520,8 @@ Meteor.methods(
                 numeroCuenta: item.NumeroCuenta,
                 activa: item.Activa,
                 generica: item.Generica,
-                fechaAsignacion: item.FechaAsignacion,
+                // por alguna razón, sequelize v5 regresa dates como strings cuando se leen con un query ... 
+                fechaAsignacion: ensureValueIsDate(item.FechaAsignacion),
                 desde: item.Desde,
                 hasta: item.Hasta,
                 asignadaA: item.AsignadaA,
@@ -530,8 +531,9 @@ Meteor.methods(
                 ultimoChequeUsado: item.UltimoChequeUsado ? parseInt(item.UltimoChequeUsado) : null,
                 cantidadDeCheques: item.CantidadDeCheques,
                 usuario: item.Usuario,
-                ingreso: item.Ingreso,
-                ultAct: item.UltAct,
+
+                ingreso: ensureValueIsDate(item.Ingreso), 
+                ultAct: ensureValueIsDate(item.UltAct),   
 
                 // estos fields no existen en sql; los agregamos aquí para que el manejo de este
                 // collection sea más fácil
@@ -552,7 +554,7 @@ Meteor.methods(
             isValid = Chequeras.simpleSchema().namedContext().validate(document);
 
             if (!isValid) {
-                Chequeras.simpleSchema().namedContext().invalidKeys().forEach(function (error) {
+                Chequeras.simpleSchema().namedContext().validationErrors().forEach(function (error) {
                     errores.push(`El valor '${error.value}' no es adecuado para el campo
                                  '${Chequeras.simpleSchema().label(error.name)}';
                                  error de tipo '${error.type}' (chequera #: ${document.numeroChequera.toString()}).`);
@@ -604,7 +606,6 @@ Meteor.methods(
         // ---------------------------------------------------------------------------------------------------
         // tipos de proveedor - copiamos a mongo desde contab
         // ---------------------------------------------------------------------------------------------------
-        // debugger;
         response = Async.runSync(function(done) {
             TiposProveedor_sql.findAndCountAll({ raw: true })
                 .then(function(result) { done(null, result); })
@@ -739,3 +740,5 @@ Meteor.methods(
         return "Ok, los catálogos han sido cargados desde <em>Contab</em> en forma satisfactoria.";
     }
 })
+
+

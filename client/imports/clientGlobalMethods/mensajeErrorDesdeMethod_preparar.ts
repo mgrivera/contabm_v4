@@ -39,7 +39,7 @@ export function mensajeErrorDesdeMethod_preparar(errorFromMeteorMethod) {
     }
 
     if (err.message) {
-        if (algo) errorMessage += ` - `;
+        if (algo) errorMessage += ` - `; 
         errorMessage += `${err.message}`;
         algo = true;
     }

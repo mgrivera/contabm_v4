@@ -25,8 +25,9 @@
                 <div class="collapse navbar-collapse navbar-nopaddingleft">
                     <ul class="nav navbar-nav">
                         <li><a href="#" class="navbar_custom_small_header">Saldos contables seleccionados </a></li>
-                        <!-- <li><a href="#" ng-click="imprimir()" class="navbar_custom_small_node">Imprimir&nbsp;&nbsp;<span class="fa fa-print"></span></a></li> -->
                         <li><a href="#" ng-click="exportarExcel()" class="navbar_custom_small_node">Exportar&nbsp;&nbsp;<span class="fa fa-file-excel-o"></span></a></li>
+                        <li class="divider-vertical-small" ng-if="userIsAdmin"></li>
+                        <li ng-if="userIsAdmin"><a href="#" ng-click="grabar()" class="navbar_custom_small_node">Grabar&nbsp;&nbsp;<span class="fa fa-floppy-o"></span></a></li>
                     </ul>
 
                     <ul class="nav navbar-nav navbar-right">
@@ -39,11 +40,13 @@
         </nav>
 
         <div ui-grid="saldosContables_ui_grid"
-             ui-grid-resize-columns
-              ui-grid-selection
-              ui-grid-pinning
-             class="angularGrid"
-             style="height: 300px; width: 100%; ">
+            ui-grid-resize-columns
+            ui-grid-selection
+            ui-grid-pinning
+            ui-grid-edit
+            ui-grid-cellnav
+            class="angularGrid"
+            style="height: 300px; width: 100%; ">
         </div>
 
     </div>

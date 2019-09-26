@@ -12,7 +12,6 @@ let validarMesCerradoEnContab = (fecha, ciaContab, asientoTipoCierreAnualFlag) =
        }
       // ----------------------------------------------------------------------------------------------
       // determinamos el mes y año fiscal en base al mes y año calendario del asiento
-
       let mesCalendario = fecha.getMonth() + 1;
       let anoCalendario = fecha.getFullYear();
 

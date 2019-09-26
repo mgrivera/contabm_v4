@@ -1,4 +1,5 @@
 
+
 import { sequelize } from '/server/sqlModels/_globals/_loadThisFirst/_globals';
 
 let  determinarNumeroAsientoContab = (fechaAsiento, tipoAsiento, ciaContab, asientoTipoCierreAnualFlag) => {
@@ -12,7 +13,7 @@ let  determinarNumeroAsientoContab = (fechaAsiento, tipoAsiento, ciaContab, asie
 
     if (typeof asientoTipoCierreAnualFlag === 'undefined') {
        asientoTipoCierreAnualFlag = false;
-     };
+    }
 
     // ----------------------------------------------------------------------------------------------
     // lo primero que hacemos es validar que el mes no esté cerrado en Contab

@@ -185,7 +185,7 @@ const obtenerPlantillasDesdeDropbox = function (dir) {
                 reject(err); 
             }
             if (result.error) { 
-                reject(result.err); 
+                reject(new Error(result.message)); 
             }
             resolve(result); 
         })

@@ -4,6 +4,8 @@ import numeral from 'numeral';
 import { sequelize } from '/server/sqlModels/_globals/_loadThisFirst/_globals';
 import { TimeOffset } from '/globals/globals'; 
 
+import { SaldosContables_sql } from '/server/imports/sqlModels/contab/saldosContables'; 
+
 Meteor.methods(
 {
     contabTraspasoSaldos: function (anoFiscal, ciaContab) {

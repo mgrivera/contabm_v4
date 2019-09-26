@@ -4,29 +4,30 @@ import Sequelize from 'sequelize';
 const sequelize = new Sequelize(Meteor.settings.sqlServer_db_contab_dbName,
                                 Meteor.settings.sqlServer_db_contab_userName,
                                 Meteor.settings.sqlServer_db_contab_userPwd, {
-    // the sql dialect of the database
-    // currently supported: 'mysql', 'sqlite', 'postgres', 'mssql'
-    dialect: 'mssql',
-  
-    // custom host; default: localhost
-    host: Meteor.settings.sqlServer_db_contab_host,
-  
-    // custom port; default: dialect default
-    port: Meteor.settings.sqlServer_db_contab_port,
-  
-    // pool configuration used to pool database connections
-    pool: {
-        maxConnections: 50,
-        minConnections: 0,
-        maxIdleTime: 60000
-      },
+  // the sql dialect of the database
+  // currently supported: 'mysql', 'sqlite', 'postgres', 'mssql'
+  dialect: 'mssql',
 
-      define: {
-        timestamps: false // true by default; para que sequelize no agregue timestaps en forma automática
-      },
-      dialectOptions: {
-        requestTimeout: 30000
-      }
+  // custom host; default: localhost
+  host: Meteor.settings.sqlServer_db_contab_host,
+
+  // custom port; default: dialect default
+  port: Meteor.settings.sqlServer_db_contab_port,
+
+  // pool configuration used to pool database connections
+  pool: {
+    max: 50,
+    min: 0,
+    idle: 60000
+  },
+
+  define: {
+    timestamps: false,        // true by default; para que sequelize no agregue timestaps en forma automática
+    freezeTableName: true,    // so that sequelize does not intent to pluralize table names (ex: user --> users)
+  },
+  dialectOptions: {
+    requestTimeout: 30000
+  }
 })
 
 const datosConexionSqlServer = `${Meteor.settings.sqlServer_db_contab_host}:${Meteor.settings.sqlServer_db_contab_port} ${Meteor.settings.sqlServer_db_contab_dbName} ${Meteor.settings.sqlServer_db_contab_userName}`; 

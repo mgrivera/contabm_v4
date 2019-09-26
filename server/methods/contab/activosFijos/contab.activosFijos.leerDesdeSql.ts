@@ -1,6 +1,6 @@
 
 
-import { sequelize } from 'server/sqlModels/_globals/_loadThisFirst/_globals';
+import { sequelize } from '../../../sqlModels/_globals/_loadThisFirst/_globals'; 
 import * as numeral from 'numeral';
 import * as lodash from 'lodash';
 import * as moment from 'moment';

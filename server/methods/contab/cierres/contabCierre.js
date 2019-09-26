@@ -6,6 +6,7 @@ import { TimeOffset } from '/globals/globals';
 
 import { MesesDelAnoFiscal_sql } from '/server/imports/sqlModels/contab/contab'; 
 import { AsientosContables_sql } from '/server/imports/sqlModels/contab/asientosContables'; 
+import { SaldosContables_sql } from '/server/imports/sqlModels/contab/saldosContables'; 
 
 Meteor.methods(
 {

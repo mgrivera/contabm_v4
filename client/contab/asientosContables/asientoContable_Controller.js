@@ -655,7 +655,6 @@ function ($scope, $stateParams, $state, $meteor, $modal, uiGridConstants) {
             partidas_ui_grid_api = gridApi;
 
             gridApi.selection.on.rowSelectionChanged($scope, function (row) {
-                //debugger;
                 partidaSeleccionada = {};
 
                 if (row.isSelected) {

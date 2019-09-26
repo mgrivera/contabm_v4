@@ -8,6 +8,7 @@ import fs from 'fs';
 import path from 'path';
 
 import { MesesDelAnoFiscal } from '/imports/collections/contab/mesesAnoFiscal'; 
+import { Temp_Consulta_SaldosContables } from '/imports/collections/contab/consultas/tempConsultaSaldosContables';
 
 // para grabar el contenido (doc word creado en base al template) a un file (collectionFS) y regresar el url
 // para poder hacer un download (usando el url) desde el client ...
@@ -217,23 +218,6 @@ Meteor.methods(
             mes12Header: mesFiscal01 && mesFiscal12.nombreMes ? mesFiscal12.nombreMes : "Indefinido",
             saldos: saldos,
         };
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
 
         // -----------------------------------------------------------------------------------------------
         // PRIMERO construimos el file path y leemos la plantilla (Excel) 

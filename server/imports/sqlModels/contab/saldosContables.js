@@ -1,8 +1,9 @@
 
-import { sequelize } from '../_globals/_loadThisFirst/_globals';
+import { sequelize } from '/server/sqlModels/_globals/_loadThisFirst/_globals';
 import Sequelize from 'sequelize';
 
-SaldosContables_sql = sequelize.define('saldosContables', {
+export class SaldosContables_sql extends Sequelize.Model { }; 
+SaldosContables_sql.init({ 
     cuentaContableID: { type: Sequelize.INTEGER, field: 'CuentaContableID', allowNull: false, primaryKey: true, autoIncrement: false, },
     ano: { type: Sequelize.INTEGER, field: 'Ano', allowNull: false, primaryKey: true, autoIncrement: false, },
     moneda: { type: Sequelize.INTEGER, field: 'Moneda', allowNull: false, primaryKey: true, autoIncrement: false, },
@@ -24,7 +25,9 @@ SaldosContables_sql = sequelize.define('saldosContables', {
     anual: { type: Sequelize.DECIMAL(10, 2), field: 'Anual', allowNull: true, defaultValue: 0, },
 
     cia: { type: Sequelize.INTEGER, field: 'Cia', allowNull: false, },
-}, {
-     indexes: [ { unique: true, fields: [ 'cuentaContableID', 'ano', 'moneda', 'monedaOriginal',  ] } ],
-     tableName: 'SaldosContables'
-});
+}, 
+{
+    indexes: [ { unique: true, fields: [ 'cuentaContableID', 'ano', 'moneda', 'monedaOriginal',  ] } ],
+    sequelize,
+    modelName: 'saldosContables'
+}); 

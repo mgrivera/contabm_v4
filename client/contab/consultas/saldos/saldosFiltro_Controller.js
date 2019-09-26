@@ -114,7 +114,7 @@ function ($scope, $stateParams, $state, $meteor, $modal) {
 
     // solo hacemos el subscribe si no se ha hecho antes; el collection se mantiene a lo largo de la session del usuario
     if (filtroAnterior) {
-        $scope.filtro = _.clone(filtroAnterior.filtro);
+        $scope.filtro = lodash.clone(filtroAnterior.filtro);
     }
 
     $scope.showProgress = true;
@@ -135,7 +135,7 @@ function ($scope, $stateParams, $state, $meteor, $modal) {
             return;
         }
 
-        if (_.isArray(result)) {
+        if (Array.isArray(result)) {
             $scope.anosArray = lodash.sortBy(result, (x) => { return -x; });
         }
 

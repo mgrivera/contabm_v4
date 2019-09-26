@@ -200,7 +200,7 @@ Meteor.methods(
             id: pago.claveUnica.toString(),
         };
     }
-});
+})
 
 
 function validarUMC_Bancos (docState,
@@ -243,7 +243,7 @@ function validarUMC_Bancos (docState,
     return {
         error: false
     };
-};
+}
 
 
 function validarPagoAplicado(claveUnicaPago) {

@@ -508,7 +508,7 @@ Meteor.methods(
 function leerCuentaContable(id) { 
 
     const response = Async.runSync(function(done) {
-        CuentasContables_sql.findById(id)
+        CuentasContables_sql.findByPk(id)
             .then(function(result) { done(null, result); })
             .catch(function (err) { done(err, null); })
             .done();

@@ -25,21 +25,27 @@ Meteor.methods({
             files = Promise.await(readDir(token, folderPath, { type, sort, order }));
             files = files.files.filter(x => x.type === "file"); 
         } catch(err) { 
-            error = true; 
             message = `Error: se ha producido un error al intentar obtener el contenido del directorio en Dropbox. <br />
                 El mensaje del error obtenido es: ${err}
                 `; 
+            return { 
+                error: true, 
+                message: message, 
+            }
         } 
 
         if (!error && files && Array.isArray(files) && files.length) { 
             const filesCount =  files.length.toString(); 
             message = `Ok, hemos leído <b>${filesCount}</b> archivos para este tipo de plantillas. `; 
         } else { 
-            error = true; 
             message = `Error: no hemos podido leer plantillas registradas en Dropbox, para este tipo de proceso en particular. <br /> 
                        Ud. debe registrar al menos una plantilla para este tipo de proceso, en el directorio adecuado 
                        (<em>${folderPath}</em>) en el Dropbox del programa. 
                       `; 
+                return { 
+                    error: true, 
+                    message: message, 
+            }
         }
 
         message = message.replace(/\/\//g, '');     // quitamos '//' del query; typescript agrega estos caracteres???

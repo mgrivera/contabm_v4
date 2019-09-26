@@ -1,5 +1,6 @@
 
 
+import lodash from 'lodash'; 
 import numeral from "numeral";
 import moment from "moment";
 import { Monedas } from '/imports/collections/monedas';
@@ -19,7 +20,7 @@ angular.module("contabm").filter('currencyFilter', function () {
 
 angular.module("contabm").filter('number8decimals', function () {
     return function (value) {
-        if (_.isFinite(value))
+        if (lodash.isFinite(value))
             return numeral(value).format('0.00000000');
         else
             return "";
@@ -28,7 +29,7 @@ angular.module("contabm").filter('number8decimals', function () {
 
 angular.module("contabm").filter('number6decimals', function () {
     return function (value) {
-        if (value)
+        if (lodash.isFinite(value))
             return numeral(value).format('0.000000');
         else
             return "";
@@ -37,8 +38,17 @@ angular.module("contabm").filter('number6decimals', function () {
 
 angular.module("contabm").filter('currencyFilterAndNull', function () {
     return function (value) {
-        if (_.isFinite(value))
+        if (lodash.isFinite(value))
             return numeral(value).format('0,0.00');
+        else
+            return "";
+    };
+})
+
+angular.module("contabm").filter('currencyFilterAndNull6Decimals', function () {
+    return function (value) {
+        if (lodash.isFinite(value))
+            return numeral(value).format('0,0.000000');
         else
             return "";
     };
@@ -99,7 +109,7 @@ let estadosFactura = [
 
 angular.module("contabm").filter('nombreEstadoFactura', function () {
     return function (estadoFactura) {
-        var found = _.find(estadosFactura, function (x) { return x.estado === estadoFactura; });
+        var found = lodash.find(estadosFactura, function (x) { return x.estado === estadoFactura; });
         return found ? found.descripcion : "Indefinido";
     };
 })
@@ -113,7 +123,7 @@ angular.module("contabm").filter('boolFilter', function () {
 angular.module("contabm").filter('grupoContableFilter', function () {
     return function (grupoContableID) {
         var grupoContable = GruposContables.findOne({ grupo: grupoContableID });
-        return !grupoContable || _.isEmpty(grupoContable) ? "Indefinido" : grupoContable.descripcion;
+        return !grupoContable || lodash.isEmpty(grupoContable) ? "Indefinido" : grupoContable.descripcion;
     };
 })
 
@@ -129,7 +139,7 @@ angular.module("contabm").filter('tipoCompania2Filter', function () {
         if (compania.nosotros)
             return " ";
 
-        var found = _.find(tiposCompania, function (t) { return t.tipo == compania.tipo; });
+        var found = lodash.find(tiposCompania, function (t) { return t.tipo == compania.tipo; });
 
         return found ? found.descripcion : "Indefinido";
     };
@@ -178,14 +188,14 @@ angular.module("contabm").filter('formatChequera', function () {
 angular.module("contabm").filter('empresaUsuariaSeleccionadaFilter', function () {
     return function (companiaID) {
         var compania = Companias.findOne(companiaID, { fields: { nombre: 1 } });
-        return !compania || _.isEmpty(compania) ? "Indefinido" : compania.nombre;
+        return !compania || lodash.isEmpty(compania) ? "Indefinido" : compania.nombre;
     };
 })
 
 angular.module("contabm").filter('companiaAbreviaturaFilter', function () {
     return function (companiaID) {
         var compania = Companias.findOne({ numero: companiaID }, { fields: { abreviatura: 1 } });
-        return !compania || _.isEmpty(compania) ? "Indefinido" : compania.abreviatura;
+        return !compania || lodash.isEmpty(compania) ? "Indefinido" : compania.abreviatura;
     };
 })
 
@@ -193,14 +203,14 @@ angular.module("contabm").filter('companiaAbreviaturaFilter', function () {
 angular.module("contabm").filter('companiaNombreCortoFilter', function () {
     return function (companiaID) {
         var compania = Companias.findOne({ _id: companiaID }, { fields: { nombreCorto: 1 } });
-        return !compania || _.isEmpty(compania) ? "Indefinido" : compania.nombreCorto;
+        return !compania || lodash.isEmpty(compania) ? "Indefinido" : compania.nombreCorto;
     };
 })
 
 angular.module("contabm").filter('companiaNombreCortoFilter_byNumeroContab', function () {
     return function (companiaID) {
         var compania = Companias.findOne({ numero: companiaID }, { fields: { nombreCorto: 1 } });
-        return !compania || _.isEmpty(compania) ? "Indefinido" : compania.nombreCorto;
+        return !compania || lodash.isEmpty(compania) ? "Indefinido" : compania.nombreCorto;
     };
 })
 
@@ -208,21 +218,21 @@ angular.module("contabm").filter('companiaNombreCortoFilter_byNumeroContab', fun
 angular.module("contabm").filter('companiaNombreFilter', function () {
     return function (companiaID) {
         var compania = Companias.findOne({ _id: companiaID }, { fields: { nombre: 1 } });
-        return !compania || _.isEmpty(compania) ? "Indefinido" : compania.nombre;
+        return !compania || lodash.isEmpty(compania) ? "Indefinido" : compania.nombre;
     };
 })
 
 angular.module("contabm").filter('monedaDescripcionFilter', function () {
     return function (monedaID) {
         var moneda = Monedas.findOne({ moneda: monedaID });
-        return !moneda || _.isEmpty(moneda) ? "Indefinido" : moneda.descripcion;
+        return !moneda || lodash.isEmpty(moneda) ? "Indefinido" : moneda.descripcion;
     };
 })
 
 angular.module("contabm").filter('monedaSimboloFilter', function () {
     return function (monedaID) {
         var moneda = Monedas.findOne({ moneda: monedaID });
-        return !moneda || _.isEmpty(moneda) ? "Indefinido" : moneda.simbolo;
+        return !moneda || lodash.isEmpty(moneda) ? "Indefinido" : moneda.simbolo;
     };
 })
 
@@ -335,7 +345,7 @@ angular.module("contabm").filter('cuotaTienePagoCompleto_Filter', function () {
             // la cuota no tiene pagos; regresamos false (sin un pago completo)
             return "";
 
-        var completo = _.some(row.pagos, function (pago) { return pago.completo; });
+        var completo = lodash.some(row.pagos, function (pago) { return pago.completo; });
 
         return completo ? "Si" : "";
     };
