@@ -7,6 +7,10 @@ import { TimeOffset } from '/globals/globals';
 import { AsientosContables_sql, dAsientosContables_sql } from '/server/imports/sqlModels/contab/asientosContables'; 
 import { CuentasContables_sql } from '/server/imports/sqlModels/contab/cuentasContables'; 
 
+// para usar los operators en sequelize 
+import Sequelize from 'sequelize';
+const Op = Sequelize.Op
+
 Meteor.methods(
 {
     importarAsientosContablesDesdeArchivoTexto: function (asientosArrayJson, mantenerNumerosAsientosContables, ciaContab) {
@@ -104,7 +108,7 @@ Meteor.methods(
                 response = null;
                 response = Async.runSync(function(done) {
                     CuentasContables_sql.count({
-                        where: { cuenta: { $eq: partida.cuentaContable }, cia: { $eq: ciaContab }},
+                        where: { cuenta: { [Op.eq]: partida.cuentaContable }, cia: { [Op.eq]: ciaContab }},
                         attributes: [ 'cuenta' ],
                         raw: true,
                     })
@@ -207,10 +211,10 @@ Meteor.methods(
                 response = null;
                 response = Async.runSync(function(done) {
                     AsientosContables_sql.count({
-                        where: { numero: { $eq: asiento.numero },
-                                 mesFiscal: { $eq: mesFiscalCiaContabSeleccionada },
-                                 anoFiscal: { $eq: anoFiscalCiaContabSeleccionada },
-                                 cia: { $eq: ciaContab }
+                        where: { numero: { [Op.eq]: asiento.numero },
+                                 mesFiscal: { [Op.eq]: mesFiscalCiaContabSeleccionada },
+                                 anoFiscal: { [Op.eq]: anoFiscalCiaContabSeleccionada },
+                                 cia: { [Op.eq]: ciaContab }
                                },
                         attributes: [ 'numero' ],
                         raw: true,
@@ -333,7 +337,7 @@ Meteor.methods(
                 response = null;
                 response = Async.runSync(function(done) {
                     CuentasContables_sql.findAll({
-                        where: { cuenta: { $eq: partida.cuentaContable }, cia: { $eq: ciaContab }},
+                        where: { cuenta: { [Op.eq]: partida.cuentaContable }, cia: { [Op.eq]: ciaContab }},
                         attributes: [ 'id' ],
                         raw: true,
                     })

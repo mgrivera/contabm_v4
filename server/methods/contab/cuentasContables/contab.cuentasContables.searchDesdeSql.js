@@ -45,18 +45,23 @@ Meteor.methods(
     }, 
 
 
-    'contab.cuentasContables.leerDesdeSqlServerRegresarCuentaCompleta': function (filtro, ciaContabSeleccionada) {
+    'contab.cuentasContables.leerDesdeSqlServerRegresarCuentaCompleta': function (search, ciaContabSeleccionada) {
 
         new SimpleSchema({
-            filtro: { type: String, optional: false, }, 
+            search: { type: String, optional: false, min: 0, }, 
             ciaContabSeleccionada: { type: Number, optional: false, },
-        }).validate({ filtro, ciaContabSeleccionada, });
+        }).validate({ search, ciaContabSeleccionada, });
 
         // hacemos que la busqueda sea siempre genérica ... nótese como quitamos algunos '*' que el usuario haya agregado
-        let criteria = filtro.replace(/\*/g, '');
-        criteria = `%${criteria}%`;
+        let where = "(1 = 1)"; 
 
-        const where = `(c.Cuenta Like '${criteria}') Or (c.Descripcion Like '${criteria}')`;
+        if (search) { 
+            let criteria = search.replace(/\*/g, '');
+            criteria = `%${criteria}%`;
+
+            where = `(c.Cuenta Like '${criteria}') Or (c.Descripcion Like '${criteria}')`;
+        }
+        
 
         // ---------------------------------------------------------------------------------------------------
         // leemos los pagos desde sql server, que cumplan el criterio indicado

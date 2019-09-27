@@ -1,5 +1,10 @@
 
+
 import numeral from 'numeral';
+
+// para usar los operators en sequelize 
+import Sequelize from 'sequelize';
+
 import { Companias } from '/imports/collections/companias';
 import { Departamentos_sql } from '/server/imports/sqlModels/nomina/catalogos/departamentos'; 
 import { Bancos_sql } from '/server/imports/sqlModels/bancos/movimientosBancarios'; 
@@ -7,6 +12,9 @@ import { Compania_sql } from '/server/imports/sqlModels/companias';
 import { Bancos } from '/imports/collections/bancos/bancos';
 
 import { Cargos_sql } from '/server/imports/sqlModels/nomina/catalogos/cargos'; 
+
+// para usar los operators en sequelize 
+const Op = Sequelize.Op
 
 Meteor.methods(
 {
@@ -447,7 +455,7 @@ Meteor.methods(
         // Ciudades - copiamos a mongo desde sql
         // ---------------------------------------------------------------------------------------------------
         response = Async.runSync(function(done) {
-            Ciudades_sql.findAndCountAll({ where: { ciudad: { $ne: '' }}, raw: true })
+            Ciudades_sql.findAndCountAll({ where: { ciudad: { [Op.ne]: '' }}, raw: true })
                 .then(function(result) { done(null, result); })
                 .catch(function (err) { done(err, null); })
                 .done();

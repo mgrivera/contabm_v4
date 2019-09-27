@@ -9,6 +9,10 @@ import { TimeOffset } from '/globals/globals';
 
 import { AsientosContables_sql, dAsientosContables_sql } from '/server/imports/sqlModels/contab/asientosContables'; 
 
+// para usar los operators en sequelize 
+import Sequelize from 'sequelize';
+const Op = Sequelize.Op
+
 Meteor.methods(
 {
     'contab.asientos.convertir': function (asientoContableID) {
@@ -82,6 +86,8 @@ Meteor.methods(
             throw new Meteor.Error("meses-cerrado-en-Contab", validarMesCerradoEnContab.errMessage);
         }
 
+        
+
         // la compañía debe estar definida como 'multimoneda' en Contab ...
         response = null;
         response = Async.runSync(function(done) {
@@ -114,9 +120,8 @@ Meteor.methods(
             };
         }
 
-
-        let monedaNacional = Monedas.findOne({ nacionalFlag: { $eq: true }});
-        let monedaExtranjera = Monedas.findOne({ nacionalFlag: { $ne: true }});
+        let monedaNacional = Monedas.findOne({ nacionalFlag: { $eq: true }});   
+        let monedaExtranjera = Monedas.findOne({ nacionalFlag: { $ne: true }});     
 
         if (!monedaNacional || !monedaExtranjera) {
             return {
@@ -126,7 +131,6 @@ Meteor.methods(
                           Por favor revise las monedas en la tabla <em>Monedas</em> y corrija esta situación.`
             };
         }
-
 
         // -------------------------------------------------------------------------------------------------
         // antes de eliminar el asiento ya convertido, averiguamos si existe (para informar al usuario)
@@ -140,12 +144,12 @@ Meteor.methods(
                 mes: asientoContable.mes,
                 ano: asientoContable.ano,
                 cia: asientoContable.cia,
-                moneda: { $ne: sequelize.col('monedaOriginal') }
+                moneda: { [Op.ne]: sequelize.col('monedaOriginal') }        
             }})
                 .then(function(result) { done(null, result); })
                 .catch(function (err) { done(err, null); })
                 .done();
-        });
+        })
 
         if (response.error) {
             throw new Meteor.Error(response.error && response.error.message ? response.error.message : response.error.toString());
@@ -164,7 +168,7 @@ Meteor.methods(
                 mes: asientoContable.mes,
                 ano: asientoContable.ano,
                 cia: asientoContable.cia,
-                moneda: { $ne: sequelize.col('monedaOriginal') }
+                moneda: { [Op.ne]: sequelize.col('monedaOriginal') }        
             }})
                 .then(function(result) { done(null, result); })
                 .catch(function (err) { done(err, null); })
@@ -174,7 +178,6 @@ Meteor.methods(
         if (response.error) {
             throw new Meteor.Error(response.error && response.error.message ? response.error.message : response.error.toString());
         }
-
 
         // -------------------------------------------------------------------------------------------
         // para efectuar la conversión, debemos determinar si el asiento se ha registrado en moneda

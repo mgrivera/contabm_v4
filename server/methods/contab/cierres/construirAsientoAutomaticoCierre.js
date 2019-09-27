@@ -9,6 +9,10 @@ import { MesesDelAnoFiscal_sql } from '/server/imports/sqlModels/contab/contab';
 import { AsientosContables_sql, dAsientosContables_sql } from '/server/imports/sqlModels/contab/asientosContables';
 import { CuentasContables_sql } from '/server/imports/sqlModels/contab/cuentasContables'; 
 
+// para usar los operators en sequelize 
+import Sequelize from 'sequelize';
+const Op = Sequelize.Op
+
 Meteor.methods(
 {
     construirAsientoAutomaticoCierre: function (anoFiscal, ciaContab) {
@@ -325,7 +329,7 @@ function leerMesesDesdeTablaMesesDelAnoFiscal(mesesArray, cia) {
         MesesDelAnoFiscal_sql.findAndCountAll(
             {
                 attributes: [ 'mesFiscal', 'mes', 'nombreMes' ],
-                where: { mesFiscal: { $in: mesesArray }, cia: cia },
+                where: { mesFiscal: { [Op.in]: mesesArray }, cia: cia },
                 order: [['mesFiscal', 'ASC']],
                 raw: true
             })
@@ -525,12 +529,12 @@ function determinarNumeroContabAsientoAutomatico(moneda, primerDiaMes, ultimoDia
         AsientosContables_sql.findAll({
             where: {
                 tipo: 'AUTO',
-                asientoTipoCierreAnualFlag: { $eq: true },
+                asientoTipoCierreAnualFlag: { [Op.eq]: true },
                 moneda: moneda.moneda,
                 monedaOriginal: moneda.monedaOriginal,
                 fecha: {
-                    $gte: moment(primerDiaMes).subtract(TimeOffset, 'hours').toDate(),  // sequeliza globaliza; revertimos
-                    $lte: moment(ultimoDiaMes).subtract(TimeOffset, 'hours').toDate(),  // sequeliza globaliza; revertimos
+                    [Op.gte]: moment(primerDiaMes).subtract(TimeOffset, 'hours').toDate(),  // sequeliza globaliza; revertimos
+                    [Op.lte]: moment(ultimoDiaMes).subtract(TimeOffset, 'hours').toDate(),  // sequeliza globaliza; revertimos
                 },
                 cia: ciaContab.numero,
             },

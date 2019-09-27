@@ -406,9 +406,11 @@ angular.module("contabm.contab.catalogos").controller("Catalogos_CuentasContable
     $scope.aplicarFiltro = function(messageFromOutSide) { 
 
         $scope.showProgress = true;
+        const search = $scope.filtro && $scope.filtro.search ? $scope.filtro.search : ""; 
 
         Meteor.call('contab.cuentasContables.leerDesdeSqlServerRegresarCuentaCompleta', 
-                     $scope.filtro.search, $scope.companiaSeleccionada.numero, (err, result) => {
+                     search, 
+                     $scope.companiaSeleccionada.numero, (err, result) => {
 
             if (err) {
                 let errorMessage = mensajeErrorDesdeMethod_preparar(err);

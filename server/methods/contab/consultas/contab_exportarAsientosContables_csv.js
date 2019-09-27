@@ -7,6 +7,10 @@ import { TimeOffset } from '/globals/globals';
 import { AsientosContables_sql, dAsientosContables_sql } from '/server/imports/sqlModels/contab/asientosContables'; 
 import { CuentasContables_sql } from '/server/imports/sqlModels/contab/cuentasContables'; 
 
+// para usar los operators en sequelize 
+import Sequelize from 'sequelize';
+const Op = Sequelize.Op
+
 Meteor.methods(
 {
     exportarAsientosContablesAFormatoCSV: function () {
@@ -77,7 +81,7 @@ Meteor.methods(
             response = null;
             response = Async.runSync(function(done) {
                 dAsientosContables_sql.findAll({
-                    where: { numeroAutomatico: { $eq: asientoContable.numeroAutomatico }},
+                    where: { numeroAutomatico: { [Op.eq]: asientoContable.numeroAutomatico }},
                     order: [ 'partida' ],
                     include: [
                         { model: CuentasContables_sql,

@@ -5,6 +5,10 @@ import moment from 'moment';
 import { MesesDelAnoFiscal_sql } from '/server/imports/sqlModels/contab/contab'; 
 import { AsientosContables_sql } from '/server/imports/sqlModels/contab/asientosContables'; 
 
+// para usar los operators en sequelize 
+import Sequelize from 'sequelize';
+const Op = Sequelize.Op
+
 Meteor.methods(
 {
     determinarSiExisteAsientoAutomaticoCierreAnual: function (anoFiscal, ciaContab) {
@@ -26,11 +30,11 @@ Meteor.methods(
         response = Async.runSync(function(done) {
             AsientosContables_sql.count({ where: {
                 fecha: {
-                    $gte: moment(primerDiaMes).format('YYYY-MM-DD'),
-                    $lte: moment(ultimoDiaMes).format('YYYY-MM-DD')
+                    [Op.gte]: moment(primerDiaMes).format('YYYY-MM-DD'),
+                    [Op.lte]: moment(ultimoDiaMes).format('YYYY-MM-DD')
                 },
                 tipo: 'AUTO',
-                asientoTipoCierreAnualFlag: { $eq: true },
+                asientoTipoCierreAnualFlag: { [Op.eq]: true },
                 cia: ciaContab.numero,
             }})
                 .then(function(result) { done(null, result); })
@@ -59,7 +63,7 @@ function leerMesesDesdeTablaMesesDelAnoFiscal(mesesArray, cia) {
         MesesDelAnoFiscal_sql.findAndCountAll(
             {
                 attributes: [ 'mesFiscal', 'mes', 'nombreMes' ],
-                where: { mesFiscal: { $in: mesesArray }, cia: cia },
+                where: { mesFiscal: { [Op.in]: mesesArray }, cia: cia },
                 order: [['mesFiscal', 'ASC']],
                 raw: true
             })

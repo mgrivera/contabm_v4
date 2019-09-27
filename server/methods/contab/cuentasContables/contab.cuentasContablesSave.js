@@ -1,8 +1,14 @@
 
 
 import lodash from 'lodash';
+// para usar los operators en sequelize 
+import Sequelize from 'sequelize';
+
 import { CuentasContables_sql } from '/server/imports/sqlModels/contab/cuentasContables'; 
 import { dAsientosContables_sql } from '/server/imports/sqlModels/contab/asientosContables'; 
+
+// para usar los operators en sequelize 
+const Op = Sequelize.Op
 
 Meteor.methods(
 {
@@ -119,10 +125,10 @@ Meteor.methods(
 
             // el usuario no debe eliminar cuentas con cuentas contables asociadas ('hijas')
             response = Async.runSync(function(done) {
-                CuentasContables_sql.count({ where: { $and:
+                CuentasContables_sql.count({ where: { [Op.and]:
                     [
-                        { cuenta: { $like: `${item.cuenta}%` }},
-                        { cuenta: { $ne: item.cuenta }},
+                        { cuenta: { [Op.like]: `${item.cuenta}%` }},
+                        { cuenta: { [Op.ne]: item.cuenta }},
                         { cia: item.cia }
                     ] }})
                     .then(function(result) { done(null, result); })
@@ -170,11 +176,11 @@ function validarCuentaContable(cuenta) {
 
     // no deben haber dos cuentas iguales para la misma cia contab 
     response = Async.runSync(function(done) {
-        CuentasContables_sql.count({ where: { $and:
+        CuentasContables_sql.count({ where: { [Op.and]:
             [
-                { cuenta: { $eq: cuenta.cuenta }},
-                { id: { $ne: cuenta.id }},
-                { cia: { $eq: cuenta.cia }}, 
+                { cuenta: { [Op.eq]: cuenta.cuenta }},
+                { id: { [Op.ne]: cuenta.id }},
+                { cia: { [Op.eq]: cuenta.cia }}, 
             ] }})
             .then(function(result) { done(null, result); })
             .catch(function (err) { done(err, null); })
@@ -222,10 +228,10 @@ function validarCuentaContable(cuenta) {
     // una cuenta de tipo detalle no debe tener otras cuentas asociadas (ie: hijas) ...
     if (cuenta.totDet == "D") {
         response = Async.runSync(function(done) {
-            CuentasContables_sql.count({ where: { $and:
+            CuentasContables_sql.count({ where: { [Op.and]:
                 [
-                    { cuenta: { $like: `${cuenta.cuenta}%` }},
-                    { cuenta: { $ne: cuenta.cuenta }},
+                    { cuenta: { [Op.like]: `${cuenta.cuenta}%` }},
+                    { cuenta: { [Op.ne]: cuenta.cuenta }},
                     { cia: cuenta.cia }
                 ] }})
                 .then(function(result) { done(null, result); })
@@ -285,9 +291,9 @@ function validarCuentaContable(cuenta) {
 
         // buscamos el nivel anterior de la cuenta; debe exisitr para cuentas de dos o más niveles 
         response = Async.runSync(function(done) {
-            CuentasContables_sql.findOne({ where: { $and:
+            CuentasContables_sql.findOne({ where: { [Op.and]:
                 [
-                    { cuenta: { $eq: nivelAnterior }},
+                    { cuenta: { [Op.eq]: nivelAnterior }},
                     { cia: cuenta.cia }
                 ] }})
                 .then(function(result) { done(null, result); })

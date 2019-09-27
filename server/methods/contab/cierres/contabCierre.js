@@ -8,6 +8,10 @@ import { MesesDelAnoFiscal_sql } from '/server/imports/sqlModels/contab/contab';
 import { AsientosContables_sql } from '/server/imports/sqlModels/contab/asientosContables'; 
 import { SaldosContables_sql } from '/server/imports/sqlModels/contab/saldosContables'; 
 
+// para usar los operators en sequelize 
+import Sequelize from 'sequelize';
+const Op = Sequelize.Op
+
 Meteor.methods(
 {
     contabCierre: function (mesesArray, anoFiscal, ciaContab) {
@@ -362,7 +366,7 @@ function leerMesesDesdeTablaMesesDelAnoFiscal(mesesArray, cia) {
         MesesDelAnoFiscal_sql.findAndCountAll(
             {
                 attributes: [ 'mesFiscal', 'mes', 'nombreMes' ],
-                where: { mesFiscal: { $in: mesesArrayFilter }, cia: cia },
+                where: { mesFiscal: { [Op.in]: mesesArrayFilter }, cia: cia },
                 order: [['mesFiscal', 'ASC']],
                 raw: true
             })
@@ -650,10 +654,7 @@ function inicializarSaldoActualConSaldoAnterior(mesFiscal, anoFiscal, ciaContab)
         throw new Meteor.Error(response.error && response.error.message ? response.error.message : response.error.toString());
 
     return;
-};
-
-
-
+}
 
 
 function determinarExistenciaAsientosTipoCierreAnual(primerDiaMes, ultimoDiaMes, ciaContab) {
@@ -661,10 +662,10 @@ function determinarExistenciaAsientosTipoCierreAnual(primerDiaMes, ultimoDiaMes,
     response = Async.runSync(function(done) {
         AsientosContables_sql.count({ where: {
             fecha: {
-                $gte: moment(primerDiaMes).subtract(TimeOffset, 'hours').toDate(),  // sequeliza globaliza; revertimos
-                $lte: moment(ultimoDiaMes).subtract(TimeOffset, 'hours').toDate(),  // sequeliza globaliza; revertimos
+                [Op.gte]: moment(primerDiaMes).subtract(TimeOffset, 'hours').toDate(),  // sequeliza globaliza; revertimos
+                [Op.lte]: moment(ultimoDiaMes).subtract(TimeOffset, 'hours').toDate(),  // sequeliza globaliza; revertimos
             },
-            asientoTipoCierreAnualFlag: { $eq: true },
+            asientoTipoCierreAnualFlag: { [Op.eq]: true }, 
             cia: ciaContab.numero,
         }})
             .then(function(result) { done(null, result); })
@@ -679,11 +680,7 @@ function determinarExistenciaAsientosTipoCierreAnual(primerDiaMes, ultimoDiaMes,
         return true;
     else
         return false;
-};
-
-
-
-
+}
 
 
 function actualizarSaldosContables(primerDiaMes, ultimoDiaMes, mesFiscal, anoFiscal, ciaContab) {
