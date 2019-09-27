@@ -37,7 +37,7 @@ Meteor.methods(
                         };
 
         // sync call
-        let methodResult = Meteor.call('eventDDP_matchEmit', eventName, eventSelector, eventData);
+        Meteor.call('eventDDP_matchEmit', eventName, eventSelector, eventData);
         // -------------------------------------------------------------------------------------------------------------
 
         let periodoCalendario = ContabFunctions.construirPeriodoParaMesFiscal(12, anoFiscal, ciaContab.numero);
@@ -112,15 +112,8 @@ Meteor.methods(
             // sync call
             methodResult = Meteor.call('eventDDP_matchEmit', eventName, eventSelector, eventData);
             // -------------------------------------------------------------------------------------------------------------
-
-            console.log("1) obtener número del asiento ... ")
-
             let numeroContabAsientoAutomatico =
                 determinarNumeroContabAsientoAutomatico(moneda, primerDiaMes, ultimoDiaMes, ciaContab);
-
-            console.log(`1) obtener número del asiento - Ok, número ${numeroContabAsientoAutomatico} ... `)
-            
-            console.log("2) leer saldos GyP ... ")
 
             // leemos los saldos del mes 12, para cuentas
             // contables de tipo gastos/ingresos. Estos saldos deben ser, justamente, revertidos, para
@@ -523,7 +516,6 @@ function determinarNumeroContabAsientoAutomatico(moneda, primerDiaMes, ultimoDia
 
     // leemos un asiento automático que ya exista; si existe, tomamos su número y lo eliminamos;
     // si no existe, determinamos un número de asientos Contab ...
-
     let response = null;
     response = Async.runSync(function(done) {
         AsientosContables_sql.findAll({
@@ -590,10 +582,10 @@ function determinarNumeroContabAsientoAutomatico(moneda, primerDiaMes, ultimoDia
                                    `Error: ha ocurrido un error al intentar obtener un número de asiento Contab. <br />
                                    El mensaje específico del error es: <br />
                                    ${numeroAsientoContab.errMessage}`);
-        };
+        }
 
         numeroAsiento = numeroAsientoContab.numeroAsientoContab;
-    };
+    }
 
     return numeroAsiento;
-};
+}

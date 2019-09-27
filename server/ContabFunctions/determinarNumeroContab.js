@@ -64,8 +64,7 @@ let  determinarNumeroAsientoContab = (fechaAsiento, tipoAsiento, ciaContab, asie
     }
 
 
-    if (!numeracionAsientosSeparadaFlag)
-    {
+    if (!numeracionAsientosSeparadaFlag) {
         // la númeración NO ES separada de acuerdo al tipo del asiento. La determinación del número
         // es más simple
 
