@@ -263,8 +263,6 @@ export default class DefinicionCuentasContables extends React.Component {
                                                                 const value = (selected && Array.isArray(selected) && selected.length > 0) ? selected[0].proveedor : "";
                                                                 const nombre = (selected && Array.isArray(selected) && selected.length > 0) ? selected[0].nombre : "";
 
-                                                                console.log("onChange / proveedor / selected / value / nombre: ", selected, value, nombre); 
-
                                                                 setFieldValue('compania', value);
                                                                 setFieldTouched('compania', true); 
 

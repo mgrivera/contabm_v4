@@ -48,12 +48,8 @@ Meteor.methods(
                                    `Error: el asiento contable, ya tiene un <em>número de asiento Contab</em>.`);
 
 
-        console.log("1) asiento contable leído desde sql: ", asientoContable)
-
         // por alguna razón, sequelize v5 regresa dates como strings (???!!!) )
         asientoContable.fecha = ensureValueIsDate(asientoContable.fecha); 
-
-        console.log("2) asiento contable leído desde sql: ", asientoContable)
 
         let numeroAsientoContab = ContabFunctions.determinarNumeroAsientoContab(asientoContable.fecha,
                                                                                 asientoContable.tipo,

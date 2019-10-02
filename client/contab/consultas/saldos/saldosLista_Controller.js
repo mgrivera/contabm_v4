@@ -553,8 +553,6 @@ angular.module("contabm")
                 return;
             }
 
-            console.log("saldos contables (before): ", $scope.saldosContables); 
-
             $scope.helpers({ 
                 saldosContables: () => { 
                     return Temp_Consulta_SaldosContables.find({ user: Meteor.userId() }, 
@@ -562,7 +560,6 @@ angular.module("contabm")
                 }
             })
 
-            console.log("saldos contables (after): ", $scope.saldosContables); 
             $scope.saldosContables_ui_grid.data = $scope.saldosContables;
 
             $scope.alerts.length = 0;

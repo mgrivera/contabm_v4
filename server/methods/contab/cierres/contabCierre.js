@@ -224,9 +224,6 @@ Meteor.methods(
 
             cerrarCodigosPresupuesto(primerDiaMes, ultimoDiaMes, mesFiscal, anoFiscal, ciaContab);
 
-            console.log("Ok, vamos al paso # 5 ..."); 
-
-
             // ---------------------------------------------------------------------------------------------
             // paso # 5) actualizamos el ultimo mes cerrado ...
             // -------------------------------------------------------------------------------------------------------------
@@ -266,11 +263,8 @@ Meteor.methods(
             });
 
             if (response.error) { 
-                console.log("Upps: error al intentar actualizar UMC con: ", ultimoMesCerrado);
                 throw new Meteor.Error(response.error && response.error.message ? response.error.message : response.error.toString());
             }
-
-            console.log("Ok, actualización de UMC exitosa. ");
                 
             // -------------------------------------------------------------------------------------------------------------
             // valores para reportar el progreso
@@ -286,8 +280,6 @@ Meteor.methods(
                         };
             methodResult = Meteor.call('eventDDP_matchEmit', eventName, eventSelector, eventData);
         })
-
-        console.log("Ok, teminamos los cierres; vamos a los mensajes finales ...");
 
         // solo cuando se permite cerrar con asientos descuadrados, construimos un mensaje que informe al usuario la existencia de
         // éstos ...

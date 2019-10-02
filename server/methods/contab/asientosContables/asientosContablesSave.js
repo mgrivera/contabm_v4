@@ -85,15 +85,11 @@ Meteor.methods(
             // 4.30 para llevar a utc; restamos 4.30 para eliminar este efecto ...
             let asientoContable_sql = lodash.cloneDeep(asientoContable);
 
-            console.log(" fecha asiento contable (insert): ", asientoContable_sql.fecha); 
-
             asientoContable_sql.fecha = moment(asientoContable.fecha).subtract(TimeOffset, 'hours').toDate();
             asientoContable_sql.ingreso = moment(asientoContable.ingreso).subtract(TimeOffset, 'hours').toDate();
             asientoContable_sql.ultAct = moment(asientoContable.ultAct).subtract(TimeOffset, 'hours').toDate();
 
             delete asientoContable_sql.partidas; 
-
-            console.log(" fecha asiento contable (insert): ", asientoContable_sql.fecha); 
 
             response = Async.runSync(function(done) {
                 AsientosContables_sql.create(asientoContable_sql)
@@ -150,15 +146,11 @@ Meteor.methods(
             // para compensar la conversión que ocurre en las fechas al grabar a sql server, restamos 4.3 horas a cada una ...
             let asientoContable_sql = lodash.cloneDeep(asientoContable);
 
-            console.log(" asiento contable (update): ", asientoContable_sql.fecha); 
-
             asientoContable_sql.fecha = moment(asientoContable.fecha).subtract(TimeOffset, 'hours').toDate();
             asientoContable_sql.ingreso = moment(asientoContable.ingreso).subtract(TimeOffset, 'hours').toDate();
             asientoContable_sql.ultAct = moment(asientoContable.ultAct).subtract(TimeOffset, 'hours').toDate();
 
             delete asientoContable_sql.partidas; 
-
-            console.log(" asiento contable (update): ", asientoContable_sql.fecha); 
 
             response = Async.runSync(function(done) {
                 AsientosContables_sql.update(asientoContable_sql, { where: { numeroAutomatico: asientoContable.numeroAutomatico }})

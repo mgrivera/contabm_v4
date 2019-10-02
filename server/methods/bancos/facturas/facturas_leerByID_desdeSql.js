@@ -1,6 +1,9 @@
 
+
 import moment from 'moment';
 import SimpleSchema from 'simpl-schema';
+
+import { Facturas_sql, Facturas_Impuestos_sql, CuotasFactura_sql } from '/server/imports/sqlModels/bancos/facturas'; 
 import { TimeOffset } from '/globals/globals'; 
 
 Meteor.methods(

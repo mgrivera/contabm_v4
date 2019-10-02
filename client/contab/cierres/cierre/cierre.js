@@ -64,7 +64,7 @@ angular.module("contabm").controller("Contab_Cierre_Controller",
 
   // para preparar la lista de meses a cerrar que se muestra al usuario ...
   $scope.showProgress = true;
-  construirYMostrarListaDeMesesACerrar($meteor, $scope, mesesDelAnoFiscal, companiaSeleccionadaDoc);
+  construirYMostrarListaDeMesesACerrar($scope, mesesDelAnoFiscal, companiaSeleccionadaDoc);
 
 
   $scope.parametros = {};
@@ -145,31 +145,45 @@ angular.module("contabm").controller("Contab_Cierre_Controller",
                 $scope.alerts.length = 0;
                 $scope.alerts.push({ type: 'info', msg: result });
 
-                construirYMostrarListaDeMesesACerrar($meteor, $scope, mesesDelAnoFiscal, companiaSeleccionadaDoc);
+                construirYMostrarListaDeMesesACerrar($scope, mesesDelAnoFiscal, companiaSeleccionadaDoc);
           })
       }
       else if (mesACerrar === -30) {
           Meteor.apply('construirAsientoAutomaticoCierre', [ $scope.ultimoMesCerrado.ano, companiaSeleccionadaDoc ], [{ noRetry: true }], (err, result) => {
 
-               if (err) {
+                if (err) {
                     let errorMessage = mensajeErrorDesdeMethod_preparar(err);
 
-                   $scope.alerts.length = 0;
-                   $scope.alerts.push({
-                     type: 'danger',
-                     msg: errorMessage
-                   });
+                    $scope.alerts.length = 0;
+                    $scope.alerts.push({
+                        type: 'danger',
+                        msg: errorMessage
+                    });
 
-                   $scope.showProgress = false;
-                   $scope.$apply();
+                    $scope.showProgress = false;
+                    $scope.$apply();
 
-                   return;
-               }
+                    return;
+                }
+
+                if (result && result.error) {
+                    
+                    $scope.alerts.length = 0;
+                    $scope.alerts.push({
+                        type: 'danger',
+                        msg: result.message
+                    });
+
+                    $scope.showProgress = false;
+                    $scope.$apply();
+
+                    return;
+                }
 
                 $scope.alerts.length = 0;
                 $scope.alerts.push({ type: 'info', msg: result });
 
-                construirYMostrarListaDeMesesACerrar($meteor, $scope, mesesDelAnoFiscal, companiaSeleccionadaDoc);
+                construirYMostrarListaDeMesesACerrar($scope, mesesDelAnoFiscal, companiaSeleccionadaDoc);
           })
       }
       else if (mesACerrar === -20) {
@@ -181,7 +195,7 @@ angular.module("contabm").controller("Contab_Cierre_Controller",
                 $scope.alerts.length = 0;
                 $scope.alerts.push({ type: 'info', msg: data0 });
 
-                construirYMostrarListaDeMesesACerrar($meteor, $scope, mesesDelAnoFiscal, companiaSeleccionadaDoc)
+                construirYMostrarListaDeMesesACerrar($scope, mesesDelAnoFiscal, companiaSeleccionadaDoc)
               },
               function (err) {
                     let errorMessage = mensajeErrorDesdeMethod_preparar(err);
@@ -198,7 +212,7 @@ angular.module("contabm").controller("Contab_Cierre_Controller",
                 $scope.alerts.length = 0;
                 $scope.alerts.push({ type: 'info', msg: data0 });
 
-                construirYMostrarListaDeMesesACerrar($meteor, $scope, mesesDelAnoFiscal, companiaSeleccionadaDoc)
+                construirYMostrarListaDeMesesACerrar($scope, mesesDelAnoFiscal, companiaSeleccionadaDoc)
               },
               function (err) {
                     let errorMessage = mensajeErrorDesdeMethod_preparar(err);
@@ -215,7 +229,7 @@ angular.module("contabm").controller("Contab_Cierre_Controller",
 ]);
 
 
-function construirYMostrarListaDeMesesACerrar($meteor, $scope, mesesDelAnoFiscal, companiaSeleccionadaDoc) {
+function construirYMostrarListaDeMesesACerrar($scope, mesesDelAnoFiscal, companiaSeleccionadaDoc) {
 
     // para construir la lista de meses a cerrar que se muestra al usuario para que seleccione el/los que desea cerrar
     // nótese que existen casos especiales: cuando se ha cerrado ya todo el año y vienen el cierre anual y el traspaso de saldos ...

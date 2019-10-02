@@ -1,10 +1,12 @@
 
+
 import lodash from 'lodash';
 import moment from 'moment';
 import { sequelize } from '/server/sqlModels/_globals/_loadThisFirst/_globals';
 import SimpleSchema from 'simpl-schema';
 import { TimeOffset } from '/globals/globals'; 
 
+import { Facturas_sql, Facturas_Impuestos_sql, CuotasFactura_sql } from '/server/imports/sqlModels/bancos/facturas'; 
 import { dFormasDePago_sql } from '/server/imports/sqlModels/bancos/formasDePago'; 
 
 Meteor.methods(

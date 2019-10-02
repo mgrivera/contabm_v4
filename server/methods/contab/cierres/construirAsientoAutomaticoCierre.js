@@ -5,9 +5,10 @@ import moment from 'moment';
 import numeral from 'numeral';
 import { TimeOffset } from '/globals/globals'; 
 
-import { MesesDelAnoFiscal_sql } from '/server/imports/sqlModels/contab/contab'; 
 import { AsientosContables_sql, dAsientosContables_sql } from '/server/imports/sqlModels/contab/asientosContables';
 import { CuentasContables_sql } from '/server/imports/sqlModels/contab/cuentasContables'; 
+
+import { montoConMasDeDosDecimales } from '/server/imports/general/generalFunctions'
 
 // para usar los operators en sequelize 
 import Sequelize from 'sequelize';
@@ -94,7 +95,7 @@ Meteor.methods(
         currentProcess = 0;
 
         // debemos agregar un asiento automático para cada combinación mon/monOrig
-        monedasEnAsientosArray.forEach((moneda) => {
+        for (const moneda of monedasEnAsientosArray) { 
 
             // -------------------------------------------------------------------------------------------------------------
             // valores para reportar el progreso
@@ -119,8 +120,7 @@ Meteor.methods(
             // contables de tipo gastos/ingresos. Estos saldos deben ser, justamente, revertidos, para
             // que los saldos de estas cuentas, luego del cierre anual, queden en cero ...
 
-             query = `Select s.CuentaContableID As cuentaContableID, c.Descripcion As nombreCuenta,
-                      Mes12 As saldoMes12
+             query = `Select s.CuentaContableID As cuentaContableID, c.Descripcion As nombreCuenta, Mes12 As saldoMes12
                       From SaldosContables s Inner Join CuentasContables c On s.CuentaContableID = c.ID
                       Where ${filtroCuentasIngresosGastos} And s.Mes12 <> 0 And c.TotDet = 'D'
                       And s.Ano = ? And s.Moneda = ? And s.MonedaOriginal = ? And s.Cia = ?`;
@@ -154,11 +154,25 @@ Meteor.methods(
                 });
             });
 
+            // si alguno de los saldos a cerrar en el asiento automático tiene más de 2 decimales, terminamos. 
+            // así evitamos un error en sequelize que hace que aborte todo el proceso 
+            for (const item of saldosMes12CuentasGastosIng) { 
+                if (montoConMasDeDosDecimales(item.saldoMes12)) { 
+
+                    const message = `Ha ocurrido un error mientras intentabamos construir el asiento automático de cierre.<br /> 
+                        Al menos uno de los saldos que serán <em>cerrados</em> en el asiento de cierre, contiene un monto con más 
+                        de dos decimales.<br /> 
+                        El saldo corresponde a la cuenta: ${item.nombreCuenta} y el monto indicado es ${item.saldoMes12}. 
+                    `
+                    throw new Meteor.Error(message);
+                }
+            }
+            
+
             // ahora que tenemos el movimiento para cada cuenta nómina (egr/ing), agregamos el asiento. Recorremos el
             // array, para agregar una partida para cada cuenta y su correspondiente movimiento en la cuenta GyP ...
 
             // agregamos el asiento ...
-
             let asientoContable = {
                 numero: numeroContabAsientoAutomatico,
                 mes: ultimoDiaMes.getMonth() + 1,
@@ -179,23 +193,20 @@ Meteor.methods(
                 cia: ciaContab.numero
             };
 
-            // TODO: vamos a buscar 'raw: true' en todo el proyect (install atom find-and-replace package); debe haber una
-            // forma de que sequelize no regrese un instance cuando hacemos un create() ...
             response = null;
             response = Async.runSync(function(done) {
-                AsientosContables_sql.create(asientoContable, { raw: true })    // para que sequelize no regrese un instance ...
+                AsientosContables_sql.create(asientoContable)    
                     .then(function(result) { done(null, result); })
                     .catch(function (err) { done(err, null); })
                     .done();
             });
 
-            if (response.error)
+            if (response.error) { 
                 throw new Meteor.Error(response.error && response.error.message ? response.error.message : response.error.toString());
+            }
 
             // asiento contable recién agregado a sql server
             let asientoContableAgregado = response.result.dataValues;
-
-
 
             // -------------------------------------------------------------------------------------------------------------
             // valores para reportar el progreso
@@ -207,7 +218,9 @@ Meteor.methods(
 
             // nótese que eventName y eventSelector no cambiarán a lo largo de la ejecución de este procedimiento
             eventData = {
-                          current: currentProcess, max: numberOfProcess, progress: '0 %',
+                          current: currentProcess, 
+                          max: numberOfProcess, 
+                          progress: '0 %',
                           message: `Agregando las partidas del asiento ...`
                         };
 
@@ -216,6 +229,10 @@ Meteor.methods(
             // -------------------------------------------------------------------------------------------------------------
 
             let partida = 0;
+
+            const queryPartidaAsiento = "Insert Into dAsientos (NumeroAutomatico, Partida, CuentaContableID, Descripcion, " + 
+                                        "Referencia, Debe, Haber) " + 
+                                        "Values (?, ?, ?, ?, ?, ?, ?)"; 
 
             saldosMes12CuentasGastosIng.forEach((saldoMes12) => {
 
@@ -236,18 +253,29 @@ Meteor.methods(
                     haber: saldoMes12.saldoMes12 > 0 ? saldoMes12.saldoMes12 : 0,
                 };
 
-                response = null;
                 response = Async.runSync(function(done) {
-                    dAsientosContables_sql.create(partidaAsiento, { raw: true })    // para que sequelize no regrese un instance ...
+                    sequelize.query(queryPartidaAsiento,
+                        {
+                                replacements: [
+                                    partidaAsiento.numeroAutomatico, 
+                                    partidaAsiento.partida, 
+                                    partidaAsiento.cuentaContableID, 
+                                    partidaAsiento.descripcion, 
+                                    partidaAsiento.referencia, 
+                                    partidaAsiento.debe.toFixed(2),
+                                    partidaAsiento.haber.toFixed(2),
+                                ],
+                                type: sequelize.QueryTypes.INSERT
+                            })
                         .then(function(result) { done(null, result); })
                         .catch(function (err) { done(err, null); })
                         .done();
                 });
 
-                if (response.error)
+                if (response.error) { 
                     throw new Meteor.Error(response.error && response.error.message ? response.error.message : response.error.toString());
+                }
                 // ------------------------------------------------------------------------------------------------
-
                 partida = partida + 10;
 
                 // ------------------------------------------------------------------------------------------------
@@ -261,20 +289,30 @@ Meteor.methods(
                     debe: saldoMes12.saldoMes12 > 0 ? saldoMes12.saldoMes12 : 0,
                     haber: saldoMes12.saldoMes12 < 0 ? saldoMes12.saldoMes12 * -1 : 0,
                 };
-
-                response = null;
+                
                 response = Async.runSync(function(done) {
-                    dAsientosContables_sql.create(partidaAsiento, { raw: true })    // para que sequelize no regrese un instance ...
+                    sequelize.query(queryPartidaAsiento,
+                        {
+                                replacements: [
+                                    partidaAsiento.numeroAutomatico, 
+                                    partidaAsiento.partida, 
+                                    partidaAsiento.cuentaContableID, 
+                                    partidaAsiento.descripcion, 
+                                    partidaAsiento.referencia, 
+                                    partidaAsiento.debe.toFixed(2),
+                                    partidaAsiento.haber.toFixed(2),
+                                ],
+                                type: sequelize.QueryTypes.INSERT
+                            })
                         .then(function(result) { done(null, result); })
                         .catch(function (err) { done(err, null); })
                         .done();
                 });
 
-                if (response.error)
+                if (response.error) { 
                     throw new Meteor.Error(response.error && response.error.message ? response.error.message : response.error.toString());
+                }
                 // ------------------------------------------------------------------------------------------------
-
-
 
                 // -------------------------------------------------------------------------------------------------------
                 // vamos a reportar progreso al cliente; solo 20 veces ...
@@ -302,44 +340,44 @@ Meteor.methods(
                 };
                 // -------------------------------------------------------------------------------------------------------
             });
-        });
+        }
 
         return `Ok, el (los) asiento automático de cierre anual ha sido construido y agregado a <em>Contab</em> en forma exitosa,
                 para el año fiscal ${anoFiscal.toString()}.`;
     }
-});
+})
 
-function leerMesesDesdeTablaMesesDelAnoFiscal(mesesArray, cia) {
+// function leerMesesDesdeTablaMesesDelAnoFiscal(mesesArray, cia) {
 
-    // ahora leemos los registros que existen en la tabla MesesDelAnoFiscal; el contenido de esta tabla nos ayuda a
-    // determinar si el año fiscal de la compañía es un año calendario normal, o empieza y termina en meses diferentes
-    // al primero y último del año calendario
+//     // ahora leemos los registros que existen en la tabla MesesDelAnoFiscal; el contenido de esta tabla nos ayuda a
+//     // determinar si el año fiscal de la compañía es un año calendario normal, o empieza y termina en meses diferentes
+//     // al primero y último del año calendario
 
-    // nótese como leemos solo los meses que se van a cerrar; puede ser 1 o varios ...
+//     // nótese como leemos solo los meses que se van a cerrar; puede ser 1 o varios ...
 
-    let response = {};
-    response = Async.runSync(function(done) {
-        MesesDelAnoFiscal_sql.findAndCountAll(
-            {
-                attributes: [ 'mesFiscal', 'mes', 'nombreMes' ],
-                where: { mesFiscal: { [Op.in]: mesesArray }, cia: cia },
-                order: [['mesFiscal', 'ASC']],
-                raw: true
-            })
-            .then(function(result) { done(null, result); })
-            .catch(function (err) { done(err, null); })
-            .done();
-    });
+//     let response = {};
+//     response = Async.runSync(function(done) {
+//         MesesDelAnoFiscal_sql.findAndCountAll(
+//             {
+//                 attributes: [ 'mesFiscal', 'mes', 'nombreMes' ],
+//                 where: { mesFiscal: { [Op.in]: mesesArray }, cia: cia },
+//                 order: [['mesFiscal', 'ASC']],
+//                 raw: true
+//             })
+//             .then(function(result) { done(null, result); })
+//             .catch(function (err) { done(err, null); })
+//             .done();
+//     });
 
-    if (response.error)
-        throw new Meteor.Error(response.error && response.error.message ? response.error.message : response.error.toString());
+//     if (response.error)
+//         throw new Meteor.Error(response.error && response.error.message ? response.error.message : response.error.toString());
 
-    if (response.result.count === 0)
-        throw new Meteor.Error("tabla-mesesAnoFiscal-vacia",
-        "Por favor revise esta tabla para la compañía Contab seleccionada; debe contener registros.");
+//     if (response.result.count === 0)
+//         throw new Meteor.Error("tabla-mesesAnoFiscal-vacia",
+//         "Por favor revise esta tabla para la compañía Contab seleccionada; debe contener registros.");
 
-    return response.result.rows;
-};
+//     return response.result.rows;
+// };
 
 
 function determinarCuentaContableGyP(ciaContab) {
@@ -355,14 +393,15 @@ function determinarCuentaContableGyP(ciaContab) {
             .done();
     });
 
-    if (response.error)
+    if (response.error) { 
         throw new Meteor.Error(response.error && response.error.message ? response.error.message : response.error.toString());
+    }
 
     if (!response.result.length)
         throw new Meteor.Error('cuenta-gyp-indefinida', 'No se ha registrado una cuenta contable GyP para la compañía Contab.');
 
     return response.result[0].cuentaGyP;
-};
+}
 
 
 function determinarFiltroCuentasIngresosGastos(ciaContab) {
@@ -378,8 +417,9 @@ function determinarFiltroCuentasIngresosGastos(ciaContab) {
             .done();
     });
 
-    if (response.error)
+    if (response.error) { 
         throw new Meteor.Error(response.error && response.error.message ? response.error.message : response.error.toString());
+    }
 
     if (!response.result.length)
         throw new Meteor.Error('cuentas-ingresos-egresos', 'No se han registrado cuales son estas cuentas contables para para la compañía Contab.');
@@ -398,12 +438,13 @@ function determinarFiltroCuentasIngresosGastos(ciaContab) {
             .done();
         });
 
-        if (response2.error)
-            throw new Meteor.Error(response2.error && response2.error.message ? response2.error.message : response2.error.toString());
+        if (response.error) { 
+            throw new Meteor.Error(response.error && response.error.message ? response.error.message : response.error.toString());
+        }
 
         if (response2.result.length)
             filtroCuentasIngresosEgresos = `c.cuenta Like '${response2.result[0].cuenta}%'`;
-    };
+    }
 
     if (response.result.length && response.result[0].ingresos2) {
         let response2 = null;
@@ -417,15 +458,16 @@ function determinarFiltroCuentasIngresosGastos(ciaContab) {
             .done();
         });
 
-        if (response2.error)
-            throw new Meteor.Error(response2.error && response2.error.message ? response2.error.message : response2.error.toString());
+        if (response.error) { 
+            throw new Meteor.Error(response.error && response.error.message ? response.error.message : response.error.toString());
+        }
 
         if (response2.result.length)
             if (!filtroCuentasIngresosEgresos)
                 filtroCuentasIngresosEgresos = `c.cuenta Like '${response2.result[0].cuenta}%'`;
             else
                 filtroCuentasIngresosEgresos += ` Or c.cuenta Like '${response2.result[0].cuenta}%'`;
-    };
+    }
 
     if (response.result.length && response.result[0].egresos1) {
         let response2 = null;
@@ -439,15 +481,16 @@ function determinarFiltroCuentasIngresosGastos(ciaContab) {
             .done();
         });
 
-        if (response2.error)
-            throw new Meteor.Error(response2.error && response2.error.message ? response2.error.message : response2.error.toString());
+        if (response.error) { 
+            throw new Meteor.Error(response.error && response.error.message ? response.error.message : response.error.toString());
+        }
 
         if (response2.result.length)
             if (!filtroCuentasIngresosEgresos)
                 filtroCuentasIngresosEgresos = `c.cuenta Like '${response2.result[0].cuenta}%'`;
             else
                 filtroCuentasIngresosEgresos += ` Or c.cuenta Like '${response2.result[0].cuenta}%'`;
-    };
+    }
 
     if (response.result.length && response.result[0].egresos2) {
         let response2 = null;
@@ -469,17 +512,16 @@ function determinarFiltroCuentasIngresosGastos(ciaContab) {
                 filtroCuentasIngresosEgresos = `c.cuenta Like '${response2.result[0].cuenta}%'`;
             else
                 filtroCuentasIngresosEgresos += ` Or c.cuenta Like '${response2.result[0].cuenta}%'`;
-    };
+    }
 
     return `(${filtroCuentasIngresosEgresos})`;
-};
+}
 
 
 function determinarMonedasUsadasEnAsientos(primerDiaMes, ultimoDiaMes, ciaContab) {
 
     // leemos los asientos del período (siempre mes 12) y determinamos las combinaciones: Moneda/Moneda original
-
-    let query = `Select Moneda As moneda, MonedaOriginal As monedaOriginal
+    const query = `Select Moneda As moneda, MonedaOriginal As monedaOriginal
                  From Asientos
                  Where Fecha Between ? And ? And Cia = ?
                  Group By Moneda, MonedaOriginal`;
@@ -500,8 +542,9 @@ function determinarMonedasUsadasEnAsientos(primerDiaMes, ultimoDiaMes, ciaContab
             .done();
     });
 
-    if (response.error)
+    if (response.error) { 
         throw new Meteor.Error(response.error && response.error.message ? response.error.message : response.error.toString());
+    }
 
     let monedasEnAsientosArray = [];
 
@@ -510,7 +553,7 @@ function determinarMonedasUsadasEnAsientos(primerDiaMes, ultimoDiaMes, ciaContab
     });
 
     return monedasEnAsientosArray;
-};
+}
 
 function determinarNumeroContabAsientoAutomatico(moneda, primerDiaMes, ultimoDiaMes, ciaContab) {
 
@@ -538,8 +581,9 @@ function determinarNumeroContabAsientoAutomatico(moneda, primerDiaMes, ultimoDia
         .done();
     });
 
-    if (response.error)
+    if (response.error) { 
         throw new Meteor.Error(response.error && response.error.message ? response.error.message : response.error.toString());
+    }
 
     let numeroAsiento = null;
 
@@ -558,8 +602,9 @@ function determinarNumeroContabAsientoAutomatico(moneda, primerDiaMes, ultimoDia
             .done();
         });
 
-        if (response2.error)
+        if (response.error) { 
             throw new Meteor.Error(response.error && response.error.message ? response.error.message : response.error.toString());
+        }
     }
     else {
         // el asiento automático no existe; determinamos un número de asiento Contab ...

@@ -1,4 +1,5 @@
 
+
 import moment from 'moment';
 import numeral from 'numeral';
 import { sequelize } from '/server/sqlModels/_globals/_loadThisFirst/_globals';
@@ -7,21 +8,19 @@ import { TimeOffset } from '/globals/globals';
 Meteor.methods(
 {
     bancosCierre: function (mesesArray, ano, ciaContab) {
-        // debugger;
 
         Match.test(mesesArray, Match.Array);
         Match.test(ano, Match.Integer);
         Match.test(ciaContab, Match.Object);
 
         // nota: mesACerrar es un array que puede tener más de un mes a cerrar (ej: [ 01, 02, 03, 04, ...])
-
         mesesArray.forEach((mes) => {
+
             // primero cerramos las cuentas bancarias (movimientos bancarios); luego las compañías (facturas y pagos)
 
             // determinamos las fechas inicial y final del mes, para leer los movimientos bancarios
             let primerDiaMes = new Date(ano, mes -1, 1);
             let ultimoDiaMes = new Date(ano, mes -1 + 1, 0);        // js: last day of month ...
-
 
             // PRIMERO cerramos las cuentas bancarias; leemos cada cuenta bancaria; para cada cuenta bancaria,
             // leemos su registro de saldos y los movimientos que se han registrado en el mes; con ésto,
@@ -37,9 +36,10 @@ Meteor.methods(
                     .done();
             });
 
-            if (response.error)
+            if (response.error) { 
                 throw new Meteor.Error(response.error && response.error.message ? response.error.message : response.error.toString());
-
+            }
+                
             // -------------------------------------------------------------------------------------------------------------
             // valores para reportar el progreso
             let numberOfItems = response.result.length;
@@ -53,12 +53,14 @@ Meteor.methods(
             let eventName = "bancos_cierreBancos_reportProgress";
             let eventSelector = { myuserId: this.userId, app: 'bancos', process: 'cierreBancos' };
             let eventData = {
-                              current: currentProcess, max: numberOfProcess, progress: '0 %',
+                              current: currentProcess, 
+                              max: numberOfProcess, 
+                              progress: '0 %',
                               message: `Cerrando el mes ${nombreMes(mes)} ... `
                             };
 
             // sync call
-            let methodResult = Meteor.call('eventDDP_matchEmit', eventName, eventSelector, eventData);
+            Meteor.call('eventDDP_matchEmit', eventName, eventSelector, eventData);
             // -------------------------------------------------------------------------------------------------------------
 
             response.result.forEach((cuentaBancaria) => {
@@ -77,10 +79,11 @@ Meteor.methods(
                         .done();
                 });
 
-                if (response.error)
+                if (response.error) { 
                     throw new Meteor.Error(response.error && response.error.message ? response.error.message : response.error.toString());
+                }
 
-                let saldos = _.isArray(response.result) && response.result.length ? response.result[0] : null;
+                let saldos = Array.isArray(response.result) && response.result.length ? response.result[0] : null;
 
                 if (saldos) {
                     // hay un registro de saldos; pasamos el saldo anterior al saldo actual
@@ -94,8 +97,9 @@ Meteor.methods(
                             .done();
                     });
 
-                    if (response.error)
+                    if (response.error) { 
                         throw new Meteor.Error(response.error && response.error.message ? response.error.message : response.error.toString());
+                    }
                 }
                 else {
                     // la cuenta bancaria no tiene un registro de saldos para el año del cierre; lo agregamos
@@ -114,8 +118,9 @@ Meteor.methods(
                             .done();
                     });
 
-                    if (response.error)
+                    if (response.error) { 
                         throw new Meteor.Error(response.error && response.error.message ? response.error.message : response.error.toString());
+                    }
 
                     // ahora leemos el registro que acabamos de agregar ... (con raw query no regresa el registro; solo el affectedRows)
                     // leemos el registro de saldos para la cuenta y el año del cierre; puede no existir ...
@@ -129,17 +134,18 @@ Meteor.methods(
                             .done();
                     });
 
-                    if (response.error)
+                    if (response.error) { 
                         throw new Meteor.Error(response.error && response.error.message ? response.error.message : response.error.toString());
+                    }
 
-                    let saldos = _.isArray(response.result) && response.result.length ? response.result[0] : null;
-                };
+                    let saldos = Array.isArray(response.result) && response.result.length ? response.result[0] : null;
+                }
 
                 // ahora leemos los movimientos bancarios para la cuenta y el mes ...
-                query = `Select Sum(Monto) As monto, Count(*) as count From MovimientosBancarios m Inner Join Chequeras c
-                             On m.ClaveUnicaChequera = c.NumeroChequera
-                             Where c.NumeroCuenta = ? And
-                             m.Fecha Between ? And ?`;
+                query = `Select Sum(Monto) As monto, Count(*) as count 
+                            From MovimientosBancarios m Inner Join Chequeras c
+                            On m.ClaveUnicaChequera = c.NumeroChequera
+                            Where c.NumeroCuenta = ? And m.Fecha Between ? And ?`;
 
                 response = null;
                 response = Async.runSync(function(done) {
@@ -154,10 +160,11 @@ Meteor.methods(
                         .done();
                 });
 
-                if (response.error)
+                if (response.error) { 
                     throw new Meteor.Error(response.error && response.error.message ? response.error.message : response.error.toString());
+                }
 
-                if (_.isArray(response.result) && response.result.length) {
+                if (Array.isArray(response.result) && response.result.length) {
                     // TODO: actualizamos el saldo, para agregar el monto en movimientos bancarios
                     let monto = response.result[0].monto;
                     let count = response.result[0].count;
@@ -176,38 +183,39 @@ Meteor.methods(
                                 .done();
                         });
 
-                        if (response.error)
+                        if (response.error) { 
                             throw new Meteor.Error(response.error && response.error.message ? response.error.message : response.error.toString());
-                    };
-                };
+                        }
+                    }
+                }
 
                 // -------------------------------------------------------------------------------------------------------
                 // vamos a reportar progreso al cliente; solo 20 veces ...
                 cantidadRecs++;
+
                 if (numberOfItems <= 25) {
                     // hay menos de 20 registros; reportamos siempre ...
-                    eventData = {
-                                  current: currentProcess, max: numberOfProcess,
+                    eventData = { current: currentProcess, 
+                                  max: numberOfProcess,
                                   progress: numeral(cantidadRecs / numberOfItems).format("0 %"),
                                   message: `Cerrando el mes ${nombreMes(mes)} ... `
                                 };
-                    let methodResult = Meteor.call('eventDDP_matchEmit', eventName, eventSelector, eventData);
+                    Meteor.call('eventDDP_matchEmit', eventName, eventSelector, eventData);
                 }
                 else {
                     reportar++;
                     if (reportar === reportarCada) {
-                        eventData = {
-                                      current: currentProcess, max: numberOfProcess,
+                        eventData = { current: currentProcess, 
+                                      max: numberOfProcess,
                                       progress: numeral(cantidadRecs / numberOfItems).format("0 %"),
                                       message: `Cerrando el mes ${nombreMes(mes)} ... `
                                     };
-                        let methodResult = Meteor.call('eventDDP_matchEmit', eventName, eventSelector, eventData);
+                        Meteor.call('eventDDP_matchEmit', eventName, eventSelector, eventData);
                         reportar = 0;
-                    };
-                };
-                // -------------------------------------------------------------------------------------------------------
-            });
-
+                    }
+                }
+                // ----------------------------------------------------------------------------------------
+            })
 
             // ---------------------------------------------------------------------------------------------
             // ahora efectuamos el cierre de compañías ...
@@ -226,8 +234,9 @@ Meteor.methods(
                     .done();
             });
 
-            if (response.error)
+            if (response.error) { 
                 throw new Meteor.Error(response.error && response.error.message ? response.error.message : response.error.toString());
+            }
 
             response.result.forEach((moneda) => {
                 // leer compañías (Proveedores) para cada moneda
@@ -245,8 +254,9 @@ Meteor.methods(
                         .done();
                 });
 
-                if (response.error)
+                if (response.error) { 
                     throw new Meteor.Error(response.error && response.error.message ? response.error.message : response.error.toString());
+                }
 
                 // -------------------------------------------------------------------------------------------------------------
                 // valores para reportar el progreso
@@ -262,7 +272,7 @@ Meteor.methods(
                               message: `Cerrando el mes ${nombreMes(mes)} ... `
                             };
                 methodResult = Meteor.call('eventDDP_matchEmit', eventName, eventSelector, eventData);
-                // debugger;
+
                 response.result.forEach((compania) => {
 
                     let movimientoDelPeriodo = 0;
@@ -289,8 +299,9 @@ Meteor.methods(
                             .done();
                     });
 
-                    if (response.error)
+                    if (response.error) { 
                         throw new Meteor.Error(response.error && response.error.message ? response.error.message : response.error.toString());
+                    }
 
                     if (response.result[0].sumTotalAPagar)
                         movimientoDelPeriodo += response.result[0].sumTotalAPagar;
@@ -317,8 +328,9 @@ Meteor.methods(
                             .done();
                     });
 
-                    if (response.error)
+                    if (response.error) { 
                         throw new Meteor.Error(response.error && response.error.message ? response.error.message : response.error.toString());
+                    }
 
                     if (response.result[0].sumTotalAPagar)
                         movimientoDelPeriodo -= response.result[0].sumTotalAPagar;
@@ -346,8 +358,9 @@ Meteor.methods(
                             .done();
                     });
 
-                    if (response.error)
+                    if (response.error) { 
                         throw new Meteor.Error(response.error && response.error.message ? response.error.message : response.error.toString());
+                    }
 
                     if (response.result[0].sumPagos)
                         movimientoDelPeriodo += response.result[0].sumPagos;
@@ -375,8 +388,9 @@ Meteor.methods(
                             .done();
                     });
 
-                    if (response.error)
+                    if (response.error) { 
                         throw new Meteor.Error(response.error && response.error.message ? response.error.message : response.error.toString());
+                    }
 
                     if (response.result[0].sumPagos)
                         movimientoDelPeriodo -= response.result[0].sumPagos;
@@ -387,8 +401,7 @@ Meteor.methods(
                     // leemos los pagos que hemos hecho a la compañía; a nuestro favor
 
                     // 1) leemos el saldo (puede no existir)
-                    query = `Select * From SaldosCompanias Where
-                             Moneda = ? And Compania = ? And Ano = ? And Cia = ?`;
+                    query = `Select * From SaldosCompanias Where Moneda = ? And Compania = ? And Ano = ? And Cia = ?`;
 
                     response = null;
                     response = Async.runSync(function(done) {
@@ -406,15 +419,15 @@ Meteor.methods(
                             .done();
                     });
 
-                    if (response.error)
+                    if (response.error) { 
                         throw new Meteor.Error(response.error && response.error.message ? response.error.message : response.error.toString());
+                    }
 
                     saldos = response.result[0];
 
                     if (!saldos) {
                         // 2) el registro de saldos no existe; lo agregamos
-                        query = `Insert Into SaldosCompanias (Moneda, Compania, Ano, Cia) Values
-                                 (?, ?, ?, ?)`;
+                        query = `Insert Into SaldosCompanias (Moneda, Compania, Ano, Cia) Values (?, ?, ?, ?)`;
 
                         response = null;
                         response = Async.runSync(function(done) {
@@ -432,12 +445,12 @@ Meteor.methods(
                                 .done();
                         });
 
-                        if (response.error)
+                        if (response.error) { 
                             throw new Meteor.Error(response.error && response.error.message ? response.error.message : response.error.toString());
+                        }
 
                         // 3) nuevamente leemos el registro de saldos; esta vez, existe
-                        query = `Select * From SaldosCompanias Where
-                                 Moneda = ? And Compania = ? And Ano = ? And Cia = ?`;
+                        query = `Select * From SaldosCompanias Where Moneda = ? And Compania = ? And Ano = ? And Cia = ?`;
 
                         response = null;
                         response = Async.runSync(function(done) {
@@ -455,8 +468,9 @@ Meteor.methods(
                                 .done();
                         });
 
-                        if (response.error)
+                        if (response.error) { 
                             throw new Meteor.Error(response.error && response.error.message ? response.error.message : response.error.toString());
+                        }
 
                         saldos = response.result[0];
                     };
@@ -485,9 +499,9 @@ Meteor.methods(
                             .done();
                     });
 
-                    if (response.error)
+                    if (response.error) { 
                         throw new Meteor.Error(response.error && response.error.message ? response.error.message : response.error.toString());
-
+                    }
 
                     // -------------------------------------------------------------------------------------------------------
                     // vamos a reportar progreso al cliente; solo 20 veces ...
@@ -558,8 +572,9 @@ Meteor.methods(
                     .done();
             });
 
-            if (response.error)
+            if (response.error) { 
                 throw new Meteor.Error(response.error && response.error.message ? response.error.message : response.error.toString());
+            }
 
             eventData = {
                           current: currentProcess, max: numberOfProcess,
@@ -571,17 +586,19 @@ Meteor.methods(
 
         let finalMessage = "";
 
-        if (mesesArray.length == 1)
+        if (mesesArray.length == 1) { 
             finalMessage = `Ok, el cierre en <em>Bancos</em> del mes <b><em>${nombreMes(mesesArray[0])}</em></b>,
                             se ha ejecutado en forma satisfactoria.`;
-        else
-        finalMessage = `Ok, el cierre en <em>Bancos</em> de los meses <b><em>${nombreMes(mesesArray[0])}</em></b> a
+        }
+        else { 
+            finalMessage = `Ok, el cierre en <em>Bancos</em> de los meses <b><em>${nombreMes(mesesArray[0])}</em></b> a
                         <b><em>${nombreMes(mesesArray[mesesArray.length - 1])}</em></b>,
                         se ha ejecutado en forma satisfactoria.`;
-
+        }
+        
         return finalMessage;
     }
-});
+})
 
 
 function nombreMes(mes) {
@@ -631,8 +648,8 @@ function nombreMes(mes) {
             break;
         default:
             return "Indefinido (?)";
-    };
-};
+    }
+}
 
 function mesTablaSaldos(mes) {
     // para determinar el nombre de la columna en la tabla Saldos, que corresponde al mes pasado ...
@@ -680,7 +697,7 @@ function mesTablaSaldos(mes) {
             break;
         default:
             nombreColumnaTablaSaldos = "Indefinido";
-    };
+    }
 
     return nombreColumnaTablaSaldos;
-};
+}

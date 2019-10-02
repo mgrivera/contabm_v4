@@ -1,5 +1,8 @@
 
 
+import { sequelize } from '/server/sqlModels/_globals/_loadThisFirst/_globals';
+import numeral from 'numeral';
+import moment from 'moment';
 
 import { TimeOffset } from '/globals/globals'; 
 import { CuentasBancarias_sql } from '/server/imports/sqlModels/bancos/movimientosBancarios'; 
@@ -7,7 +10,6 @@ import { CuentasBancarias_sql } from '/server/imports/sqlModels/bancos/movimient
 Meteor.methods(
 {
     bancosCierre_traspasoSaldos: function (ano, ciaContab) {
-        // debugger;
 
         // traspasamos los saldos finales del año al año próximo ...
 
@@ -32,7 +34,7 @@ Meteor.methods(
                         };
 
         // sync call
-        let methodResult = Meteor.call('eventDDP_matchEmit', eventName, eventSelector, eventData);
+        Meteor.call('eventDDP_matchEmit', eventName, eventSelector, eventData);
         // -------------------------------------------------------------------------------------------------------------
 
 
@@ -53,8 +55,9 @@ Meteor.methods(
                 .done();
         });
 
-        if (response.error)
+        if (response.error) { 
             throw new Meteor.Error(response.error && response.error.message ? response.error.message : response.error.toString());
+        }
         // -------------------------------------------------------------------------------------------------------------
 
 
@@ -77,8 +80,9 @@ Meteor.methods(
                 .done();
         });
 
-        if (response.error)
+        if (response.error) { 
             throw new Meteor.Error(response.error && response.error.message ? response.error.message : response.error.toString());
+        }
 
         // -------------------------------------------------------------------------------------------------------------
         // valores para reportar el progreso
@@ -122,8 +126,9 @@ Meteor.methods(
                     .done();
             });
 
-            if (response.error)
+            if (response.error) { 
                 throw new Meteor.Error(response.error && response.error.message ? response.error.message : response.error.toString());
+            }
             // -------------------------------------------------------------------------------------------------------------
 
 
@@ -137,7 +142,7 @@ Meteor.methods(
                               progress: numeral(cantidadRecs / numberOfItems).format("0 %"),
                               message: `actualizando saldos de cuentas bancarias ... `
                             };
-                let methodResult = Meteor.call('eventDDP_matchEmit', eventName, eventSelector, eventData);
+                Meteor.call('eventDDP_matchEmit', eventName, eventSelector, eventData);
             }
             else {
                 reportar++;
@@ -147,7 +152,7 @@ Meteor.methods(
                                   progress: numeral(cantidadRecs / numberOfItems).format("0 %"),
                                   message: `actualizando saldos de cuentas bancarias ... `
                                 };
-                    let methodResult = Meteor.call('eventDDP_matchEmit', eventName, eventSelector, eventData);
+                    Meteor.call('eventDDP_matchEmit', eventName, eventSelector, eventData);
                     reportar = 0;
                 };
             };
@@ -155,9 +160,7 @@ Meteor.methods(
 
         });
 
-        // debugger;
         // TODO: saldosCompañías: hacer lo anterior, pero para saldos de compañías ...
-
         // -------------------------------------------------------------------------------------------------------------
         // valores para reportar el progreso
         numberOfItems = 1;
@@ -191,8 +194,9 @@ Meteor.methods(
                 .done();
         });
 
-        if (response.error)
+        if (response.error) { 
             throw new Meteor.Error(response.error && response.error.message ? response.error.message : response.error.toString());
+        }
         // -------------------------------------------------------------------------------------------------------------
 
 
@@ -209,8 +213,9 @@ Meteor.methods(
                 .done();
         });
 
-        if (response.error)
+        if (response.error) { 
             throw new Meteor.Error(response.error && response.error.message ? response.error.message : response.error.toString());
+        }
 
         // -------------------------------------------------------------------------------------------------------------
         // valores para reportar el progreso
@@ -257,8 +262,9 @@ Meteor.methods(
                     .done();
             });
 
-            if (response.error)
+            if (response.error) { 
                 throw new Meteor.Error(response.error && response.error.message ? response.error.message : response.error.toString());
+            }
             // -------------------------------------------------------------------------------------------------------------
 
 
@@ -272,7 +278,7 @@ Meteor.methods(
                               progress: numeral(cantidadRecs / numberOfItems).format("0 %"),
                               message: `actualizando saldos de compañías ... `
                             };
-                let methodResult = Meteor.call('eventDDP_matchEmit', eventName, eventSelector, eventData);
+                Meteor.call('eventDDP_matchEmit', eventName, eventSelector, eventData);
             }
             else {
                 reportar++;
@@ -282,7 +288,7 @@ Meteor.methods(
                                   progress: numeral(cantidadRecs / numberOfItems).format("0 %"),
                                   message: `actualizando saldos de compañías ... `
                                 };
-                    let methodResult = Meteor.call('eventDDP_matchEmit', eventName, eventSelector, eventData);
+                    Meteor.call('eventDDP_matchEmit', eventName, eventSelector, eventData);
                     reportar = 0;
                 };
             };
@@ -332,14 +338,15 @@ Meteor.methods(
                 .done();
         });
 
-        if (response.error)
+        if (response.error) { 
             throw new Meteor.Error(response.error && response.error.message ? response.error.message : response.error.toString());
+        }
 
 
         return `Ok, el traspaso de saldos, desde el año ${ano.toString()} al año ${(ano + 1).toString()},
                 se ha ejecutado en forma satisfactoria.`;
     }
-});
+})
 
 function leerSaldoCuentaBancariaAnoProximo(saldoCuentaBancaria, ano) {
 
@@ -355,8 +362,9 @@ function leerSaldoCuentaBancariaAnoProximo(saldoCuentaBancaria, ano) {
             .done();
     });
 
-    if (response.error)
+    if (response.error) { 
         throw new Meteor.Error(response.error && response.error.message ? response.error.message : response.error.toString());
+    }
 
     let saldoCuentaBancariaAnoProximo = response.result[0];
 
@@ -374,14 +382,15 @@ function leerSaldoCuentaBancariaAnoProximo(saldoCuentaBancaria, ano) {
                 .done();
         });
 
-        if (response.error)
+        if (response.error) { 
             throw new Meteor.Error(response.error && response.error.message ? response.error.message : response.error.toString());
+        }
 
         saldoCuentaBancariaAnoProximo = response.result;
-    };
+    }
 
     return saldoCuentaBancariaAnoProximo;
-};
+}
 
 
 function leerSaldoCompaniaAnoProximo(saldoCompania, ano) {
@@ -404,8 +413,9 @@ function leerSaldoCompaniaAnoProximo(saldoCompania, ano) {
             .done();
     });
 
-    if (response.error)
+    if (response.error) { 
         throw new Meteor.Error(response.error && response.error.message ? response.error.message : response.error.toString());
+    }
 
     let saldoCompaniaAnoProximo = response.result[0];
 
@@ -426,11 +436,12 @@ function leerSaldoCompaniaAnoProximo(saldoCompania, ano) {
                 .done();
         });
 
-        if (response.error)
+        if (response.error) { 
             throw new Meteor.Error(response.error && response.error.message ? response.error.message : response.error.toString());
+        }
 
         saldoCompaniaAnoProximo = response.result;
-    };
+    }
 
     return saldoCompaniaAnoProximo;
-};
+}

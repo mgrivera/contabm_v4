@@ -31,7 +31,7 @@ Meteor.methods(
                         };
 
         // sync call
-        let methodResult = Meteor.call('eventDDP_matchEmit', eventName, eventSelector, eventData);
+        Meteor.call('eventDDP_matchEmit', eventName, eventSelector, eventData);
         // -------------------------------------------------------------------------------------------------------------
 
 
@@ -50,8 +50,9 @@ Meteor.methods(
                 .done();
         });
 
-        if (response.error)
+        if (response.error) { 
             throw new Meteor.Error(response.error && response.error.message ? response.error.message : response.error.toString());
+        }
         // -------------------------------------------------------------------------------------------------------------
 
         // leemos los saldos de las cuentas contables, para el año fiscal en curso ...
@@ -67,9 +68,9 @@ Meteor.methods(
                 .done();
         });
 
-        if (response.error)
+        if (response.error) { 
             throw new Meteor.Error(response.error && response.error.message ? response.error.message : response.error.toString());
-
+        }
         // -------------------------------------------------------------------------------------------------------------
         // valores para reportar el progreso
         numberOfItems = response.result.count;     // cantidad de saldos leídos arriba
@@ -78,7 +79,9 @@ Meteor.methods(
         cantidadRecs = 0;
         currentProcess = 2;
         eventData = {
-                      current: currentProcess, max: numberOfProcess, progress: '0 %',
+                      current: currentProcess, 
+                      max: numberOfProcess, 
+                      progress: '0 %',
                       message: `actualizando saldos de cuentas contables del próximo año fiscal ... `
                     };
 
@@ -103,22 +106,44 @@ Meteor.methods(
             // contar la cantidad de saldos que existen para el próximo año fiscal, para agregar o actualizar en consecuencia
             // -------------------------------------------------------------------------------------------------------------
 
-            response = null;
+            // NOTA: hay un issue en sequelize v5 que hace que las operaciones aborten cuando se intenta actualizar campos 
+            // definidos como money en sql server. En sequelize, los definimos como Sequelize.DECIMAL(10, 2). 
+            // Por ahora, usamos un query que actualice el monto y convertimos el monto a string con toFixed(2)
 
             if (saldoContableAnoFiscalProximo_count) {
                 // Ok, el saldo existe para el año fiscal próximo; lo actualizamos ...
+
+                // response = Async.runSync(function(done) {
+                //     SaldosContables_sql.update(
+                //         {
+                //             inicial: saldoAnoFiscalActual.anual,
+                //         },
+                //         { where: {
+                //             cuentaContableID: saldoAnoFiscalActual.cuentaContableID,
+                //             ano: anoFiscalProximo,
+                //             moneda: saldoAnoFiscalActual.moneda,
+                //             monedaOriginal: saldoAnoFiscalActual.monedaOriginal,
+                //         }}
+                //     )
+                //         .then(function(result) { done(null, result); })
+                //         .catch(function (err) { done(err, null); })
+                //         .done();
+                // });
+
+                query = `Update SaldosContables Set Inicial = ? Where CuentaContableID = ? And Ano = ? And 
+                         Moneda = ? And MonedaOriginal =?`;
+
+                response = null;
                 response = Async.runSync(function(done) {
-                    SaldosContables_sql.update(
-                        {
-                            inicial: saldoAnoFiscalActual.anual,
-                        },
-                        { where: {
-                            cuentaContableID: saldoAnoFiscalActual.cuentaContableID,
-                            ano: anoFiscalProximo,
-                            moneda: saldoAnoFiscalActual.moneda,
-                            monedaOriginal: saldoAnoFiscalActual.monedaOriginal,
-                        }}
-                    )
+                    sequelize.query(query, {
+                                            replacements: [ saldoAnoFiscalActual.anual.toFixed(2), 
+                                                            saldoAnoFiscalActual.cuentaContableID, 
+                                                            anoFiscalProximo, 
+                                                            saldoAnoFiscalActual.moneda, 
+                                                            saldoAnoFiscalActual.monedaOriginal 
+                                                          ],
+                                            type: sequelize.QueryTypes.UPDATE
+                                        })
                         .then(function(result) { done(null, result); })
                         .catch(function (err) { done(err, null); })
                         .done();
@@ -126,24 +151,48 @@ Meteor.methods(
             }
             else {
                 // Ok, el saldo, para el año fiscal próximo, no existe ; lo agregamos ...
+                
+                // response = Async.runSync(function(done) {
+                //     SaldosContables_sql.create(
+                //         {
+                //             cuentaContableID: saldoAnoFiscalActual.cuentaContableID,
+                //             ano: anoFiscalProximo,
+                //             moneda: saldoAnoFiscalActual.moneda,
+                //             monedaOriginal: saldoAnoFiscalActual.monedaOriginal,
+                //             inicial: saldoAnoFiscalActual.anual,
+                //             cia: ciaContab.numero,
+                //         })
+                //         .then(function(result) { done(null, result); })
+                //         .catch(function (err) { done(err, null); })
+                //         .done();
+                // });
+
+                query = `Insert Into SaldosContables (CuentaContableID, Ano, Moneda, MonedaOriginal, Inicial, 
+                         Mes01, Mes02, Mes03, Mes04, Mes05, Mes06, Mes07, Mes08, Mes09, Mes10, Mes11, Mes12, Anual, Cia) 
+                         Values (?, ?, ?, ?, ?, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, ?)
+                `;
+
+                response = null;
                 response = Async.runSync(function(done) {
-                    SaldosContables_sql.create(
-                        {
-                            cuentaContableID: saldoAnoFiscalActual.cuentaContableID,
-                            ano: anoFiscalProximo,
-                            moneda: saldoAnoFiscalActual.moneda,
-                            monedaOriginal: saldoAnoFiscalActual.monedaOriginal,
-                            inicial: saldoAnoFiscalActual.anual,
-                            cia: ciaContab.numero,
-                        })
+                    sequelize.query(query, {
+                                            replacements: [ saldoAnoFiscalActual.cuentaContableID, 
+                                                            anoFiscalProximo, 
+                                                            saldoAnoFiscalActual.moneda, 
+                                                            saldoAnoFiscalActual.monedaOriginal, 
+                                                            saldoAnoFiscalActual.anual.toFixed(2), 
+                                                            ciaContab.numero
+                                                          ],
+                                            type: sequelize.QueryTypes.INSERT
+                                        })
                         .then(function(result) { done(null, result); })
                         .catch(function (err) { done(err, null); })
                         .done();
                 });
-            };
+            }
 
-            if (response.error)
+            if (response.error) { 
                 throw new Meteor.Error(response.error && response.error.message ? response.error.message : response.error.toString());
+            }
             // -------------------------------------------------------------------------------------------------------------
 
 
@@ -157,7 +206,7 @@ Meteor.methods(
                               progress: numeral(cantidadRecs / numberOfItems).format("0 %"),
                               message: `actualizando saldos de cuentas contables ... `
                             };
-                let methodResult = Meteor.call('eventDDP_matchEmit', eventName, eventSelector, eventData);
+                Meteor.call('eventDDP_matchEmit', eventName, eventSelector, eventData);
             }
             else {
                 reportar++;
@@ -167,13 +216,13 @@ Meteor.methods(
                                   progress: numeral(cantidadRecs / numberOfItems).format("0 %"),
                                   message: `actualizando saldos de cuentas contables ... `
                                 };
-                    let methodResult = Meteor.call('eventDDP_matchEmit', eventName, eventSelector, eventData);
+                    Meteor.call('eventDDP_matchEmit', eventName, eventSelector, eventData);
                     reportar = 0;
-                };
-            };
+                }
+            }
             // -------------------------------------------------------------------------------------------------------
 
-        });
+        })
 
         // ----------------------------------------------------------------------------------------------
         // actualizamos el último mes cerrado, al año próximo y mes 0
@@ -194,8 +243,6 @@ Meteor.methods(
         // sync call
         methodResult = Meteor.call('eventDDP_matchEmit', eventName, eventSelector, eventData);
         // -------------------------------------------------------------------------------------------------------------
-
-
 
         // después del traspaso de saldos, el UMC debe quedar en 0 y para el próximo año fiscal
         response = {};
@@ -220,13 +267,14 @@ Meteor.methods(
                 .done();
         });
 
-        if (response.error)
+        if (response.error) { 
             throw new Meteor.Error(response.error && response.error.message ? response.error.message : response.error.toString());
+        }
 
         return `Ok, el traspaso de saldos en <em>Contab</em>, desde el año fiscal ${anoFiscal.toString()} al año fiscal
                 ${(anoFiscal + 1).toString()}, ha sido ejecutado en forma exitosa.`;
     }
-});
+})
 
 
 function leerSaldoCuentaContableAnoProximo(cuentaContableID, anoFiscalProximo, moneda, monedaOriginal) {
@@ -247,8 +295,9 @@ function leerSaldoCuentaContableAnoProximo(cuentaContableID, anoFiscalProximo, m
             .done();
     });
 
-    if (response.error)
+    if (response.error) { 
         throw new Meteor.Error(response.error && response.error.message ? response.error.message : response.error.toString());
+    }
 
     return response.result;
-};
+}

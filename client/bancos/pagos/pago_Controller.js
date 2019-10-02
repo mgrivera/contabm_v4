@@ -387,9 +387,9 @@ angular.module("contabm").controller("Bancos_Pagos_Pago_Controller",
 
         if ($scope.pago.docState) {
             DialogModal($modal, "<em>Pagos</em>",
-                `Aparentemente, <em>se han efectuado cambios</em> en el registro.
-                                   Por favor grabe los cambios antes de intentar ejecutar esta función.`,
-                false).then();
+                        `Aparentemente, <em>se han efectuado cambios</em> en el registro.
+                        Por favor grabe los cambios antes de intentar ejecutar esta función.`,
+                        false).then();
             return;
         }
 
@@ -410,84 +410,96 @@ angular.module("contabm").controller("Bancos_Pagos_Pago_Controller",
     function revertirPago2() {
         // si el pago tiene un movimiento bancario asociado, debemos indicarlo al usuario y permitir
         // continuar o cancelar
-        $meteor.call('bancosPagos_revertirPago1', $scope.pago.claveUnica).then(
-            function (data) {
+        Meteor.call('bancosPagos_revertirPago1', $scope.pago.claveUnica, (err, result) => {
 
-                if (data.error) {
-                    $scope.alerts.length = 0;
-                    $scope.alerts.push({
-                        type: 'danger',
-                        msg: data.message
-                    });
-                    $scope.showProgress = false;
-                } else {
-                    if (data.movimientoBancario) {
-                        // el pago puede tener un moviminto bancario asociado; en ese caso, indicamos al
-                        // usuario y permitirmos continuar/cancelar
-                        DialogModal($modal,
-                            "<em>Bancos - Pagos</em>",
-                            `El pago que Ud. desea revertir, tiene un movimiento bancario asociado.<br />
-                                    Este movimiento bancario <b>no será afectado</b> en forma alguna, si Ud.
-                                    ejecuta este proceso y revierte el pago.<br /><br />
-                                    Ud. puede consultar este movimiento bancario para eliminarlo
-                                    o modificarlo, en la forma que le parezca adecuada.<br /><br />
-                                    Aún así, desea continuar y revertir este pago?
-                                    `,
-                            true).then(
-                                function (resolve) {
-                                    revertirPago3();
-                                },
-                                function (err) {
-                                    return true;
-                                });
-                    } else {
-                        // el pago no tiene un movimiento bancario; simplente, revertimos
-                        revertirPago3();
-                    }
-                }
-            },
-            function (err) {
+            if (err) {
                 let errorMessage = mensajeErrorDesdeMethod_preparar(err);
 
                 $scope.alerts.length = 0;
+                $scope.alerts.push({ type: 'danger', msg: errorMessage });
+
+                $scope.showProgress = false;
+                $scope.$apply();
+
+                return;
+            }
+
+            if (result.error) {
+                $scope.alerts.length = 0;
                 $scope.alerts.push({
                     type: 'danger',
-                    msg: errorMessage
+                    msg: result.message
                 });
+
                 $scope.showProgress = false;
-            });
+                $scope.$apply();
+
+                return;
+            }
+
+            if (result.movimientoBancario) {
+                // el pago puede tener un moviminto bancario asociado; en ese caso, indicamos al
+                // usuario y permitirmos continuar/cancelar
+                DialogModal($modal,
+                    "<em>Bancos - Pagos</em>",
+                    `El pago que Ud. desea revertir, tiene un movimiento bancario asociado.<br />
+                            Este movimiento bancario <b>no será afectado</b> en forma alguna, si Ud.
+                            ejecuta este proceso y revierte el pago.<br /><br />
+                            Ud. puede consultar este movimiento bancario para eliminarlo
+                            o modificarlo, en la forma que le parezca adecuada.<br /><br />
+                            Aún así, desea continuar y revertir este pago?
+                            `,
+                    true).then(
+                        function (resolve) {
+                            revertirPago3();
+                        },
+                        function (err) {
+                            return true;
+                        });
+            } else {
+                // el pago no tiene un movimiento bancario; simplente, revertimos
+                revertirPago3();
+            }
+        })
     }
 
     function revertirPago3() {
-        $meteor.call('bancosPagos_revertirPago2', $scope.pago.claveUnica).then(
-            function (data) {
-                if (data.error) {
-                    $scope.alerts.length = 0;
-                    $scope.alerts.push({
-                        type: 'danger',
-                        msg: data.message
-                    });
-                    $scope.showProgress = false;
-                } else {
-                    $scope.alerts.length = 0;
-                    $scope.alerts.push({
-                        type: 'info',
-                        msg: data.message
-                    });
-                    inicializarItem();
-                    $scope.showProgress = false;
-                }
-            },
-            function (err) {
+
+        Meteor.call('bancosPagos_revertirPago2', $scope.pago.claveUnica, (err, result) => {
+
+            if (err) {
                 let errorMessage = mensajeErrorDesdeMethod_preparar(err);
 
                 $scope.alerts.length = 0;
+                $scope.alerts.push({ type: 'danger', msg: errorMessage });
+
+                $scope.showProgress = false;
+                $scope.$apply();
+
+                return;
+            }
+
+            if (result.error) {
+                $scope.alerts.length = 0;
                 $scope.alerts.push({
                     type: 'danger',
-                    msg: errorMessage
+                    msg: result.message
                 });
+
                 $scope.showProgress = false;
+                $scope.$apply();
+
+                return;
+            }
+
+            $scope.alerts.length = 0;
+            $scope.alerts.push({
+                type: 'info',
+                msg: result.message
             });
+
+            inicializarItem();
+        })
     }
 
     // -------------------------------------------------------------------------
@@ -554,47 +566,48 @@ angular.module("contabm").controller("Bancos_Pagos_Pago_Controller",
             return;
         }
 
-        $meteor.call('pagosSave', editedItem,
-                                $scope.fechaOriginal,
-                                $scope.companiaSeleccionada.numero).then(
-            function (data) {
+        Meteor.call('pagosSave', editedItem, $scope.fechaOriginal, $scope.companiaSeleccionada.numero, (err, result) => {
 
-                if (data.error) {
-                    // el método que intenta grabar los cambis puede regresar un error cuando,
-                    // por ejemplo, la fecha corresponde a un mes ya cerrado en Bancos ...
-                    $scope.alerts.length = 0;
-                    $scope.alerts.push({
-                        type: 'danger',
-                        msg: data.message
-                    });
-                    $scope.showProgress = false;
-                } else {
-                    $scope.alerts.length = 0;
-                    $scope.alerts.push({
-                        type: 'info',
-                        msg: data.message
-                    });
+            if (err) {
+                let errorMessage = mensajeErrorDesdeMethod_preparar(err);
 
-                    // el meteor method regresa siempre el _id del item; cuando el usuario elimina, regresa "-999"
-                    $scope.id = data.id;
+                $scope.alerts.length = 0;
+                $scope.alerts.push({ type: 'danger', msg: errorMessage });
 
-                    // nótese que siempre, al registrar cambios, leemos el registro desde sql server; la idea es
-                    // mostrar los datos tal como fueron grabados y refrescarlos para el usuario. Cuando el
-                    // usuario elimina el registro, su id debe regresar en -999 e InicializarItem no debe
-                    // encontrar nada ...
-                    inicializarItem($scope.id);
-                }
-            },
-            function (err) {
-            let errorMessage = mensajeErrorDesdeMethod_preparar(err);
+                $scope.showProgress = false;
+                $scope.$apply();
 
+                return;
+            }
+
+            if (result.error) {
                 $scope.alerts.length = 0;
                 $scope.alerts.push({
                     type: 'danger',
-                    msg: errorMessage
+                    msg: result.message
                 });
+
                 $scope.showProgress = false;
-            })
+                $scope.$apply();
+
+                return;
+            }
+
+            $scope.alerts.length = 0;
+            $scope.alerts.push({
+                type: 'info',
+                msg: result.message
+            });
+
+            // el meteor method regresa siempre el _id del item; cuando el usuario elimina, regresa "-999"
+            $scope.id = result.id;
+
+            // nótese que siempre, al registrar cambios, leemos el registro desde sql server; la idea es
+            // mostrar los datos tal como fueron grabados y refrescarlos para el usuario. Cuando el
+            // usuario elimina el registro, su id debe regresar en -999 e InicializarItem no debe
+            // encontrar nada ...
+            inicializarItem($scope.id);
+        })
     }
 
     $scope.pago = {};
@@ -707,5 +720,4 @@ angular.module("contabm").controller("Bancos_Pagos_Pago_Controller",
             $scope.$apply();
         })
     }
-  }
-]);
+}])

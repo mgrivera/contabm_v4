@@ -1,6 +1,5 @@
 
 
-
 let validarMesCerradoEnBancos = (fecha, ciaContab) => {
 
     let errMessage = "";
@@ -20,8 +19,9 @@ let validarMesCerradoEnBancos = (fecha, ciaContab) => {
             .done();
     });
 
-    if (response.error)
+    if (response.error) { 
         throw new Meteor.Error(response.error && response.error.message ? response.error.message : response.error.toString());
+    }
 
     if (!response.result.length) {
         errMessage = `Error: no hemos encontrado un registro en la tabla <em>Ultimo Mes Cerrado</em> en <em>Bancos</em>
@@ -29,7 +29,7 @@ let validarMesCerradoEnBancos = (fecha, ciaContab) => {
             "Por favor revise y corrija esta situación.`;
 
         return { error: true, errMessage: errMessage };
-    };
+    }
 
     let ultimoMesCerrado = response.result[0];
 
@@ -42,10 +42,13 @@ let validarMesCerradoEnBancos = (fecha, ciaContab) => {
         errMessage = `Error: la fecha que se desea editar o registrar, corresponde a un mes ya cerrado en <em>Bancos</em>.<br />
             Ud. no puede alterar un mes ya cerrado en <em>Bancos</em>.`;
 
-        return { error: true, errMessage: errMessage };
-    };
+        return { 
+            error: true, 
+            errMessage: errMessage,  
+        };
+    }
 
     return { error: false };
-};
+}
 
 BancosFunctions.validarMesCerradoEnBancos = validarMesCerradoEnBancos;

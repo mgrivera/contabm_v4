@@ -1,4 +1,5 @@
 
+
 import { sequelize } from '/server/sqlModels/_globals/_loadThisFirst/_globals';
 import moment from 'moment';
 import lodash from 'lodash';
@@ -21,6 +22,7 @@ import { Monedas_sql } from '../../imports/sqlModels/monedas';
 import { Chequeras_sql } from '/server/imports/sqlModels/bancos/movimientosBancarios'; 
 import { Bancos } from '/imports/collections/bancos/bancos';
 import { AsientosContables_sql, dAsientosContables_sql } from '/server/imports/sqlModels/contab/asientosContables'; 
+import { Facturas_sql, Facturas_Impuestos_sql } from '/server/imports/sqlModels/bancos/facturas'; 
 
 Meteor.methods({
    'generales.agregarAsientoContableAEntidad': function (provieneDe, provieneDe_ID, ciaContabSeleccionada_ID) {

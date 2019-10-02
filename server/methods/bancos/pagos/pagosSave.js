@@ -1,8 +1,11 @@
 
+
 import { sequelize } from '/server/sqlModels/_globals/_loadThisFirst/_globals';
 import moment from 'moment';
 import lodash from 'lodash'; 
 import SimpleSchema from 'simpl-schema';
+
+import { Pagos_sql } from '/server/imports/sqlModels/bancos/pagos'; 
 import { TimeOffset } from '/globals/globals'; 
 
 Meteor.methods(
@@ -83,8 +86,6 @@ Meteor.methods(
 
             let pago_sql = lodash.cloneDeep(pago);
 
-            console.log("pago (update): ", pago_sql.fecha); 
-
             // ----------------------------------------------------------------------------------------------------------------
             // para compensar la conversión que ocurre en las fechas al grabar a sql server, restamos 4.3 horas a cada una ...
             pago_sql.fecha = pago_sql.fecha ? moment(pago_sql.fecha).subtract(TimeOffset, 'hours').toDate() : null;
@@ -92,8 +93,6 @@ Meteor.methods(
 
             pago_sql.ultAct = moment(new Date()).subtract(TimeOffset, 'hours').toDate();
             pago_sql.usuario = usuario.emails[0].address;
-
-            console.log("pago (update): ", pago_sql.fecha); 
 
             response = Async.runSync(function(done) {
                 Pagos_sql.update(pago_sql, {
@@ -202,50 +201,6 @@ Meteor.methods(
     }
 })
 
-
-function validarUMC_Bancos (docState,
-                            fecha,
-                            fechaOriginal,
-                            ciaContabID) {
-
-    if (docState != 1) {
-        let validarMesCerradoEnBancos = BancosFunctions.validarMesCerradoEnBancos(fechaOriginal, ciaContabID);
-
-        if (validarMesCerradoEnBancos.error) {
-            // aunque la función regresa su propio mensaje, preparamos uno propio para que sea más específico
-            let errorMessage = ` Error: la fecha del pago
-                                 (${moment(fechaOriginal).format('DD-MM-YYYY')}) corresponde
-                                 a un mes ya cerrado en Bancos.
-                               `;
-            return {
-                error: true,
-                message: errorMessage
-            };
-        };
-    };
-
-    // arriba validamos las fechas 'originales' cuando el usuario modifica; ahora validamos las fechas indicadas
-    // para la pago, al agregar o modificar
-    let validarMesCerradoEnBancos = BancosFunctions.validarMesCerradoEnBancos(fecha, ciaContabID);
-
-    if (validarMesCerradoEnBancos.error) {
-        // aunque la función regresa su propio mensaje, preparamos uno propio para que sea más específico
-        let errorMessage = ` Error: la fecha del pago
-                             (${moment(fecha).format('DD-MM-YYYY')}) corresponde
-                             a un mes ya cerrado en Bancos.
-                           `;
-        return {
-            error: true,
-            message: errorMessage
-        };
-    };
-
-    return {
-        error: false
-    };
-}
-
-
 function validarPagoAplicado(claveUnicaPago) {
 
     // el usuario no puede eliminar un pago aplicado; es decir, con registros en dPagos.
@@ -287,4 +242,40 @@ function validarPagoAplicado(claveUnicaPago) {
     return {
         error: false
     }
+}
+
+function validarUMC_Bancos (docState, fecha, fechaOriginal, ciaContabID) {
+
+    if (docState != 1) {
+        let validarMesCerradoEnBancos = BancosFunctions.validarMesCerradoEnBancos(fechaOriginal, ciaContabID);
+
+        if (validarMesCerradoEnBancos.error) {
+            // aunque la función regresa su propio mensaje, preparamos uno propio para que sea más específico
+            let errorMessage = ` Error: la fecha del pago
+                                 (${moment(fechaOriginal).format('DD-MM-YYYY')}) corresponde a un mes ya cerrado en Bancos.`;
+
+            return {
+                error: true,
+                message: errorMessage
+            };
+        }
+    }
+
+    // arriba validamos las fechas 'originales' cuando el usuario modifica; ahora validamos las fechas indicadas
+    // para la pago, al agregar o modificar
+    let validarMesCerradoEnBancos = BancosFunctions.validarMesCerradoEnBancos(fecha, ciaContabID);
+
+    if (validarMesCerradoEnBancos.error) {
+        // aunque la función regresa su propio mensaje, preparamos uno propio para que sea más específico
+        let errorMessage = ` Error: la fecha del pago (${moment(fecha).format('DD-MM-YYYY')}) corresponde
+                             a un mes ya cerrado en Bancos.`;
+        return {
+            error: true,
+            message: errorMessage
+        };
+    };
+
+    return {
+        error: false
+    };
 }

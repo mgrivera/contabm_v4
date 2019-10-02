@@ -3,6 +3,8 @@
 import { sequelize } from '/server/sqlModels/_globals/_loadThisFirst/_globals';
 import moment from 'moment';
 import SimpleSchema from 'simpl-schema';
+
+import { Pagos_sql } from '/server/imports/sqlModels/bancos/pagos'; 
 import { TimeOffset } from '/globals/globals'; 
 
 Meteor.methods(

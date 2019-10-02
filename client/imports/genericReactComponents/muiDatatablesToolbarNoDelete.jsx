@@ -22,7 +22,6 @@ const defaultToolbarSelectStyles = {
 
 class CustomToolbarSelect extends React.Component {
   // handleClick = () => {
-  //   console.log("click! current selected rows", this.props.selectedRows);
   //   this.props.setSome();
   // };
 

@@ -1,8 +1,9 @@
 
-import { sequelize } from '../_globals/_loadThisFirst/_globals';
+
+import { sequelize } from '../../../../server/sqlModels/_globals/_loadThisFirst/_globals';
 import Sequelize from 'sequelize';
 
-Pagos_sql = sequelize.define('pagos', {
+export const Pagos_sql = sequelize.define('pagos', {
     claveUnica: { type: Sequelize.INTEGER, field: 'ClaveUnica', primaryKey: true, autoIncrement: true, allowNull: false, },
     proveedor: { type: Sequelize.INTEGER, field: 'Proveedor', allowNull: false, },
     moneda: { type: Sequelize.INTEGER, field: 'Moneda', allowNull: false, },

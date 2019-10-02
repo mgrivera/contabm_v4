@@ -1,8 +1,8 @@
 
-import { sequelize } from '../_globals/_loadThisFirst/_globals';
+import { sequelize } from '../../../../server/sqlModels/_globals/_loadThisFirst/_globals';
 import Sequelize from 'sequelize';
 
-Facturas_sql = sequelize.define('facturas', {
+export const Facturas_sql = sequelize.define('facturas', {
     claveUnica: { type: Sequelize.INTEGER, field: 'ClaveUnica', primaryKey: true, autoIncrement: true, allowNull: false },
     proveedor: { type: Sequelize.INTEGER, field: 'Proveedor', allowNull: false },
     numeroFactura: { type: Sequelize.STRING, field: 'NumeroFactura', allowNull: false },
@@ -56,7 +56,7 @@ Facturas_sql = sequelize.define('facturas', {
 });
 
 
-Facturas_Impuestos_sql = sequelize.define('facturas_Impuestos', {
+export const Facturas_Impuestos_sql = sequelize.define('facturas_Impuestos', {
     id: { type: Sequelize.INTEGER, field: 'ID', primaryKey: true, autoIncrement: true, allowNull: false },
     facturaID: { type: Sequelize.INTEGER, field: 'FacturaID', allowNull: false },
     impRetID: { type: Sequelize.INTEGER, field: 'ImpRetID', allowNull: false },
@@ -74,7 +74,7 @@ Facturas_Impuestos_sql = sequelize.define('facturas_Impuestos', {
 });
 
 
-CuotasFactura_sql = sequelize.define('cuotasFactura', {
+export const CuotasFactura_sql = sequelize.define('cuotasFactura', {
     claveUnica: { type: Sequelize.INTEGER, field: 'ClaveUnica', primaryKey: true, autoIncrement: true, allowNull: false },
     claveUnicaFactura: { type: Sequelize.INTEGER, field: 'ClaveUnicaFactura', allowNull: false },
     numeroCuota: { type: Sequelize.INTEGER, field: 'NumeroCuota', allowNull: false },

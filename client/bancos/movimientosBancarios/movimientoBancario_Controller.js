@@ -89,8 +89,6 @@ function ($scope, $stateParams, $state, $meteor, $modal) {
                 const proveedor = JSON.parse(result.proveedor); 
     
                 if (proveedor) {
-                    console.log("proveedor: ", proveedor); 
-    
                     const beneficiario = proveedor.beneficiario ? proveedor.beneficiario : null;
                     const concepto = proveedor.concepto ? proveedor.concepto : null;
                     const montoBase = proveedor.montoCheque ? proveedor.montoCheque : null;

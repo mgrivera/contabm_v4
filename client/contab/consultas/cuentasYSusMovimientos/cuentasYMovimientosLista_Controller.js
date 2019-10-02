@@ -269,9 +269,8 @@ function ($scope, $stateParams, $state, $meteor, $modal, uiGridConstants) {
         },
         onStop: function (error) {
           if (error) {
-            console.log('An error happened - ', error);
           } else {
-          };
+          }
         }
       });
 

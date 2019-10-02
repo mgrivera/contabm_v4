@@ -119,8 +119,6 @@ export default class PagosAnticipoLista extends React.Component {
         // el value en el checkbox siempre contiene un string; pero allí viene el index del item seleccionado
         // por eso, convertimos a number 
         const selectedIdx = e.target.checked ? Number(e.target.value) : -1;  
-        console.log("selectedIdx / type: ", selectedIdx, typeof selectedIdx); 
-
 
         // ponemos selected *solo* para el item seleccionado, cuyo index es selectedIdx
         // la idea es que, si hay otros items seleccionados, se deseccionen al cambiar aqui el state de cada item 
