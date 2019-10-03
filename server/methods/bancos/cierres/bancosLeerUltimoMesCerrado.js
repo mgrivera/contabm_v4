@@ -1,6 +1,13 @@
 
+
+import { Meteor } from 'meteor/meteor'
+import { Match } from 'meteor/check'
+import { Async } from 'meteor/meteorhacks:async';
+
 import moment from 'moment'; 
-import { TimeOffset } from '/globals/globals'; 
+import { TimeOffset } from '/globals/globals';
+
+import { UltimoMesCerrado_sql } from "/server/imports/sqlModels/bancos/ultimoMesCerrado"; 
 
 Meteor.methods(
 {
@@ -59,11 +66,11 @@ Meteor.methods(
                 // ésto nunca debe ocurrir ...
                 throw new Meteor.Error("no-ultimo-mes-cerrado",
                     `Error: aparentemente, la compañía seleccionada no tiene un registro en la tabla <em>último mes cerrado</em>`);
-            };
-        };
+            }
+        }
 
         // al leer desde sql, sequelize localiza; agregamos el offset (4.3) para revertir ...
         response.result.ultAct = moment(response.result[0].ultAct).add(TimeOffset, 'h').toDate();
         return JSON.stringify(response.result[0]);
     }
-});
+})

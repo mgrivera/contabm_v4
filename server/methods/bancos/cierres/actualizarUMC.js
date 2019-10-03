@@ -1,6 +1,13 @@
 
+
+import { Meteor } from 'meteor/meteor'
+import { Match } from 'meteor/check'
+import { Async } from 'meteor/meteorhacks:async';
+
 import moment from 'moment';
 import { TimeOffset } from '/globals/globals'; 
+
+import { UltimoMesCerrado_sql } from "/server/imports/sqlModels/bancos/ultimoMesCerrado"; 
 
 Meteor.methods(
 {
@@ -21,9 +28,10 @@ Meteor.methods(
                 .done();
         });
 
-        if (response.error)
+        if (response.error) { 
             throw new Meteor.Error(response.error && response.error.message ? response.error.message : response.error.toString());
-
+        }
+            
         // result es 'affectedRows' ...
         if (response.result === null)
             throw new Meteor.Error("no-ultimo-mes-cerrado",
@@ -31,4 +39,4 @@ Meteor.methods(
 
         return JSON.stringify(response.result);
     }
-});
+})

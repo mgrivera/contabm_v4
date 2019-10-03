@@ -1,11 +1,16 @@
 
 
+import { Meteor } from 'meteor/meteor'
+import { Match } from 'meteor/check'
+import { Async } from 'meteor/meteorhacks:async';
+
 import { sequelize } from '/server/sqlModels/_globals/_loadThisFirst/_globals';
 import numeral from 'numeral';
 import moment from 'moment';
 
 import { TimeOffset } from '/globals/globals'; 
 import { CuentasBancarias_sql } from '/server/imports/sqlModels/bancos/movimientosBancarios'; 
+import { UltimoMesCerrado_sql } from "/server/imports/sqlModels/bancos/ultimoMesCerrado"; 
 
 Meteor.methods(
 {
@@ -40,7 +45,7 @@ Meteor.methods(
 
         // -------------------------------------------------------------------------------------------------------------
         // ponemos los saldos iniciales del año próximo en cero
-        query = `Update Saldos Set Inicial = 0 From Saldos s Inner Join CuentasBancarias c
+        let query = `Update Saldos Set Inicial = 0 From Saldos s Inner Join CuentasBancarias c
                  On s.CuentaBancaria = c.CuentaInterna
                  Where s.Ano = ? And c.Cia = ?`;
 
@@ -97,7 +102,7 @@ Meteor.methods(
                     };
 
         // sync call
-        methodResult = Meteor.call('eventDDP_matchEmit', eventName, eventSelector, eventData);
+        Meteor.call('eventDDP_matchEmit', eventName, eventSelector, eventData);
         // -------------------------------------------------------------------------------------------------------------
 
         response.result.rows.forEach((saldoCuentaBancaria) => {
@@ -154,8 +159,8 @@ Meteor.methods(
                                 };
                     Meteor.call('eventDDP_matchEmit', eventName, eventSelector, eventData);
                     reportar = 0;
-                };
-            };
+                }
+            }
             // -------------------------------------------------------------------------------------------------------
 
         });
@@ -175,7 +180,7 @@ Meteor.methods(
                     };
 
         // sync call
-        methodResult = Meteor.call('eventDDP_matchEmit', eventName, eventSelector, eventData);
+        Meteor.call('eventDDP_matchEmit', eventName, eventSelector, eventData);
         // -------------------------------------------------------------------------------------------------------------
 
 
@@ -230,7 +235,7 @@ Meteor.methods(
                     };
 
         // sync call
-        methodResult = Meteor.call('eventDDP_matchEmit', eventName, eventSelector, eventData);
+        Meteor.call('eventDDP_matchEmit', eventName, eventSelector, eventData);
         // -------------------------------------------------------------------------------------------------------------
 
         response.result.rows.forEach((saldoCompania) => {
@@ -313,7 +318,7 @@ Meteor.methods(
                     };
 
         // sync call
-        methodResult = Meteor.call('eventDDP_matchEmit', eventName, eventSelector, eventData);
+        Meteor.call('eventDDP_matchEmit', eventName, eventSelector, eventData);
         // -------------------------------------------------------------------------------------------------------------
 
         response = {};

@@ -1,9 +1,14 @@
 
 
+import { Meteor } from 'meteor/meteor'
+import { Match } from 'meteor/check'
+import { Async } from 'meteor/meteorhacks:async';
+
 import moment from 'moment';
 import numeral from 'numeral';
 import { sequelize } from '/server/sqlModels/_globals/_loadThisFirst/_globals';
 import { TimeOffset } from '/globals/globals'; 
+import { UltimoMesCerrado_sql } from "/server/imports/sqlModels/bancos/ultimoMesCerrado"; 
 
 Meteor.methods(
 {
@@ -121,30 +126,16 @@ Meteor.methods(
                     if (response.error) { 
                         throw new Meteor.Error(response.error && response.error.message ? response.error.message : response.error.toString());
                     }
-
-                    // ahora leemos el registro que acabamos de agregar ... (con raw query no regresa el registro; solo el affectedRows)
-                    // leemos el registro de saldos para la cuenta y el año del cierre; puede no existir ...
-                    query = `Select * From Saldos Where CuentaBancaria = ? And Ano = ?`;
-
-                    response = null;
-                    response = Async.runSync(function(done) {
-                        sequelize.query(query, { replacements: [ cuentaBancaria.cuentaInterna, ano ], type: sequelize.QueryTypes.SELECT })
-                            .then(function(result) { done(null, result); })
-                            .catch(function (err) { done(err, null); })
-                            .done();
-                    });
-
-                    if (response.error) { 
-                        throw new Meteor.Error(response.error && response.error.message ? response.error.message : response.error.toString());
-                    }
-
-                    let saldos = Array.isArray(response.result) && response.result.length ? response.result[0] : null;
                 }
 
-                // ahora leemos los movimientos bancarios para la cuenta y el mes ...
+                // ----------------------------------------------------------------------------------------
+                // arriba nos aseguramos que exista un registro de saldos; si existe, ponemos el saldo anterior en 
+                // el saldo del mes; si no existe, creamos un registro de saldos, con todos sus saldos en cero. 
+
+                // ahora leemos los movimientos bancarios para la cuenta y el mes; la idea es actualizar el saldo del mes
+                // con el saldo anterior, que ya está en el saldo actual, y el movimiento (bancario) del mes 
                 query = `Select Sum(Monto) As monto, Count(*) as count 
-                            From MovimientosBancarios m Inner Join Chequeras c
-                            On m.ClaveUnicaChequera = c.NumeroChequera
+                            From MovimientosBancarios m Inner Join Chequeras c On m.ClaveUnicaChequera = c.NumeroChequera
                             Where c.NumeroCuenta = ? And m.Fecha Between ? And ?`;
 
                 response = null;
@@ -214,14 +205,24 @@ Meteor.methods(
                         reportar = 0;
                     }
                 }
-                // ----------------------------------------------------------------------------------------
             })
 
+            // ---------------------------------------------------------------------------------------------------------
+            // creamos 4 arrays con montos sumarizados de facturas y pagos. En general, las facturas pueden ser de 
+            // proveedores (pagos - en contra) o clientes (cobros - a favor); los pagos, en forma similar: 'mi' en 
+            // contra y 'su' a favor ... 
+
+            const facturasClientes = leerYSumarizarFacturasClientes(primerDiaMes, ultimoDiaMes, ciaContab.numero); 
+            const facturasProveedores = leerYSumarizarFacturasProveedores(primerDiaMes, ultimoDiaMes, ciaContab.numero); 
+
+            const misPagos = leerYSumarizarMisPagos(primerDiaMes, ultimoDiaMes, ciaContab.numero); 
+            const susPagos = leerYSumarizarSusPagos(primerDiaMes, ultimoDiaMes, ciaContab.numero); 
+
             // ---------------------------------------------------------------------------------------------
-            // ahora efectuamos el cierre de compañías ...
+            // arriba hicimos el cierre de cuentas bancarias; ahora efectuamos el cierre de compañías ...
 
             // leemos cada moneda
-            query = `Select Moneda As moneda From Monedas`;
+            query = `Select Moneda As moneda, Descripcion as descripcion From Monedas`;
 
             response = null;
             response = Async.runSync(function(done) {
@@ -238,7 +239,7 @@ Meteor.methods(
                 throw new Meteor.Error(response.error && response.error.message ? response.error.message : response.error.toString());
             }
 
-            response.result.forEach((moneda) => {
+            for (const moneda of response.result) {
                 // leer compañías (Proveedores) para cada moneda
 
                 query = `Select Proveedor As compania From Proveedores`;
@@ -266,152 +267,64 @@ Meteor.methods(
                 cantidadRecs = 0;
                 currentProcess = 2;
 
-                eventData = {
-                              current: currentProcess, max: numberOfProcess,
+                eventData = { current: currentProcess, 
+                              max: numberOfProcess,
                               progress: '0 %',
-                              message: `Cerrando el mes ${nombreMes(mes)} ... `
+                              message: `Cerrando el mes ${nombreMes(mes)} / ${moneda.descripcion}... `
                             };
-                methodResult = Meteor.call('eventDDP_matchEmit', eventName, eventSelector, eventData);
+                Meteor.call('eventDDP_matchEmit', eventName, eventSelector, eventData);
 
-                response.result.forEach((compania) => {
+                for (const compania of response.result) {
 
                     let movimientoDelPeriodo = 0;
 
                     // -----------------------------------------------------------------------------------------
                     // leemos las facturas para la compañía,  del tipo CxC; a nuestro favor
-                    query = `Select Sum(TotalAPagar) As sumTotalAPagar From Facturas Where
-                             Moneda = ? And Proveedor = ? And FechaEmision Between ? And ? And CxCCxPFlag = 2 And Cia = ?`;
-
-                    response = null;
-                    response = Async.runSync(function(done) {
-                        sequelize.query(query, {
-                                                  replacements: [
-                                                                  moneda.moneda,
-                                                                  compania.compania,
-                                                                  moment(primerDiaMes).format("YYYY-MM-DD"),
-                                                                  moment(ultimoDiaMes).format("YYYY-MM-DD"),
-                                                                  ciaContab.numero
-                                                              ],
-                                                  type: sequelize.QueryTypes.SELECT
-                                              })
-                            .then(function(result) { done(null, result); })
-                            .catch(function (err) { done(err, null); })
-                            .done();
-                    });
-
-                    if (response.error) { 
-                        throw new Meteor.Error(response.error && response.error.message ? response.error.message : response.error.toString());
+                    // usar ésto para leer moneda.moneda, compania.compania,
+                    const facturaClientes = facturasClientes.find(x => x.proveedor === compania.compania && x.moneda === moneda.moneda); 
+ 
+                    if (facturaClientes) { 
+                        movimientoDelPeriodo += facturaClientes.monto;
                     }
-
-                    if (response.result[0].sumTotalAPagar)
-                        movimientoDelPeriodo += response.result[0].sumTotalAPagar;
+                        
 
                     // -----------------------------------------------------------------------------------------
                     // leemos las facturas para la compañía,  del tipo CxP; en contra
-                    query = `Select Sum(TotalAPagar) As sumTotalAPagar From Facturas Where
-                             Moneda = ? And Proveedor = ? And FechaRecepcion Between ? And ? And CxCCxPFlag = 1 And Cia = ?`;
-
-                    response = null;
-                    response = Async.runSync(function(done) {
-                        sequelize.query(query, {
-                                                  replacements: [
-                                                                  moneda.moneda,
-                                                                  compania.compania,
-                                                                  moment(primerDiaMes).format("YYYY-MM-DD"),
-                                                                  moment(ultimoDiaMes).format("YYYY-MM-DD"),
-                                                                  ciaContab.numero
-                                                              ],
-                                                  type: sequelize.QueryTypes.SELECT
-                                              })
-                            .then(function(result) { done(null, result); })
-                            .catch(function (err) { done(err, null); })
-                            .done();
-                    });
-
-                    if (response.error) { 
-                        throw new Meteor.Error(response.error && response.error.message ? response.error.message : response.error.toString());
+                    const facturaProveedores = facturasProveedores.find(x => x.proveedor === compania.compania && x.moneda === moneda.moneda); 
+                    
+                    if (facturaProveedores) { 
+                        movimientoDelPeriodo -= facturaProveedores.monto;
                     }
+                        
+                    // -----------------------------------------------------------------------------------------
+                    // leemos los pagos que hemos recibido de clientes; a nuestro favor
+                    const suPago = susPagos.find(x => x.proveedor === compania.compania && x.moneda === moneda.moneda);
 
-                    if (response.result[0].sumTotalAPagar)
-                        movimientoDelPeriodo -= response.result[0].sumTotalAPagar;
-
+                    if (suPago) { 
+                        movimientoDelPeriodo += suPago.monto;
+                    }
 
                     // -----------------------------------------------------------------------------------------
-                    // leemos los pagos que hemos hecho a la compañía; a nuestro favor
-                    query = `Select Sum(Monto) As sumPagos From Pagos Where
-                             Moneda = ? And Proveedor = ? And Fecha Between ? And ? And MiSuFlag = 1 And Cia = ?`;
+                    // leemos los pagos que hemos hecho a proveedores; en contra
+                    const miPago = misPagos.find(x => x.proveedor === compania.compania && x.moneda === moneda.moneda);
 
-                    response = null;
-                    response = Async.runSync(function(done) {
-                        sequelize.query(query, {
-                                                  replacements: [
-                                                                  moneda.moneda,
-                                                                  compania.compania,
-                                                                  moment(primerDiaMes).format("YYYY-MM-DD"),
-                                                                  moment(ultimoDiaMes).format("YYYY-MM-DD"),
-                                                                  ciaContab.numero
-                                                              ],
-                                                  type: sequelize.QueryTypes.SELECT
-                                              })
-                            .then(function(result) { done(null, result); })
-                            .catch(function (err) { done(err, null); })
-                            .done();
-                    });
-
-                    if (response.error) { 
-                        throw new Meteor.Error(response.error && response.error.message ? response.error.message : response.error.toString());
+                    if (miPago) { 
+                        movimientoDelPeriodo -= miPago.monto;
                     }
-
-                    if (response.result[0].sumPagos)
-                        movimientoDelPeriodo += response.result[0].sumPagos;
-
-
-                    // -----------------------------------------------------------------------------------------
-                    // leemos los pagos que hemos hecho a la compañía; a nuestro favor
-                    query = `Select Sum(Monto) As sumPagos From Pagos Where
-                             Moneda = ? And Proveedor = ? And Fecha Between ? And ? And MiSuFlag = 2 And Cia = ?`;
-
-                    response = null;
-                    response = Async.runSync(function(done) {
-                        sequelize.query(query, {
-                                                  replacements: [
-                                                                  moneda.moneda,
-                                                                  compania.compania,
-                                                                  moment(primerDiaMes).format("YYYY-MM-DD"),
-                                                                  moment(ultimoDiaMes).format("YYYY-MM-DD"),
-                                                                  ciaContab.numero
-                                                              ],
-                                                  type: sequelize.QueryTypes.SELECT
-                                              })
-                            .then(function(result) { done(null, result); })
-                            .catch(function (err) { done(err, null); })
-                            .done();
-                    });
-
-                    if (response.error) { 
-                        throw new Meteor.Error(response.error && response.error.message ? response.error.message : response.error.toString());
-                    }
-
-                    if (response.result[0].sumPagos)
-                        movimientoDelPeriodo -= response.result[0].sumPagos;
-
 
                     // Finalmente, actualizamos el saldo de la compañia
                     // -----------------------------------------------------------------------------------------
-                    // leemos los pagos que hemos hecho a la compañía; a nuestro favor
 
                     // 1) leemos el saldo (puede no existir)
                     query = `Select * From SaldosCompanias Where Moneda = ? And Compania = ? And Ano = ? And Cia = ?`;
 
                     response = null;
                     response = Async.runSync(function(done) {
-                        sequelize.query(query, {
-                                                  replacements: [
-                                                                  moneda.moneda,
+                        sequelize.query(query, { replacements: [ moneda.moneda,
                                                                   compania.compania,
                                                                   ano,
                                                                   ciaContab.numero
-                                                              ],
+                                                                ],
                                                   type: sequelize.QueryTypes.SELECT
                                               })
                             .then(function(result) { done(null, result); })
@@ -423,9 +336,9 @@ Meteor.methods(
                         throw new Meteor.Error(response.error && response.error.message ? response.error.message : response.error.toString());
                     }
 
-                    saldos = response.result[0];
+                    const saldoCompania = response.result[0];
 
-                    if (!saldos) {
+                    if (!saldoCompania) {
                         // 2) el registro de saldos no existe; lo agregamos
                         query = `Insert Into SaldosCompanias (Moneda, Compania, Ano, Cia) Values (?, ?, ?, ?)`;
 
@@ -448,50 +361,20 @@ Meteor.methods(
                         if (response.error) { 
                             throw new Meteor.Error(response.error && response.error.message ? response.error.message : response.error.toString());
                         }
+                    }
 
-                        // 3) nuevamente leemos el registro de saldos; esta vez, existe
-                        query = `Select * From SaldosCompanias Where Moneda = ? And Compania = ? And Ano = ? And Cia = ?`;
-
-                        response = null;
-                        response = Async.runSync(function(done) {
-                            sequelize.query(query, {
-                                                      replacements: [
-                                                                      moneda.moneda,
-                                                                      compania.compania,
-                                                                      ano,
-                                                                      ciaContab.numero
-                                                                  ],
-                                                      type: sequelize.QueryTypes.SELECT
-                                                  })
-                                .then(function(result) { done(null, result); })
-                                .catch(function (err) { done(err, null); })
-                                .done();
-                        });
-
-                        if (response.error) { 
-                            throw new Meteor.Error(response.error && response.error.message ? response.error.message : response.error.toString());
-                        }
-
-                        saldos = response.result[0];
-                    };
-
-                    // 4) finalmente, ahora que sabemos que el registro de saldos existe y lo tenemos, lo actualizamos ...
-                    let saldoAnterior = saldos[mesTablaSaldos(mes -1)] ? saldos[mesTablaSaldos(mes -1)] : 0;
-                    let saldoActual = saldoAnterior + movimientoDelPeriodo;
-
-                    query = `Update SaldosCompanias Set ${mesTablaSaldos(mes)} = ? Where
-                             Moneda = ? And Compania = ? And Ano = ? And Cia = ?`;
+                    // 4) finalmente, ahora que sabemos que el registro de saldos *existe* lo actualizamos ...
+                    query = `Update SaldosCompanias Set ${mesTablaSaldos(mes)} = ? Where Moneda = ? And Compania = ? And Ano = ? And Cia = ?`;
 
                     response = null;
                     response = Async.runSync(function(done) {
                         sequelize.query(query, {
-                                                  replacements: [
-                                                                  movimientoDelPeriodo,
+                                                  replacements: [ movimientoDelPeriodo,
                                                                   moneda.moneda,
                                                                   compania.compania,
                                                                   ano,
                                                                   ciaContab.numero
-                                                              ],
+                                                                ],
                                                   type: sequelize.QueryTypes.UPDATE
                                               })
                             .then(function(result) { done(null, result); })
@@ -508,28 +391,27 @@ Meteor.methods(
                     cantidadRecs++;
                     if (numberOfItems <= 25) {
                         // hay menos de 20 registros; reportamos siempre ...
-                        eventData = {
-                                      current: currentProcess, max: numberOfProcess,
+                        eventData = { current: currentProcess, 
+                                      max: numberOfProcess,
                                       progress: numeral(cantidadRecs / numberOfItems).format("0 %"),
-                                      message: `Cerrando el mes ${nombreMes(mes)} ... `
+                                      message: `Cerrando el mes ${nombreMes(mes)} / ${moneda.descripcion}... `
                                     };
-                        methodResult = Meteor.call('eventDDP_matchEmit', eventName, eventSelector, eventData);
+                        Meteor.call('eventDDP_matchEmit', eventName, eventSelector, eventData);
                     }
                     else {
                         reportar++;
                         if (reportar === reportarCada) {
-                            eventData = {
-                                          current: currentProcess, max: numberOfProcess,
+                            eventData = { current: currentProcess, 
+                                          max: numberOfProcess,
                                           progress: numeral(cantidadRecs / numberOfItems).format("0 %"),
-                                          message: `Cerrando el mes ${nombreMes(mes)} ... `
+                                          message: `Cerrando el mes ${nombreMes(mes)} / ${moneda.descripcion}... `
                                         };
-                            methodResult = Meteor.call('eventDDP_matchEmit', eventName, eventSelector, eventData);
+                            Meteor.call('eventDDP_matchEmit', eventName, eventSelector, eventData);
                             reportar = 0;
-                        };
-                    };
-                    // -------------------------------------------------------------------------------------------------------
-                });
-            });
+                        }
+                    }
+                }
+            }
 
 
             // ---------------------------------------------------------------------------------------------
@@ -548,7 +430,7 @@ Meteor.methods(
                           progress: '0 %',
                           message: `Cerrando el mes ${nombreMes(mes)} ... `
                         };
-            methodResult = Meteor.call('eventDDP_matchEmit', eventName, eventSelector, eventData);
+            Meteor.call('eventDDP_matchEmit', eventName, eventSelector, eventData);
 
             response = {};
             let filter = { cia: ciaContab.numero };
@@ -581,7 +463,7 @@ Meteor.methods(
                           progress: '100 %',
                           message: `Cerrando el mes ${nombreMes(mes)} ... `
                         };
-            methodResult = Meteor.call('eventDDP_matchEmit', eventName, eventSelector, eventData);
+            Meteor.call('eventDDP_matchEmit', eventName, eventSelector, eventData);
         });
 
         let finalMessage = "";
@@ -606,46 +488,32 @@ function nombreMes(mes) {
     switch (mes) {
         case 0:
             return 'Ninguno';
-            break;
         case 1:
             return 'Enero';
-            break;
         case 2:
             return 'Febrero';
-            break;
         case 3:
             return 'Marzo';
-            break;
         case 4:
             return 'Abril';
-            break;
         case 5:
             return 'Mayo';
-            break;
         case 6:
             return 'Junio';
-            break;
         case 7:
             return 'Julio';
-            break;
         case 8:
             return 'Agosto';
-            break;
         case 9:
             return 'Septiembre';
-            break;
         case 10:
             return 'Octubre';
-            break;
         case 11:
             return 'Noviembre';
-            break;
         case 12:
             return 'Diciembre';
-            break;
         case 13:
             return 'Anual';
-            break;
         default:
             return "Indefinido (?)";
     }
@@ -701,3 +569,131 @@ function mesTablaSaldos(mes) {
 
     return nombreColumnaTablaSaldos;
 }
+
+
+// =======================================================================================================
+// para leer y sumarizar los montos de facturas a clientes (a favor) 
+function leerYSumarizarFacturasClientes (desde, hasta, ciaContab) { 
+
+    const query = `Select Moneda as moneda, Proveedor as proveedor, Sum(TotalAPagar) As monto 
+                   From Facturas 
+                   Where FechaEmision Between ? And ? And CxCCxPFlag = 2 And Cia = ?
+                   Group by Moneda, Proveedor
+                   `;
+
+    const response = Async.runSync(function (done) {
+        sequelize.query(query, {
+            replacements: [
+                moment(desde).format("YYYY-MM-DD"),
+                moment(hasta).format("YYYY-MM-DD"),
+                ciaContab
+            ],
+            type: sequelize.QueryTypes.SELECT
+        })
+            .then(function (result) { done(null, result); })
+            .catch(function (err) { done(err, null); })
+            .done();
+    });
+
+    if (response.error) {
+        throw new Meteor.Error(response.error && response.error.message ? response.error.message : response.error.toString());
+    }
+
+    return response.result; 
+}
+
+
+// =======================================================================================================
+// para leer y sumarizar los montos de facturas a proveedores (en contra)
+function leerYSumarizarFacturasProveedores (desde, hasta, ciaContab) { 
+    
+    const query = `Select Moneda as moneda, Proveedor as proveedor, Sum(TotalAPagar) As monto 
+                   From Facturas 
+                   Where FechaRecepcion Between ? And ? And CxCCxPFlag = 1 And Cia = ?
+                   Group by Moneda, Proveedor
+                   `;
+
+    const response = Async.runSync(function (done) {
+        sequelize.query(query, {
+            replacements: [
+                moment(desde).format("YYYY-MM-DD"),
+                moment(hasta).format("YYYY-MM-DD"),
+                ciaContab
+            ],
+            type: sequelize.QueryTypes.SELECT
+        })
+            .then(function (result) { done(null, result); })
+            .catch(function (err) { done(err, null); })
+            .done();
+    });
+
+    if (response.error) {
+        throw new Meteor.Error(response.error && response.error.message ? response.error.message : response.error.toString());
+    }
+
+    return response.result; 
+}
+
+
+// =======================================================================================================
+// para leer y sumarizar montos de pagos efectuados (en contra)
+function leerYSumarizarMisPagos (desde, hasta, ciaContab) { 
+
+    const query = `Select Moneda as moneda, Proveedor as proveedor, Sum(Monto) As monto 
+                   From Pagos 
+                   Where Fecha Between ? And ? And MiSuFlag = 1 And Cia = ?
+                   Group by Moneda, Proveedor
+                   `;
+
+    const response = Async.runSync(function (done) {
+        sequelize.query(query, {
+            replacements: [
+                moment(desde).format("YYYY-MM-DD"),
+                moment(hasta).format("YYYY-MM-DD"),
+                ciaContab.numero
+            ],
+            type: sequelize.QueryTypes.SELECT
+        })
+            .then(function (result) { done(null, result); })
+            .catch(function (err) { done(err, null); })
+            .done();
+    });
+
+    if (response.error) {
+        throw new Meteor.Error(response.error && response.error.message ? response.error.message : response.error.toString());
+    }
+
+    return response.result; 
+} 
+
+
+// =======================================================================================================
+// para leer y sumarizar montos de pagos recibidos (a favor)
+function leerYSumarizarSusPagos (desde, hasta, ciaContab) { 
+    
+    const query = `Select Moneda as moneda, Proveedor as proveedor, Sum(Monto) As monto  
+                   From Pagos 
+                   Where Fecha Between ? And ? And MiSuFlag = 2 And Cia = ?
+                   Group by Moneda, Proveedor
+                   `;
+
+    const response = Async.runSync(function (done) {
+        sequelize.query(query, {
+            replacements: [
+                moment(desde).format("YYYY-MM-DD"),
+                moment(hasta).format("YYYY-MM-DD"),
+                ciaContab.numero
+            ],
+            type: sequelize.QueryTypes.SELECT
+        })
+            .then(function (result) { done(null, result); })
+            .catch(function (err) { done(err, null); })
+            .done();
+    });
+
+    if (response.error) {
+        throw new Meteor.Error(response.error && response.error.message ? response.error.message : response.error.toString());
+    }
+
+    return response.result; 
+} 
