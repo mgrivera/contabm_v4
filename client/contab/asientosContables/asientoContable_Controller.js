@@ -1,8 +1,11 @@
 
 
+import { Meteor } from 'meteor/meteor'
 import lodash from 'lodash';
 import moment from 'moment'; 
 import saveAs from 'save-as'
+import angular from 'angular';
+
 import { Monedas } from '/imports/collections/monedas';
 
 import { Companias } from '/imports/collections/companias';
@@ -87,7 +90,7 @@ function ($scope, $stateParams, $state, $meteor, $modal, uiGridConstants) {
         if (!$scope.asientoContable.fecha) {
             $scope.setIsEdited();
             return;
-        };
+        }
 
         $scope.showProgress = true;
 
@@ -126,10 +129,10 @@ function ($scope, $stateParams, $state, $meteor, $modal, uiGridConstants) {
                                     true);
 
             promise.then(
-                function (resolve) {
+                function () {
                     $state.go('contab.asientosContables.lista', { origen: $scope.origen, pageNumber: $scope.pageNumber });
                 },
-                function (err) {
+                function () {
                     return true;
                 });
 
@@ -147,7 +150,7 @@ function ($scope, $stateParams, $state, $meteor, $modal, uiGridConstants) {
                                 false).then();
 
             return;
-        };
+        }
 
         // simplemente, ponemos el docState en 3 para que se elimine al Grabar ...
         $scope.asientoContable.docState = 3;
@@ -166,16 +169,15 @@ function ($scope, $stateParams, $state, $meteor, $modal, uiGridConstants) {
         }
 
         if ($scope.asientoContable.docState && $scope.origen == 'edicion') {
-            var promise = DialogModal($modal,
-                                    "<em>Asientos contables</em>",
-                                    "Aparentemente, Ud. ha efectuado cambios; aún así, desea <em>refrescar el registro</em> y perder los cambios?",
-                                    true);
+            DialogModal($modal, "<em>Asientos contables</em>",
+                                "Aparentemente, Ud. ha efectuado cambios; aún así, desea <em>refrescar el registro</em> y perder los cambios?",
+                                true);
 
             promise.then(
-                function (resolve) {
+                function () {
                     $scope.refresh();
                 },
-                function (err) {
+                function () {
                     return true;
                 });
 
@@ -216,10 +218,10 @@ function ($scope, $stateParams, $state, $meteor, $modal, uiGridConstants) {
                 }
             }
         }).result.then(
-              function (resolve) {
+              function () {
                   return true;
               },
-              function (cancel) {
+              function () {
                   return true;
               });
     }
@@ -258,10 +260,10 @@ function ($scope, $stateParams, $state, $meteor, $modal, uiGridConstants) {
                  a las que ya existan, de existir algunas. 
                 `,
             true).then(
-                function (resolve) {
+                function () {
                     importarAsientoContable1();
                 },
-                function (err) {
+                function () {
                     return true;
                 })
     }
@@ -346,7 +348,7 @@ function ($scope, $stateParams, $state, $meteor, $modal, uiGridConstants) {
                 })
 
                 leerCuentasContablesFromSql__porIDYCuenta(listaCuentasContablesIDs, listaCuentasContablesCuentas, $scope.companiaSeleccionada.numero)
-                    .then((result) => {
+                    .then(() => {
 
                         // al regresar aquí, ya las cuentas contables están en minimongo; estás serán las que se muestren en la lista 
                         // en el ddl del ui-grid 
@@ -614,10 +616,10 @@ function ($scope, $stateParams, $state, $meteor, $modal, uiGridConstants) {
                                         true);
 
             promise.then(
-                function (resolve) {
+                function () {
                     $scope.nuevo();
                 },
-                function (err) {
+                function () {
                     return true;
                 });
 
@@ -1274,7 +1276,7 @@ function ($scope, $stateParams, $state, $meteor, $modal, uiGridConstants) {
 
                 return true;
             },
-            function (cancel) {
+            function () {
                 return true;
             });
     }

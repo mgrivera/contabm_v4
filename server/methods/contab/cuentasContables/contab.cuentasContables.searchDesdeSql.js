@@ -1,5 +1,8 @@
 
 
+import { Meteor } from 'meteor/meteor'
+import { Async } from 'meteor/meteorhacks:async';
+
 import { sequelize } from '/server/sqlModels/_globals/_loadThisFirst/_globals';
 import SimpleSchema from 'simpl-schema';
 
@@ -16,18 +19,18 @@ Meteor.methods(
         let criteria = search.replace(/\*/g, '');
         criteria = `%${criteria}%`;
 
-        const where = `(c.Cuenta Like '${criteria}') Or (c.Descripcion Like '${criteria}')`;
+        const where = `((c.Cuenta Like '${criteria}') Or (c.Descripcion Like '${criteria}'))`;
 
         // ---------------------------------------------------------------------------------------------------
         // leemos los pagos desde sql server, que cumplan el criterio indicado
-        let query = `Select c.ID as id, c.Cuenta as cuenta, (c.Cuenta + ' ' + c.Descripcion) as descripcion, c.Cia as cia  
-                     From CuentasContables c
-                     Where ${where} And c.Cia = ${ciaContabSeleccionada} And c.TotDet = 'D' And c.ActSusp = 'A' 
-                     Order By c.Cuenta, c.Descripcion
-                    `;
+        const query = `Select c.ID as id, c.Cuenta as cuenta, (c.Cuenta + ' ' + c.Descripcion + ' ' + cs.Abreviatura) as descripcion, 
+                       c.Cia as cia  
+                       From CuentasContables c Inner Join Companias cs On c.Cia = cs.Numero 
+                       Where ${where} And c.Cia = ${ciaContabSeleccionada} And c.TotDet = 'D' And c.ActSusp = 'A' 
+                       Order By c.Cuenta, c.Descripcion
+                      `;
 
-        response = null;
-        response = Async.runSync(function(done) {
+        const response = Async.runSync(function(done) {
             sequelize.query(query, { type: sequelize.QueryTypes.SELECT })
                 .then(function(result) { done(null, result); })
                 .catch(function (err) { done(err, null); })
@@ -59,7 +62,7 @@ Meteor.methods(
             let criteria = search.replace(/\*/g, '');
             criteria = `%${criteria}%`;
 
-            where = `(c.Cuenta Like '${criteria}') Or (c.Descripcion Like '${criteria}')`;
+            where = `((c.Cuenta Like '${criteria}') Or (c.Descripcion Like '${criteria}'))`;
         }
         
 
@@ -75,8 +78,7 @@ Meteor.methods(
                      Order By c.Cuenta, c.Descripcion
                     `;
 
-        response = null;
-        response = Async.runSync(function(done) {
+        const response = Async.runSync(function(done) {
             sequelize.query(query, { type: sequelize.QueryTypes.SELECT })
                 .then(function(result) { done(null, result); })
                 .catch(function (err) { done(err, null); })
