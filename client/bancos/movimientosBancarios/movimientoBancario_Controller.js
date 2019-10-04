@@ -1,5 +1,9 @@
 
+
+import angular from 'angular';
+import { Meteor } from 'meteor/meteor'
 import moment from 'moment';
+import lodash from 'lodash'; 
 import { DialogModal } from '/client/imports/general/genericUIBootstrapModal/angularGenericModal'; 
 
 import { Companias } from '/imports/collections/companias';
@@ -277,10 +281,10 @@ function ($scope, $stateParams, $state, $meteor, $modal) {
                 true);
 
             promise.then(
-                function (resolve) {
+                function () {
                     $state.go('bancos.movimientosBancarios.lista', { origen: $scope.origen, limit: $scope.limit });
                 },
-                function (err) {
+                function () {
                     return true;
                 });
 
@@ -317,16 +321,16 @@ function ($scope, $stateParams, $state, $meteor, $modal) {
         }
 
         if ($scope.movimientoBancario.docState && $scope.origen == 'edicion') {
-            var promise = DialogModal($modal,
+            DialogModal($modal,
                 "<em>Bancos - Movimientos bancarios</em>",
                 "Aparentemente, Ud. ha efectuado cambios; aún así, desea <em>refrescar el registro</em> y perder los cambios?",
                 true);
 
             promise.then(
-                function (resolve) {
+                function () {
                     $scope.refresh();
                 },
-                function (err) {
+                function () {
                     return true;
                 });
 
@@ -352,10 +356,10 @@ function ($scope, $stateParams, $state, $meteor, $modal) {
                 true);
 
             promise.then(
-                function (resolve) {
+                function () {
                     $scope.nuevo();
                 },
-                function (err) {
+                function () {
                     return true;
                 });
 
@@ -379,7 +383,7 @@ function ($scope, $stateParams, $state, $meteor, $modal) {
 
     $scope.asientoContable = function () {
 
-        var modalInstance = $modal.open({
+        $modal.open({
             templateUrl: 'client/generales/asientosContablesAsociados/asientosContablesAsociadosModal.html',
             controller: 'AsientosContablesAsociados_Controller',
             size: 'lg',
@@ -401,10 +405,10 @@ function ($scope, $stateParams, $state, $meteor, $modal) {
                 }
             },
         }).result.then(
-            function (resolve) {
+            function () {
                 return true;
             },
-            function (cancel) {
+            function () {
                 return true;
             });
     }
@@ -427,10 +431,10 @@ function ($scope, $stateParams, $state, $meteor, $modal) {
                 },
             },
         }).result.then(
-            function (resolve) {
+            function () {
                 return true;
             },
-            function (cancel) {
+            function () {
                 return true;
             });
     }
@@ -450,7 +454,7 @@ function ($scope, $stateParams, $state, $meteor, $modal) {
         $scope.showProgress = true;
 
         // obtenemos un clone de los datos a guardar ...
-        let editedItem = _.cloneDeep($scope.movimientoBancario);
+        let editedItem = lodash.cloneDeep($scope.movimientoBancario);
 
         // nótese como validamos cada item antes de intentar guardar en el servidor
         let isValid = false;

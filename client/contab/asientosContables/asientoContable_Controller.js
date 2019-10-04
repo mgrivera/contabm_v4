@@ -636,7 +636,6 @@ function ($scope, $stateParams, $state, $meteor, $modal, uiGridConstants) {
         inicializarItem();
     }
 
-    let partidas_ui_grid_api = null;
     let partidaSeleccionada = {};
 
     $scope.partidas_ui_grid = {
@@ -653,8 +652,6 @@ function ($scope, $stateParams, $state, $meteor, $modal, uiGridConstants) {
         rowHeight: 25,
 
         onRegisterApi: function (gridApi) {
-
-            partidas_ui_grid_api = gridApi;
 
             gridApi.selection.on.rowSelectionChanged($scope, function (row) {
                 partidaSeleccionada = {};
@@ -1171,7 +1168,7 @@ function ($scope, $stateParams, $state, $meteor, $modal, uiGridConstants) {
         Meteor.call('contab.asientos.convertir', $scope.asientoContable.numeroAutomatico, (err, result) => {
 
                 if (err) {
-                let errorMessage = mensajeErrorDesdeMethod_preparar(err);
+                    let errorMessage = mensajeErrorDesdeMethod_preparar(err);
 
                     $scope.alerts.length = 0;
                     $scope.alerts.push({
@@ -1182,7 +1179,7 @@ function ($scope, $stateParams, $state, $meteor, $modal, uiGridConstants) {
                     $scope.showProgress = false;
                     $scope.$apply();
                     return;
-                };
+                }
 
                 // el método puede regresar un error (y su mensaje)
                 $scope.alerts.length = 0;
@@ -1456,7 +1453,7 @@ function ($scope, $stateParams, $state, $meteor, $modal, uiGridConstants) {
                     const cuentasContablesArray = result.cuentasContables;
 
                     // 1) agregamos el array de cuentas contables al $scope 
-                    $scope.cuentasContablesLista = lodash.sortBy(cuentasContablesArray, [ 'descripcion' ]);;
+                    $scope.cuentasContablesLista = lodash.sortBy(cuentasContablesArray, [ 'descripcion' ]);
 
                     // 2) hacemos el binding entre la lista y el ui-grid 
                     $scope.partidas_ui_grid.columnDefs[2].editDropdownOptionsArray = $scope.cuentasContablesLista;     
