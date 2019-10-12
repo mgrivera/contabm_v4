@@ -1,9 +1,12 @@
 
+
 import { sequelize } from '/server/sqlModels/_globals/_loadThisFirst/_globals';
 import moment from 'moment';
 import numeral from 'numeral';
 import lodash from 'lodash'; 
 import { TimeOffset } from '/globals/globals'; 
+
+import { Temp_Consulta_Bancos_MovimientosBancarios } from '/imports/collections/temp/tempConsultaMovimientosBancarios'; 
 
 Meteor.methods(
 {

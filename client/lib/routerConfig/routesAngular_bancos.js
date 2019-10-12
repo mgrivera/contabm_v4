@@ -291,16 +291,24 @@ angular.module("contabm").config(['$urlRouterProvider', '$stateProvider', '$loca
             params: { cantidadMovimientosITFLeidos: null, cantidadMovimientosITFAgregados: null },
             parent: 'bancos.impuestoTransaccionesFinancieras'
         })
+
+        // -------------------------------------------------------------------------------------------
+        // Cierres 
         .state('bancos.ultimoMesCerrado', {
             url: '/ultimoMesCerrado',
-            templateUrl: 'client/bancos/cierres/ultimoMesCerrado/ultimoMesCerrado.html',
+            templateUrl: 'client/imports/bancos/cierres/ultimoMesCerrado/ultimoMesCerrado.html',
             controller: 'Bancos_UltimoMesCerrado_Controller',
             parent: 'bancos'
         })
         .state('bancos.cierre', {
             url: '/cierre',
-            templateUrl: 'client/bancos/cierres/cierre/cierre.html',
+            templateUrl: 'client/imports/bancos/cierres/cierre/cierre.html',
             controller: 'Bancos_Cierre_Controller',
+            parent: 'bancos'
+        })
+        .state('bancos.saldosCuentasBancarias', {
+            url: '/saldosCuentasBancarias',
+            templateUrl: 'client/imports/bancos/cierres/saldosCuentasBancarias/saldosCuentasBancarias.html',
             parent: 'bancos'
         })
   }

@@ -12,7 +12,10 @@ import UnidadTributariaController from '/client/imports/bancos/catalogos/unidadT
 import BancosComprobantesSeniat from '/client/imports/bancos/comprobantesSeniat/comprobantesSeniat'; 
 import '/client/imports/bancos/comprobantesSeniat/comprobantesSeniat.html'; 
 
+import ContabBancosCierres from "/client/imports/bancos/cierres/angular.module.bancos.cierres"; 
+
 angular.module("contabm.bancos", [ 'contabm.bancos.catalogos', 
                                    'categoriasRetencion', 
                                    UnidadTributariaController.name, 
-                                   BancosComprobantesSeniat.name, ]);
+                                   BancosComprobantesSeniat.name, 
+                                   ContabBancosCierres.name, ]);

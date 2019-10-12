@@ -1,11 +1,18 @@
 
+
+import angular from 'angular'; 
+import { Meteor } from 'meteor/meteor'
+
 import numeral from 'numeral';
 import { Companias } from '/imports/collections/companias';
 import { CompaniaSeleccionada } from '/imports/collections/companiaSeleccionada';
 
+import { Temp_Consulta_Bancos_MovimientosBancarios } from '/imports/collections/temp/tempConsultaMovimientosBancarios'; 
+import { mensajeErrorDesdeMethod_preparar } from '/client/imports/clientGlobalMethods/mensajeErrorDesdeMethod_preparar'; 
+
 angular.module("contabm").controller("Bancos_MovimientosBancarios_List_Controller",
-['$scope', '$stateParams', '$state', '$meteor', '$modal',
-function ($scope, $stateParams, $state, $meteor, $modal) {
+['$scope', '$stateParams', '$state', '$modal',
+function ($scope, $stateParams, $state, $modal) {
 
     $scope.showProgress = false;
 
@@ -41,8 +48,6 @@ function ($scope, $stateParams, $state, $meteor, $modal) {
         $state.go('bancos.movimientosBancarios.filter', { origen: $scope.origen });
     }
 
-
-    let list_ui_grid_api = null;
     let movimientoBancarioSeleccionado = {};
 
     $scope.list_ui_grid = {
@@ -59,8 +64,6 @@ function ($scope, $stateParams, $state, $meteor, $modal) {
         rowHeight: 25,
 
         onRegisterApi: function (gridApi) {
-
-            list_ui_grid_api = gridApi;
 
             gridApi.selection.on.rowSelectionChanged($scope, function (row) {
                 movimientoBancarioSeleccionado = {};
@@ -330,7 +333,7 @@ function ($scope, $stateParams, $state, $meteor, $modal) {
 
     $scope.exportarExcel = function() {
 
-        let modalInstance = $modal.open({
+        $modal.open({
             templateUrl: 'client/bancos/movimientosBancarios/exportarExcelModal.html',
             controller: 'BancosMovimientosBancariosExportarExcel_Controller',
             size: 'md',
@@ -340,10 +343,10 @@ function ($scope, $stateParams, $state, $meteor, $modal) {
                 },
             },
         }).result.then(
-              function (resolve) {
+              function () {
                   return true;
               },
-              function (cancel) {
+              function () {
                   return true;
               });
     }

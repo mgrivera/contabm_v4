@@ -1,10 +1,17 @@
 
+
+import { Meteor } from 'meteor/meteor'
+import { Async } from 'meteor/meteorhacks:async';
+import { Mongo } from 'meteor/mongo'
+
 import { sequelize } from '/server/sqlModels/_globals/_loadThisFirst/_globals';
 import moment from 'moment';
+import lodash from 'lodash'; 
 import SimpleSchema from 'simpl-schema';
 import { TimeOffset } from '/globals/globals'; 
 
 import { MovimientosBancarios_sql } from '/server/imports/sqlModels/bancos/movimientosBancarios'; 
+import { Temp_Consulta_Bancos_MovimientosBancarios } from '/imports/collections/temp/tempConsultaMovimientosBancarios'; 
 
 Meteor.methods(
 {
@@ -42,8 +49,9 @@ Meteor.methods(
         // ---------------------------------------------------------------------------------------------
 
 
-        let usuario = Meteor.users.findOne(Meteor.userId());
+        const usuario = Meteor.users.findOne(Meteor.userId());
         let docState = movimientoBancario.docState;
+        let response = null;
 
         if (movimientoBancario.docState == 1) {
             delete movimientoBancario.docState;
@@ -54,7 +62,6 @@ Meteor.methods(
                          Where ClaveUnicaChequera = ? And
                          Transaccion = ?`;
 
-            let response = null;
             response = Async.runSync(function(done) {
                 sequelize.query(query,
                     {
@@ -81,7 +88,7 @@ Meteor.methods(
             }
                 
             // ----------------------------------------------------------------------------------------
-            let movimientoBancario_sql = _.clone(movimientoBancario);
+            let movimientoBancario_sql = lodash.clone(movimientoBancario);
 
             // ------------------------------------------------------------------------------------------
             // sequelize siempre convierte las fechas a utc (es decir, las globaliza); nuestro offset
@@ -91,7 +98,6 @@ Meteor.methods(
             movimientoBancario_sql.fechaEntregado = movimientoBancario_sql.fechaEntregado ? moment(movimientoBancario_sql.fechaEntregado).subtract(TimeOffset, 'hours').toDate() : null;
             movimientoBancario_sql.ingreso = movimientoBancario_sql.ingreso ? moment(movimientoBancario_sql.ingreso).subtract(TimeOffset, 'hours').toDate() : null;
 
-            let usuario = Meteor.users.findOne(this.userId);
             movimientoBancario_sql.ultMod = movimientoBancario_sql.ultMod ? moment(movimientoBancario_sql.ultMod).subtract(TimeOffset, 'hours').toDate() : null;
             movimientoBancario_sql.usuario = usuario.emails[0].address;
 
@@ -110,7 +116,7 @@ Meteor.methods(
             // el registro, luego de ser grabado en sql, es regresado en response.result.dataValues ...
             let savedItem = response.result.dataValues;
             movimientoBancario.claveUnica = savedItem.claveUnica;
-        };
+        }
 
 
         if (movimientoBancario.docState == 2) {
@@ -122,13 +128,12 @@ Meteor.methods(
 
             // ----------------------------------------------------------------------------------------------------------------
             // para compensar la conversión que ocurre en las fechas al grabar a sql server, restamos 4.3 horas a cada una ...
-            let movimientoBancario_sql = _.clone(movimientoBancario);
+            let movimientoBancario_sql = lodash.clone(movimientoBancario);
 
             movimientoBancario_sql.fecha = movimientoBancario_sql.fecha ? moment(movimientoBancario_sql.fecha).subtract(TimeOffset, 'hours').toDate() : null;
             movimientoBancario_sql.fechaEntregado = movimientoBancario_sql.fechaEntregado ? moment(movimientoBancario_sql.fechaEntregado).subtract(TimeOffset, 'hours').toDate() : null;
             movimientoBancario_sql.ingreso = movimientoBancario_sql.ingreso ? moment(movimientoBancario_sql.ingreso).subtract(TimeOffset, 'hours').toDate() : null;
 
-            let usuario = Meteor.users.findOne(this.userId);
             movimientoBancario_sql.ultMod = moment(new Date()).subtract(TimeOffset, 'hours').toDate();
             movimientoBancario_sql.usuario = usuario.emails[0].address;
 
@@ -143,7 +148,7 @@ Meteor.methods(
 
             if (response.error)
                 throw new Meteor.Error(response.error && response.error.message ? response.error.message : response.error.toString());
-        };
+        }
 
 
         if (movimientoBancario.docState == 3) {
@@ -157,7 +162,7 @@ Meteor.methods(
 
             if (response.error)
                 throw new Meteor.Error(response.error && response.error.message ? response.error.message : response.error.toString());
-        };
+        }
 
         let tempMovimientoBancario = null;
 
@@ -190,7 +195,7 @@ Meteor.methods(
             if (response.error)
                 throw new Meteor.Error(response.error && response.error.message ? response.error.message : response.error.toString());
 
-            tempMovimientoBancario = _.isArray(response.result) && response.result.length ? response.result[0] : null;
+            tempMovimientoBancario = Array.isArray(response.result) && response.result.length ? response.result[0] : null;
 
 
             tempMovimientoBancario._id = new Mongo.ObjectID()._str;
@@ -201,11 +206,11 @@ Meteor.methods(
             // ahora tenemos una variable 'global' que sirve de 'offset' ...
             tempMovimientoBancario.fecha = tempMovimientoBancario.fecha ? moment(tempMovimientoBancario.fecha).add(TimeOffset, 'hours').toDate() : null;
             tempMovimientoBancario.fechaEntregado = tempMovimientoBancario.fechaEntregado ? moment(tempMovimientoBancario.fechaEntregado).add(TimeOffset, 'hours').toDate() : null;
-        };
+        }
 
 
         if (docState == 1) {
-            Temp_Consulta_Bancos_MovimientosBancarios.insert(tempMovimientoBancario, function (error, result) {
+            Temp_Consulta_Bancos_MovimientosBancarios.insert(tempMovimientoBancario, function (error) {
                 if (error)
                     throw new Meteor.Error("validationErrors", error.message ? error.message : error.toString());
             });
@@ -216,7 +221,7 @@ Meteor.methods(
                 { claveUnica: tempMovimientoBancario.claveUnica, user: this.userId, },
                 { $set: tempMovimientoBancario },
                 { multi: false, upsert: false },
-                function (error, result) {
+                function (error) {
                     if (error)
                         throw new Meteor.Error("validationErrors", error.message ? error.message : error.toString());
                 });
@@ -228,7 +233,7 @@ Meteor.methods(
                 user: this.userId,
                 claveUnica: movimientoBancario.claveUnica
             });
-        };
+        }
 
 
         // ---------------------------------------------------------------------------------
@@ -237,7 +242,7 @@ Meteor.methods(
             let actualizarChequera = BancosFunctions.actualizarChequera(movimientoBancario.claveUnicaChequera);
             if (actualizarChequera.error)
                 return { error: true, message: actualizarChequera.errMessage };
-        };
+        }
 
 
         return {
@@ -245,4 +250,4 @@ Meteor.methods(
             id: movimientoBancario.claveUnica.toString()
         };
     }
-});
+})

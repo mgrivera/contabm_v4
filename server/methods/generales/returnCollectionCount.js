@@ -4,6 +4,8 @@ import SimpleSchema from 'simpl-schema';
 import { Temp_Consulta_Bancos_CajaChica } from '/imports/collections/bancos/temp.bancos.consulta.cajaChica'; 
 import { Temp_Consulta_Contab_ActivosFijos } from '/imports/collections/contab/temp.contab.consulta.activosFijos'; 
 
+import { Temp_Consulta_Bancos_MovimientosBancarios } from '/imports/collections/temp/tempConsultaMovimientosBancarios'; 
+
 
 Meteor.methods({
    getCollectionCount: function (collectionName) {

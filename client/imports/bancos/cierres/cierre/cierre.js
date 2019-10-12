@@ -1,13 +1,15 @@
 
 
+import angular from 'angular'; 
 import lodash from 'lodash'; 
+import { Meteor } from 'meteor/meteor';
 
 import { Companias } from '/imports/collections/companias';
 import { CompaniaSeleccionada } from '/imports/collections/companiaSeleccionada';
 import { mensajeErrorDesdeMethod_preparar } from '/client/imports/clientGlobalMethods/mensajeErrorDesdeMethod_preparar'; 
 
-angular.module("contabm").controller("Bancos_Cierre_Controller",
-['$scope', '$meteor', '$modal', function ($scope, $meteor, $modal) {
+export default angular.module("contabm.bancos.cierres.cierre", [])
+                      .controller("Bancos_Cierre_Controller", ['$scope', function ($scope) {
 
     $scope.processProgress = {
         current: 0,

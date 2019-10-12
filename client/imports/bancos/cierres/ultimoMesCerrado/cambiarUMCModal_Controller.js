@@ -1,9 +1,13 @@
 
 
+import angular from 'angular'; 
+import { Meteor } from 'meteor/meteor';
+import lodash from 'lodash'; 
 
-angular.module("contabm").controller('CambiarUMCModal_Controller',
-['$scope', '$modalInstance', '$modal', '$meteor', 'companiaSeleccionadaDoc', 'ultimoMesCerrado', 'anosArray',
-function ($scope, $modalInstance, $modal, $meteor, companiaSeleccionadaDoc, ultimoMesCerrado, anosArray) {
+export default angular.module("contabm.bancos.cierres.ultimoMesCerrado.modal", [ ])
+                      .controller('CambiarUMCModal_Controller',
+['$scope', '$modalInstance', '$meteor', 'companiaSeleccionadaDoc', 'ultimoMesCerrado', 'anosArray',
+function ($scope, $modalInstance, $meteor, companiaSeleccionadaDoc, ultimoMesCerrado, anosArray) {
 
     // debugger;
     $scope.alerts = [];
@@ -51,7 +55,7 @@ function ($scope, $modalInstance, $modal, $meteor, companiaSeleccionadaDoc, ulti
               msg: `Ud. debe seleccionar un elemento en cada lista. `
             });
             return;
-        };
+        }
 
         // nos aseguramos que el usuario no adelante el mes cerrado; solo puede atrasarlo ...
 
@@ -66,7 +70,7 @@ function ($scope, $modalInstance, $modal, $meteor, companiaSeleccionadaDoc, ulti
                    para cerrar la forma sin efectuar ningún cambio, haga un <em>click</em> en <em>Cerrar</em>. `
             });
             return;
-        };
+        }
 
         if (ano2 > ultimoMesCerrado.ano) {
             $scope.alerts.length = 0;
@@ -75,7 +79,7 @@ function ($scope, $modalInstance, $modal, $meteor, companiaSeleccionadaDoc, ulti
               msg: `Ud. no puede adelantar el mes cerrado a uno posterior; solo puede atrasarlo a un mes anterior. `
             });
             return;
-        };
+        }
 
         if (ano2 == ultimoMesCerrado.ano && mes2 > ultimoMesCerrado.mes) {
             $scope.alerts.length = 0;
@@ -84,7 +88,7 @@ function ($scope, $modalInstance, $modal, $meteor, companiaSeleccionadaDoc, ulti
               msg: `Ud. no puede adelantar el mes cerrado a uno posterior; solo puede atrasarlo a un mes anterior. `
             });
             return;
-        };
+        }
 
         if ($scope.bancos_cambiarUMC_Form.$valid) {
             // debugger;
@@ -95,7 +99,7 @@ function ($scope, $modalInstance, $modal, $meteor, companiaSeleccionadaDoc, ulti
             // actualizamos el ultimoMesCerrado con los valores necesarios y lo pasamos al meteor method que
             // lo actualiza en sql server
 
-            let umc = _.clone(ultimoMesCerrado);
+            let umc = lodash.clone(ultimoMesCerrado);
 
             umc.mes = mes2;
             umc.ano = ano2;
@@ -110,22 +114,12 @@ function ($scope, $modalInstance, $modal, $meteor, companiaSeleccionadaDoc, ulti
             $scope.showProgress = true;
 
             $meteor.call('bancosUpdateUMC', umc).then(
-              function (data) {
-                  //   debugger;
-                //   $scope.alerts.length = 0;
-                //   $scope.alerts.push({
-                //     type: 'info',
-                //     msg: `Ok, el <em>último mes cerrado</em> ha sido cambiado en forma satisfactoria.<br />
-                //     El nuevo valor para el <em>último mes cerrado</em> es: ${nombreMes(mes2)} / ${ano2.toString()} `
-                //   });
-
-                  // TODO: cerrar este modal; al hacerlo, ejecutar nuevamente el meteor method que lee el UMC,
-                  // para que el usuario pueda verlo ...
+              function () {
                   $scope.showProgress = false;
                   $scope.ok();                  // cerramos el modal y regresamos ...
               },
                 function (err) {
-                    //   debugger;
+
                     let errorMessage = "<b>Error:</b> se ha producido un error al intentar ejecutar la operación.";
                     if (err.errorType)
                         errorMessage += " (" + err.errorType + ")";
@@ -141,7 +135,7 @@ function ($scope, $modalInstance, $modal, $meteor, companiaSeleccionadaDoc, ulti
 
                         if (err.details)
                             errorMessage += "<br />" + err.details;
-                    };
+                    }
 
                     if (!err.message && !err.reason && !err.details)
                         errorMessage += err.toString();
@@ -156,55 +150,4 @@ function ($scope, $modalInstance, $modal, $meteor, companiaSeleccionadaDoc, ulti
                 });
         }
     };
-}
-]);
-
-function nombreMes(mes) {
-
-    switch (mes) {
-        case 0:
-            return 'Ninguno';
-            break;
-        case 1:
-            return 'Enero';
-            break;
-        case 2:
-            return 'Febrero';
-            break;
-        case 3:
-            return 'Marzo';
-            break;
-        case 4:
-            return 'Abril';
-            break;
-        case 5:
-            return 'Mayo';
-            break;
-        case 6:
-            return 'Junio';
-            break;
-        case 7:
-            return 'Julio';
-            break;
-        case 8:
-            return 'Agosto';
-            break;
-        case 9:
-            return 'Septiembre';
-            break;
-        case 10:
-            return 'Octubre';
-            break;
-        case 11:
-            return 'Noviembre';
-            break;
-        case 12:
-            return 'Diciembre';
-            break;
-        case 13:
-            return 'Anual';
-            break;
-        default:
-            return "Indefinido (?)";
-    };
-};
+}])

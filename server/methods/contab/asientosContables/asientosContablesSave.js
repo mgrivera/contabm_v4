@@ -1,5 +1,8 @@
 
 
+import { Meteor } from 'meteor/meteor'
+import { Async } from 'meteor/meteorhacks:async';
+
 import moment from 'moment';
 import lodash from 'lodash';
 import { TimeOffset } from '/globals/globals'; 
@@ -91,6 +94,7 @@ Meteor.methods(
 
             delete asientoContable_sql.partidas; 
 
+            let response = null; 
             response = Async.runSync(function(done) {
                 AsientosContables_sql.create(asientoContable_sql)
                     .then(function(result) { done(null, result); })
@@ -152,6 +156,7 @@ Meteor.methods(
 
             delete asientoContable_sql.partidas; 
 
+            let response = null; 
             response = Async.runSync(function(done) {
                 AsientosContables_sql.update(asientoContable_sql, { where: { numeroAutomatico: asientoContable.numeroAutomatico }})
                     .then(function(result) { done(null, result); })
@@ -197,6 +202,7 @@ Meteor.methods(
 
         if (asientoContable.docState == 3) {
             // sql elimina (cascade delete) las partidas ...
+            let response = null; 
             response = Async.runSync(function(done) {
                 AsientosContables_sql.destroy({ where: { numeroAutomatico: asientoContable.numeroAutomatico } })
                     .then(function(result) { done(null, result); })
@@ -214,4 +220,4 @@ Meteor.methods(
             id: asientoContable.numeroAutomatico.toString(),
         };
     }
-});
+})

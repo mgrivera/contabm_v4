@@ -1,0 +1,28 @@
+
+
+.cellNumber {
+    text-align: right; 
+    font-size: x-small; 
+}
+
+.alignLeft {
+    text-align: left; 
+}
+
+.fontXSmall { 
+    font-size: x-small; 
+}  
+
+/* los buttons son muy altos en el navBar */
+@media (min-width: 768px) { 
+    .navbar-nav > .navBar_button > a {
+        padding-top: 5px;
+        padding-bottom: 5px;
+    }
+}
+
+/* el navBar sigue siendo muy alto pues aplica un margin de 20x */
+nav.toolBar_navBar.navbar.navbar-default {
+     margin-bottom: 0px;
+     min-height: 0px;
+}

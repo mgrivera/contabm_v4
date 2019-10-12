@@ -1,4 +1,7 @@
 
+
+import { Meteor } from 'meteor/meteor'
+import { Async } from 'meteor/meteorhacks:async';
 import Sequelize from 'sequelize';
 
 const sequelize = new Sequelize(Meteor.settings.sqlServer_db_contab_dbName,
@@ -35,9 +38,9 @@ console.log("Intentando una conexión a sql server: ", datosConexionSqlServer);
 
 // -------------------------------------------------------------------------------------------------------------
 var sqlConnection = Async.runSync(function(done) {
-  var test = sequelize.authenticate().then(function () { done(null, "conexión exitosa a sql server ..."); })
-                                      .catch(function (err) { done(err, null); })
-                                      .done();
+  sequelize.authenticate().then(function () { done(null, "conexión exitosa a sql server ..."); })
+                          .catch(function (err) { done(err, null); })
+                          .done();
 });
 
 if (sqlConnection.error) {

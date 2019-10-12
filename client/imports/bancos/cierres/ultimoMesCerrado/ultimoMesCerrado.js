@@ -1,12 +1,19 @@
 
+
+import { Meteor } from 'meteor/meteor';
+import angular from 'angular'; 
 import moment from 'moment';
+import lodash from 'lodash'; 
 
 import { Companias } from '/imports/collections/companias';
 import { CompaniaSeleccionada } from '/imports/collections/companiaSeleccionada';
 
+import '/client/imports/bancos/cierres/ultimoMesCerrado/cambiarUMCModal.html'; 
+import BancosCierresUltimoMesCerradoModal from '/client/imports/bancos/cierres/ultimoMesCerrado/cambiarUMCModal_Controller'; 
+
 // Este controller (angular) se carga con la página primera del programa
-angular.module("contabm").controller("Bancos_UltimoMesCerrado_Controller",
-['$scope', '$meteor', '$modal', function ($scope, $meteor, $modal) {
+export default angular.module("contabm.bancos.cierres.ultimoMesCerrado", [ BancosCierresUltimoMesCerradoModal.name, ])
+                      .controller("Bancos_UltimoMesCerrado_Controller", ['$scope', '$meteor', '$modal', function ($scope, $meteor, $modal) {
 
       $scope.showProgress = false;
 
@@ -39,7 +46,6 @@ angular.module("contabm").controller("Bancos_UltimoMesCerrado_Controller",
 
       $meteor.call('bancosLeerUltimoMesCerrado', companiaSeleccionadaDoc).then(
         function (data) {
-            //   debugger;
             $scope.ultimoMesCerrado = JSON.parse(data);
 
             $scope.ultimoMesCerrado.mes2 = nombreMes($scope.ultimoMesCerrado.mes);
@@ -55,7 +61,7 @@ angular.module("contabm").controller("Bancos_UltimoMesCerrado_Controller",
             $scope.showProgress = false;
         },
           function (err) {
-              //   debugger;
+
               let errorMessage = "<b>Error:</b> se ha producido un error al intentar ejecutar la operación.";
               if (err.errorType)
                   errorMessage += " (" + err.errorType + ")";
@@ -71,7 +77,7 @@ angular.module("contabm").controller("Bancos_UltimoMesCerrado_Controller",
 
                   if (err.details)
                       errorMessage += "<br />" + err.details;
-              };
+              }
 
               if (!err.message && !err.reason && !err.details)
                   errorMessage += err.toString();
@@ -93,20 +99,20 @@ angular.module("contabm").controller("Bancos_UltimoMesCerrado_Controller",
                   return false;
 
               if (user && user.emails && user.emails.length > 0 &&
-                  _.some(user.emails, email => { return email.address == "admin@admin.com"; }))
+                  lodash.some(user.emails, email => { return email.address == "admin@admin.com"; }))
                       return true;
 
               if (!user.roles)
                   return false;
 
               // mostramos todas las opciones a usuarios en el rol 'admin'
-              if (_.find(user.roles, r => { return r === "admin"; }))
+              if (lodash.find(user.roles, r => { return r === "admin"; }))
                   return true;
 
               if (!rol)
                   return false;
 
-              var found = _.find(user.roles, r => { return r === rol; });
+              var found = lodash.find(user.roles, r => { return r === rol; });
               if (found)
                   return true;
               else
@@ -122,8 +128,8 @@ angular.module("contabm").controller("Bancos_UltimoMesCerrado_Controller",
 
       $meteor.call('bancosDeterminarAnosCerrados', companiaSeleccionadaDoc).then(
         function (data) {
-            var modalInstance = $modal.open({
-                templateUrl: 'client/bancos/cierres/ultimoMesCerrado/cambiarUMCModal.html',
+            $modal.open({
+                templateUrl: 'client/imports/bancos/cierres/ultimoMesCerrado/cambiarUMCModal.html',
                 controller: 'CambiarUMCModal_Controller',
                 size: 'md',
                 resolve: {
@@ -138,7 +144,7 @@ angular.module("contabm").controller("Bancos_UltimoMesCerrado_Controller",
                     },
                 }
             }).result.then(
-                  function (resolve) {
+                  function () {
                       // cuando el usuario cambia el umc, el modal es cerrado y regresamos, volvemos a leer el umc
                       // desde sql server ...
 
@@ -148,7 +154,6 @@ angular.module("contabm").controller("Bancos_UltimoMesCerrado_Controller",
 
                       $meteor.call('bancosLeerUltimoMesCerrado', companiaSeleccionadaDoc).then(
                         function (data) {
-                            //   debugger;
                             $scope.ultimoMesCerrado = JSON.parse(data);
 
                             $scope.ultimoMesCerrado.mes2 = nombreMes($scope.ultimoMesCerrado.mes);
@@ -164,7 +169,6 @@ angular.module("contabm").controller("Bancos_UltimoMesCerrado_Controller",
                             $scope.showProgress = false;
                         },
                           function (err) {
-                              //   debugger;
                               let errorMessage = "<b>Error:</b> se ha producido un error al intentar ejecutar la operación.";
                               if (err.errorType)
                                   errorMessage += " (" + err.errorType + ")";
@@ -180,7 +184,7 @@ angular.module("contabm").controller("Bancos_UltimoMesCerrado_Controller",
 
                                   if (err.details)
                                       errorMessage += "<br />" + err.details;
-                              };
+                              }
 
                               if (!err.message && !err.reason && !err.details)
                                   errorMessage += err.toString();
@@ -194,7 +198,7 @@ angular.module("contabm").controller("Bancos_UltimoMesCerrado_Controller",
                               $scope.showProgress = false;
                           });
                   },
-                  function (cancel) {
+                  function () {
                       $scope.showProgress = false;
                       return true;
                   });
@@ -216,7 +220,7 @@ angular.module("contabm").controller("Bancos_UltimoMesCerrado_Controller",
 
                   if (err.details)
                       errorMessage += "<br />" + err.details;
-              };
+              }
 
               if (!err.message && !err.reason && !err.details)
                   errorMessage += err.toString();
@@ -239,47 +243,33 @@ function nombreMes(mes) {
     switch (mes) {
         case 0:
             return 'Ninguno';
-            break;
         case 1:
             return 'Enero';
-            break;
         case 2:
             return 'Febrero';
-            break;
         case 3:
             return 'Marzo';
-            break;
         case 4:
             return 'Abril';
-            break;
         case 5:
             return 'Mayo';
-            break;
         case 6:
             return 'Junio';
-            break;
         case 7:
             return 'Julio';
-            break;
         case 8:
             return 'Agosto';
-            break;
         case 9:
             return 'Septiembre';
-            break;
         case 10:
             return 'Octubre';
-            break;
         case 11:
             return 'Noviembre';
-            break;
         case 12:
             return 'Diciembre';
-            break;
         case 13:
             return 'Anual';
-            break;
         default:
             return "Indefinido (?)";
-    };
-};
+    }
+}
