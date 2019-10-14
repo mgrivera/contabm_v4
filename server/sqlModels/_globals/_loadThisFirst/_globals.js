@@ -7,6 +7,12 @@ import Sequelize from 'sequelize';
 const sequelize = new Sequelize(Meteor.settings.sqlServer_db_contab_dbName,
                                 Meteor.settings.sqlServer_db_contab_userName,
                                 Meteor.settings.sqlServer_db_contab_userPwd, {
+
+
+  // sequelize sugiere que no se usen alias como: $ne, $eq, $like, etc. 
+  // en vez de hacerlo, usar Sequelize.Op.ne ...                                 
+  operatorsAliases: false, 
+
   // the sql dialect of the database
   // currently supported: 'mysql', 'sqlite', 'postgres', 'mssql'
   dialect: 'mssql',
