@@ -43,7 +43,7 @@ Meteor.methods(
         // ---------------------------------------------------------------------------------------------------
         // leemos los pagos desde sql server, que cumplan el criterio indicado
         const query = `Select c.ID as id, c.Cuenta as cuenta, 
-                       (c.Cuenta + ' ' + c.Descripcion + ' ' + cs.Abreviatura) as descripcion,  
+                       (LTRIM(RTRIM(c.Cuenta)) + ' ' + LTRIM(RTRIM(c.Descripcion)) + ' ' + LTRIM(RTRIM(cs.Abreviatura))) as descripcion, 
                        c.Cia as cia  
                        From CuentasContables c Inner Join Companias cs On c.Cia = cs.Numero 
                        Where ${where}  
@@ -107,7 +107,7 @@ Meteor.methods(
             }
             
             const query = `Select c.ID as id, c.Cuenta as cuenta, 
-                           (c.Cuenta + ' ' + c.Descripcion + ' ' + cs.Abreviatura) as descripcion,  
+                           (LTRIM(RTRIM(c.Cuenta)) + ' ' + LTRIM(RTRIM(c.Descripcion)) + ' ' + LTRIM(RTRIM(cs.Abreviatura))) as descripcion, 
                            Cia as cia  
                            From CuentasContables c Inner Join Companias cs On c.Cia = cs.Numero 
                            Where ${where}  
@@ -152,10 +152,8 @@ Meteor.methods(
                 where = `(1 = 2)`;
             }
 
-            // ---------------------------------------------------------------------------------------------------
-            // leemos los pagos desde sql server, que cumplan el criterio indicado
             const query = `Select c.ID as id, c.Cuenta as cuenta, 
-                           (c.Cuenta + ' ' + c.Descripcion + ' ' + cs.Abreviatura) as descripcion,  
+                           (LTRIM(RTRIM(c.Cuenta)) + ' ' + LTRIM(RTRIM(c.Descripcion)) + ' ' + LTRIM(RTRIM(cs.Abreviatura))) as descripcion, 
                            Cia as cia  
                            From CuentasContables c Inner Join Companias cs On c.Cia = cs.Numero 
                            Where ${where} and c.Cia = ${ciaContabID}  

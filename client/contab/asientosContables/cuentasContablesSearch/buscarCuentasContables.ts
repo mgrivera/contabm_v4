@@ -2,9 +2,8 @@
 
 import * as angular from 'angular';
 
-angular.module("contabm").controller('BuscarCuentasContables_Modal_Controller',
-['$scope', '$modalInstance', 'companiaContabSeleccionada', 'partidaSeleccionada', 
-function ($scope, $modalInstance, companiaContabSeleccionada, partidaSeleccionada) {
+angular.module("contabm")
+       .controller('BuscarCuentasContables_Modal_Controller', ['$scope', '$modalInstance', function ($scope, $modalInstance) {
 
     // ui-bootstrap alerts ...
     $scope.alerts = [];

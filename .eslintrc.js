@@ -25,6 +25,10 @@ module.exports = {
         "react", "import"
     ],
     "rules": {
+        "prefer-const": ["error", {
+            "destructuring": "any",
+            "ignoreReadBeforeAssign": false
+        }]
     }
 }
 

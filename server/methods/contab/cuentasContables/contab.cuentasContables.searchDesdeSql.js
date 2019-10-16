@@ -23,7 +23,8 @@ Meteor.methods(
 
         // ---------------------------------------------------------------------------------------------------
         // leemos los pagos desde sql server, que cumplan el criterio indicado
-        const query = `Select c.ID as id, c.Cuenta as cuenta, (c.Cuenta + ' ' + c.Descripcion + ' ' + cs.Abreviatura) as descripcion, 
+        const query = `Select c.ID as id, c.Cuenta as cuenta, 
+                       (LTRIM(RTRIM(c.Cuenta)) + ' ' + LTRIM(RTRIM(c.Descripcion)) + ' ' + LTRIM(RTRIM(cs.Abreviatura))) as descripcion, 
                        c.Cia as cia  
                        From CuentasContables c Inner Join Companias cs On c.Cia = cs.Numero 
                        Where ${where} And c.Cia = ${ciaContabSeleccionada} And c.TotDet = 'D' And c.ActSusp = 'A' 

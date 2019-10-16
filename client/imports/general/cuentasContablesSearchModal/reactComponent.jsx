@@ -1,5 +1,7 @@
 
 
+import { Meteor } from 'meteor/meteor'
+
 import React from "react"; 
 import PropTypes from 'prop-types';
 
@@ -7,6 +9,7 @@ import { AsyncTypeahead } from 'react-bootstrap-typeahead';
 import 'react-bootstrap-typeahead/css/Typeahead.min.css';
 
 import "./styles.css"; 
+import lodash from 'lodash'; 
 
 import Grid from 'react-bootstrap/lib/Grid';
 import Row from 'react-bootstrap/lib/Row';
@@ -20,9 +23,14 @@ import Panel from 'react-bootstrap/lib/Panel';
 import FormGroup from 'react-bootstrap/lib/FormGroup';
 import ControlLabel from 'react-bootstrap/lib/ControlLabel';
 
-const TableRow = ({ idx, item }) => { 
-        
-    const row = (<tr> 
+// este collection (minimongo) existe solo en el client. La idea es tener allí un cache con las cuentas contables que el 
+// usuario va usando mientras mantiene su session en contab 
+// cuando el usuario abre este modal para buscar cuentas en el server, verá estas cuentas en la tabla 
+import { CuentasContablesClient } from '/client/imports/clientCollections/cuentasContables'; 
+
+const TableRow = ({ item, handleTableRowClick }) => { 
+
+    const row = (<tr onClick={() => handleTableRowClick(item)}> 
                     <td>{item.id}</td>
                     <td>{item.descripcion}</td>
                 </tr>); 
@@ -34,43 +42,55 @@ export default class CuentasContablesSearchModal extends React.Component {
     constructor(props, context) {
         super(props, context);
 
-        this.handleShow = this.handleShow.bind(this);
-        this.handleClose = this.handleClose.bind(this);
-
         this.state = {
             show: false, 
 
             cuentasContables: [ ], 
+            itemSeleccionado: {},           // para registrar el item (cuenta) que el usuairo ha seleccionado en la tabla 
+            tableSearch: "",                // para que el usuario pueda hacer un search en el contenido de la tabla 
 
             cuentasTypeAheadOptions: { 
                 allowNew: false,
                 isLoading: false,
                 minLength: 4, 
-                options: [ ],          
+                options: [],          
                 multiple: false, 
             }, 
 
             openInfoPanel: false, 
         };
+
+        this.handleShow = this.handleShow.bind(this);
+        this.handleClose = this.handleClose.bind(this);     
+        this.handleTableRowClick = this.handleTableRowClick.bind(this);
+        this.handle_infoPopover_toggle = this.handle_infoPopover_toggle.bind(this);
+        this.handleCuentasTypeAheadSearch = this.handleCuentasTypeAheadSearch.bind(this);           
+        this.handleShowInfoPanel = this.handleShowInfoPanel.bind(this); 
     }
 
-    handle_infoPopover_toggle = () => {
+    handle_infoPopover_toggle() {
         this.setState({ showInfoPopover: !this.state.showInfoPopover });
     }
 
     handleClose() {
         this.setState({ show: false });
-        this.props.agregarCuentasContablesLeidasDesdeSql(this.state.cuentasContables); 
+        this.props.agregarCuentasContablesLeidasDesdeSql(this.state.cuentasContables, this.state.itemSeleccionado); 
     }
 
     handleShow() {
-        this.setState({ show: true });
+        // inicialmente, mostramos en la tabla las cuentas que el usuairo ha usado antes en la sesión
+        const cuentasContablesLeidasAntes = CuentasContablesClient.find({ cia: this.props.ciaContabSeleccionada.numero }).fetch(); 
+
+        this.setState({ 
+            cuentasContables: cuentasContablesLeidasAntes,       // pueden o no venir cuentas; si no vienen, viene un array vacío   
+            show: true, 
+        });
     }
 
-    handleCuentasTypeAheadSearch = (query) => { 
+    handleCuentasTypeAheadSearch(query) { 
 
         // como el state contiene inner objects, nos aseguramos que el setState se ejecute en forma correcta 
-        let cuentasTypeAheadOptions = JSON.parse(JSON.stringify(this.state.cuentasTypeAheadOptions))
+        const cuentasTypeAheadOptions = JSON.parse(JSON.stringify(this.state.cuentasTypeAheadOptions))
         cuentasTypeAheadOptions.isLoading = true; 
         this.setState({cuentasTypeAheadOptions}) 
 
@@ -78,7 +98,7 @@ export default class CuentasContablesSearchModal extends React.Component {
             .then((options) => { 
 
                 // como el state contiene inner objects, nos aseguramos que el setState se ejecute en forma correcta 
-                let cuentasTypeAheadOptions = JSON.parse(JSON.stringify(this.state.cuentasTypeAheadOptions))
+                const cuentasTypeAheadOptions = JSON.parse(JSON.stringify(this.state.cuentasTypeAheadOptions))
 
                 cuentasTypeAheadOptions.isLoading = false; 
                 cuentasTypeAheadOptions.options = options; 
@@ -87,13 +107,31 @@ export default class CuentasContablesSearchModal extends React.Component {
             })
     }
 
-    handleShowInfoPanel = () => { 
+    handleShowInfoPanel() { 
         const openInfoPanel = !this.state.openInfoPanel; 
         this.setState({ openInfoPanel: openInfoPanel, })
     }
 
+    handleTableRowClick(item) { 
+        // si el usuario hace un click en una cuenta en la tabla, cerramos el modal y la usamos para seleccionar 
+        // en el ddl de la cuenta contable que se ha seleccionado antes de abrir el modal 
+        this.setState({ itemSeleccionado: item }, () => this.handleClose());
+    }
+
     render() {
-        
+
+        // el usuario puede aplicar un filtro para mostrar *solo* algunas cuentas en la tabla 
+        let filtered = []; 
+        const search = this.state.tableSearch; 
+
+        if (search) { 
+            filtered = this.state.cuentasContables.filter(x => x.descripcion.toLowerCase().includes(search.toLowerCase())); 
+        } else { 
+            filtered = this.state.cuentasContables; 
+        }
+
+        const cuentasContables = lodash.sortBy(filtered, ['descripcion']); 
+                     
         return (
             <div>
                 <span onClick={this.handleShow}>Cuentas contables&nbsp;&nbsp;<span className="fa fa-desktop"></span></span>
@@ -147,7 +185,7 @@ export default class CuentasContablesSearchModal extends React.Component {
                                                         // cada vez que el usuario selecciona una cuenta, la agregamos al array en el 
                                                         // state (y mostramos en la tabla, pues el array y los rows están relacionados) 
                                                         if (selected && Array.isArray(selected) && selected.length) {
-                                                            let items = this.state.cuentasContables;
+                                                            const items = this.state.cuentasContables;
                                                             const item = selected[0];
 
                                                             // solo agregamos si no existe 
@@ -161,6 +199,11 @@ export default class CuentasContablesSearchModal extends React.Component {
                                                             // para limmpiar el input y que el usuario pueda empezar a hacer otra 
                                                             // busqueda sin tener que, en forma manual, limpiar el contenido del input 
                                                             this.cuentasTypeahead.getInstance().clear();
+
+                                                            // Retain focus to keep the menu open when making new selections.
+                                                            // nota: la verdad ésto no funcionó (???!!!) 
+                                                            this.cuentasTypeahead.getInstance().blur();
+                                                            this.cuentasTypeahead.getInstance().focus();
                                                         }
                                                     }}
 
@@ -173,6 +216,12 @@ export default class CuentasContablesSearchModal extends React.Component {
                                     <Row>
                                         <Col sm={12}>
                                             <div className="table-wrapper">
+                                                <div style={{textAlign: "right", fontSize: "small", }}> 
+                                                    <input type="text" 
+                                                           value={this.state.tableSearch} 
+                                                           placeholder="Escriba para buscar ..."
+                                                           onChange={e => this.setState({ tableSearch: e.target.value })} />
+                                                </div>
                                                 <Table striped bordered condensed hover responsive>
                                                     <thead>
                                                         <tr>
@@ -182,12 +231,14 @@ export default class CuentasContablesSearchModal extends React.Component {
                                                     </thead>
                                                     <tbody>
                                                         {
-                                                            this.state.cuentasContables.map((item, idx) => {
+                                                            // cuentasContables contiene las cuentas luego de aplicar el filtro y el sort 
+                                                            cuentasContables.map((item, idx) => {
                                                                 return (
                                                                     <TableRow
                                                                         key={idx}
                                                                         idx={idx}
-                                                                        item={item}
+                                                                        item={item} 
+                                                                        handleTableRowClick={this.handleTableRowClick}
                                                                     />)
                                                             })
                                                         }
@@ -277,4 +328,9 @@ function InfoPanel({ openInfoPanel, handleShowInfoPanel }) {
             </Panel.Collapse>
         </Panel>
     )
+}
+
+InfoPanel.propTypes = {
+    openInfoPanel: PropTypes.bool.isRequired, 
+    handleShowInfoPanel: PropTypes.func.isRequired
 }

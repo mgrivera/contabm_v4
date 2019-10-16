@@ -44,7 +44,7 @@ function ($scope, $stateParams, $state, $meteor, $modal, uiGridConstants) {
         $scope.companiaSeleccionada = companiaContabSeleccionada;
     }
 
-    $scope.$on('actualizarCatalogos', function (event, args) {
+    $scope.$on('actualizarCatalogos', function () {
         // leemos la compañía Contab seleccioinada solo cuando el parent controller indica que los 
         // catálogos están en el client ... 
         companiaSeleccionada = CompaniaSeleccionada.findOne({ userID: Meteor.userId() });
@@ -98,7 +98,7 @@ function ($scope, $stateParams, $state, $meteor, $modal, uiGridConstants) {
         Meteor.call('contab.asientos.leerFactorCambioMasReciente', $scope.asientoContable.fecha, (err, result) => {
 
             if (err) {
-                let errorMessage = mensajeErrorDesdeMethod_preparar(err);
+                const errorMessage = mensajeErrorDesdeMethod_preparar(err);
 
                 $scope.alerts.length = 0;
                 $scope.alerts.push({
@@ -233,7 +233,7 @@ function ($scope, $stateParams, $state, $meteor, $modal, uiGridConstants) {
         // permitimos grabar el asiento contable, como un json, a un archivo en la máquina. Luego, este archivo podrá
         // ser importado como un asiento nuevo ...
         try {
-            let asientoContable = lodash.cloneDeep($scope.asientoContable);
+            const asientoContable = lodash.cloneDeep($scope.asientoContable);
 
             var blob = new Blob([JSON.stringify(asientoContable)], {type: "text/plain;charset=utf-8"});
             saveAs(blob, "asiento contable");
@@ -284,7 +284,7 @@ function ($scope, $stateParams, $state, $meteor, $modal, uiGridConstants) {
 
     function importarAsientoContable2 () {
         // permitimos al usuario leer, en un nuevo asiento contable, alguno que se haya exportado a un text file ...
-        let inputFile = angular.element("#fileInput");
+        const inputFile = angular.element("#fileInput");
         if (inputFile) { 
             inputFile.click();        // simulamos un click al input (file)
         }
@@ -292,7 +292,7 @@ function ($scope, $stateParams, $state, $meteor, $modal, uiGridConstants) {
 
     $scope.uploadFile = function (files) {
 
-        let userSelectedFile = files[0];
+        const userSelectedFile = files[0];
 
         if (!userSelectedFile) {
             DialogModal($modal, "<em>Asientos contables</em>",
@@ -300,7 +300,7 @@ function ($scope, $stateParams, $state, $meteor, $modal, uiGridConstants) {
                                 "Por favor seleccione un archivo que corresponda a un asiento contable <em>exportado</em> antes.",
                                 false).then();
 
-            let inputFile = angular.element("#fileInput");
+            const inputFile = angular.element("#fileInput");
             if (inputFile && inputFile[0] && inputFile[0].value) { 
                 // para que el input type file "limpie" el file indicado por el usuario
                 inputFile[0].value = null;
@@ -315,11 +315,11 @@ function ($scope, $stateParams, $state, $meteor, $modal, uiGridConstants) {
         reader.onload = function(e) {
             try {
                 var content = e.target.result;
-                let asientoContable = JSON.parse(content);
+                const asientoContable = JSON.parse(content);
 
                 // 1) leemos, desde el servidor, las cuentas contables cuyo *id* viene en cada partida del asiento 
                 const partidas = Array.isArray(asientoContable.partidas) ? asientoContable.partidas : []; 
-                let listaCuentasContablesIDs = [];
+                const listaCuentasContablesIDs = [];
 
                 partidas.forEach((c) => {
                     if (c.cuentaContableID) {
@@ -339,7 +339,7 @@ function ($scope, $stateParams, $state, $meteor, $modal, uiGridConstants) {
 
                 // 2) leemos, desde el servidor, las cuentas contables cuya *cuenta* viene en cada partida del asiento 
                 // TODO: debemos pasar esta lista a un promise que busque las cuentas por cuenta y cia, en vez de id 
-                let listaCuentasContablesCuentas = [];
+                const listaCuentasContablesCuentas = [];
 
                 partidas.forEach((c) => {
                     if (c.cuentaContable) {
@@ -415,14 +415,14 @@ function ($scope, $stateParams, $state, $meteor, $modal, uiGridConstants) {
 
             // si no viene la moneda, puede venir su simbolo (scrwebm)
             if (!$scope.asientoContable.moneda && asientoContable.monedaSimbolo) {
-                let moneda = Monedas.findOne({ simbolo: asientoContable.monedaSimbolo });
+                const moneda = Monedas.findOne({ simbolo: asientoContable.monedaSimbolo });
                 if (moneda) {
                     $scope.asientoContable.moneda = moneda.moneda;
                 }
             }
 
             if (!$scope.asientoContable.monedaOriginal && asientoContable.monedaOriginalSimbolo) {
-                let monedaOriginal = Monedas.findOne({ simbolo: asientoContable.monedaOriginalSimbolo });
+                const monedaOriginal = Monedas.findOne({ simbolo: asientoContable.monedaOriginalSimbolo });
                 if (monedaOriginal) {
                     $scope.asientoContable.monedaOriginal = monedaOriginal.moneda;
                 }
@@ -444,9 +444,9 @@ function ($scope, $stateParams, $state, $meteor, $modal, uiGridConstants) {
             asientoContable.partidas.forEach((p) => {
 
                 // permitimos que el usuario haya agregado partidas (al asiento nuevo ....)
-                let ultimaPartida = lodash.last(lodash.sortBy($scope.asientoContable.partidas, (x) => { return x.partida; }));
+                const ultimaPartida = lodash.last(lodash.sortBy($scope.asientoContable.partidas, (x) => { return x.partida; }));
 
-                let partida = {
+                const partida = {
                     numeroAutomatico: $scope.asientoContable.numeroAutomatico,
                     partida: 10,
                     debe: 0,
@@ -516,7 +516,7 @@ function ($scope, $stateParams, $state, $meteor, $modal, uiGridConstants) {
             $scope.partidas_ui_grid.data = $scope.asientoContable.partidas;
         }
 
-        let inputFile = angular.element("#fileInput");
+        const inputFile = angular.element("#fileInput");
         if (inputFile && inputFile[0] && inputFile[0].value) {
             // para que el input type file "limpie" el file indicado por el usuario
             inputFile[0].value = null;
@@ -560,7 +560,7 @@ function ($scope, $stateParams, $state, $meteor, $modal, uiGridConstants) {
             return;
         }
 
-        let result = cuadrarAsientoContable($scope.asientoContable.partidas, partidaSeleccionada); 
+        const result = cuadrarAsientoContable($scope.asientoContable.partidas, partidaSeleccionada); 
 
         if (!$scope.asientoContable.docState) { 
             $scope.asientoContable.docState = 2;
@@ -637,6 +637,7 @@ function ($scope, $stateParams, $state, $meteor, $modal, uiGridConstants) {
     }
 
     let partidaSeleccionada = {};
+    let partidas_uiGrid_Api = null; 
 
     $scope.partidas_ui_grid = {
 
@@ -653,6 +654,9 @@ function ($scope, $stateParams, $state, $meteor, $modal, uiGridConstants) {
 
         onRegisterApi: function (gridApi) {
 
+            //Save a reference to the gridApi for later
+            partidas_uiGrid_Api = gridApi;
+
             gridApi.selection.on.rowSelectionChanged($scope, function (row) {
                 partidaSeleccionada = {};
 
@@ -668,11 +672,11 @@ function ($scope, $stateParams, $state, $meteor, $modal, uiGridConstants) {
 
                     // solo cuando el usuario indica la cuenta contable, intentamos inicializar el row en base al anteior ...
                     if (colDef.field == 'cuentaContableID') {
-                        let index = $scope.asientoContable.partidas.indexOf(rowEntity, 0);
+                        const index = $scope.asientoContable.partidas.indexOf(rowEntity, 0);
 
                         if (index != -1 && index > 0) {
 
-                            let rowAnterior = $scope.asientoContable.partidas[index - 1];
+                            const rowAnterior = $scope.asientoContable.partidas[index - 1];
                             if (rowAnterior) {
 
                                 if (rowAnterior.descripcion && !rowEntity.descripcion) { 
@@ -685,8 +689,8 @@ function ($scope, $stateParams, $state, $meteor, $modal, uiGridConstants) {
                                     
                                 if (!rowEntity.debe && !rowEntity.haber) {
                                     // intentamos cuadrar el asiento en la partida actual ...
-                                    let totalDebe = lodash.sumBy($scope.asientoContable.partidas, (x) => { return x.debe ? x.debe : 0; });
-                                    let totalHaber = lodash.sumBy($scope.asientoContable.partidas, (x) => { return x.haber ? x.haber : 0; });
+                                    const totalDebe = lodash.sumBy($scope.asientoContable.partidas, (x) => { return x.debe ? x.debe : 0; });
+                                    const totalHaber = lodash.sumBy($scope.asientoContable.partidas, (x) => { return x.haber ? x.haber : 0; });
 
                                     if (totalDebe > totalHaber) {
                                         rowEntity.haber = lodash.round(totalDebe - totalHaber, 2);
@@ -878,7 +882,7 @@ function ($scope, $stateParams, $state, $meteor, $modal, uiGridConstants) {
     ]
 
 
-    $scope.$on('actualizarCatalogos', function (event, args) {
+    $scope.$on('actualizarCatalogos', function () {
         $scope.centrosCosto = $scope.$parent.centrosCosto;
         $scope.partidas_ui_grid.columnDefs[7].editDropdownOptionsArray = $scope.centrosCosto;
 
@@ -904,9 +908,9 @@ function ($scope, $stateParams, $state, $meteor, $modal, uiGridConstants) {
         }
             
         // obtenemos la última partida, para definir la nueva en base a esa ...
-        let ultimaPartida = lodash.last( lodash.sortBy($scope.asientoContable.partidas, (x) => { return x.partida; }) );
+        const ultimaPartida = lodash.last( lodash.sortBy($scope.asientoContable.partidas, (x) => { return x.partida; }) );
 
-        let partida = {
+        const partida = {
             numeroAutomatico: $scope.asientoContable.numeroAutomatico,
             partida: 10,
             debe: 0,
@@ -947,7 +951,7 @@ function ($scope, $stateParams, $state, $meteor, $modal, uiGridConstants) {
         if ($scope.asientoContable && $scope.asientoContable.partidas) {
             if (montoConMasDeDosDecimales($scope.asientoContable.partidas)) {
                 
-            let message = `Aparentemente, al menos una de las partidas en el asiento contable,
+            const message = `Aparentemente, al menos una de las partidas en el asiento contable,
                         tiene un monto con <b>más de dos decimales</b>.<br /><br />
                         Para corregir esta situación, Ud. debe seleccionar alguna partida en la lista y
                         hacer un <em>click</em> en la función <em>cuadrar asiento</em>.<br />
@@ -964,11 +968,11 @@ function ($scope, $stateParams, $state, $meteor, $modal, uiGridConstants) {
         $scope.showProgress = true;
 
         // obtenemos un clone de los datos a guardar ...
-        let editedItem = lodash.cloneDeep($scope.asientoContable);
+        const editedItem = lodash.cloneDeep($scope.asientoContable);
 
         // nótese como validamos cada item antes de intentar guardar en el servidor
         let isValid = false;
-        let errores = [];
+        const errores = [];
 
         // para que el usuario tenga una mejor experiencia al registrar el asiento, agregamos siempre una nueva partida a la lista. 
         // Por ésto, siempre va a haber una partida de más en el array. La eliminamos pues no pasaría la validación ... 
@@ -1010,7 +1014,7 @@ function ($scope, $stateParams, $state, $meteor, $modal, uiGridConstants) {
 
             if (err) {
 
-                let errorMessage = mensajeErrorDesdeMethod_preparar(err);
+                const errorMessage = mensajeErrorDesdeMethod_preparar(err);
                 
                 $scope.$parent.alerts.length = 0;
                 $scope.$parent.alerts.push({
@@ -1074,7 +1078,7 @@ function ($scope, $stateParams, $state, $meteor, $modal, uiGridConstants) {
 
             if (err) {
 
-                let errorMessage = mensajeErrorDesdeMethod_preparar(err);
+                const errorMessage = mensajeErrorDesdeMethod_preparar(err);
                 
                 $scope.$parent.alerts.length = 0;
                 $scope.$parent.alerts.push({
@@ -1168,7 +1172,7 @@ function ($scope, $stateParams, $state, $meteor, $modal, uiGridConstants) {
         Meteor.call('contab.asientos.convertir', $scope.asientoContable.numeroAutomatico, (err, result) => {
 
                 if (err) {
-                    let errorMessage = mensajeErrorDesdeMethod_preparar(err);
+                    const errorMessage = mensajeErrorDesdeMethod_preparar(err);
 
                     $scope.alerts.length = 0;
                     $scope.alerts.push({
@@ -1235,11 +1239,11 @@ function ($scope, $stateParams, $state, $meteor, $modal, uiGridConstants) {
                     // para que siempre haya uno nuevo en la lista. La idea es que el usuario no tenga que hacer click en Nuevo en el toolbar  
                     partidaSeleccionada.docState = 1; 
 
-                    let index = $scope.asientoContable.partidas.indexOf(partidaSeleccionada, 0);
+                    const index = $scope.asientoContable.partidas.indexOf(partidaSeleccionada, 0);
 
                     if (index != -1 && index > 0) {
 
-                        let partidaAnterior = $scope.asientoContable.partidas[index - 1];
+                        const partidaAnterior = $scope.asientoContable.partidas[index - 1];
                         if (partidaAnterior) {
                             if (partidaAnterior.descripcion && !partidaSeleccionada.descripcion) { 
                                 partidaSeleccionada.descripcion = partidaAnterior.descripcion;
@@ -1251,8 +1255,8 @@ function ($scope, $stateParams, $state, $meteor, $modal, uiGridConstants) {
                                 
                             if (!partidaSeleccionada.debe && !partidaSeleccionada.haber) {
                                 // intentamos cuadrar el asiento en la partida actual ...
-                                let totalDebe = lodash.sumBy($scope.asientoContable.partidas, (x) => { return x.debe ? x.debe : 0; });
-                                let totalHaber = lodash.sumBy($scope.asientoContable.partidas, (x) => { return x.haber ? x.haber : 0; });
+                                const totalDebe = lodash.sumBy($scope.asientoContable.partidas, (x) => { return x.debe ? x.debe : 0; });
+                                const totalHaber = lodash.sumBy($scope.asientoContable.partidas, (x) => { return x.haber ? x.haber : 0; });
 
                                 if (totalDebe > totalHaber) {
                                     partidaSeleccionada.haber = lodash.round(totalDebe - totalHaber, 2);
@@ -1297,9 +1301,9 @@ function ($scope, $stateParams, $state, $meteor, $modal, uiGridConstants) {
         $scope.showProgress = true;
 
         if ($scope.id == "0") {
-            let usuario = Meteor.users.findOne(Meteor.userId());
-            let monedaDefecto = Monedas.findOne({ defaultFlag: true });
-            let tipoAsientoDefecto = ParametrosGlobalBancos.findOne();
+            const usuario = Meteor.users.findOne(Meteor.userId());
+            const monedaDefecto = Monedas.findOne({ defaultFlag: true });
+            const tipoAsientoDefecto = ParametrosGlobalBancos.findOne();
             _fechaOriginalAsientoContable = null;
 
             if (!monedaDefecto) {
@@ -1378,7 +1382,7 @@ function ($scope, $stateParams, $state, $meteor, $modal, uiGridConstants) {
         Meteor.call('asientoContable_leerByID_desdeSql', pk, (err, result) => {
 
             if (err) {
-                let errorMessage = mensajeErrorDesdeMethod_preparar(err);
+                const errorMessage = mensajeErrorDesdeMethod_preparar(err);
 
                 $scope.alerts.length = 0;
                 $scope.alerts.push({
@@ -1433,11 +1437,11 @@ function ($scope, $stateParams, $state, $meteor, $modal, uiGridConstants) {
             // =================================================================================================================
             // para que estén desde el inicio, leemos las cuentas contables que el usuario ha registrado antes aqui 
             const partidas = Array.isArray($scope.asientoContable.partidas) ? $scope.asientoContable.partidas : []; 
-            let listaCuentasContablesIDs = [];
+            const listaCuentasContablesIDs = [];
 
             partidas.forEach((c) => {
                 if (c.cuentaContableID) {
-                    // primero la buscamos, para no repetirla 
+                    // primero la buscamos, para no repetirla; en las partidas del asiento pueden venir cuentas contables repetidas  
                     const cuenta = listaCuentasContablesIDs.find(x => x === c.cuentaContableID); 
 
                     if (!cuenta) { 
@@ -1467,7 +1471,7 @@ function ($scope, $stateParams, $state, $meteor, $modal, uiGridConstants) {
                     const result2 = revisarSumasIguales($scope.asientoContable.partidas);
 
                     if (result2.error) {
-                        let message = result.message.replace(/\/\//gi, "");
+                        const message = result.message.replace(/\/\//gi, "");
                         $scope.alerts.push({ type: 'warning', msg: message });
                     }
 
@@ -1490,7 +1494,7 @@ function ($scope, $stateParams, $state, $meteor, $modal, uiGridConstants) {
         })
     }
   
-    $scope.agregarCuentasContablesLeidasDesdeSql = (cuentasArray) => { 
+    $scope.agregarCuentasContablesLeidasDesdeSql = (cuentasArray, itemSeleccionado) => { 
 
         // cuando el modal que permite al usuario leer cuentas contables desde el servidor se cierra, 
         // recibimos las cuentas leídas y las agregamos al $scope, para que estén presentes en la lista del
@@ -1524,8 +1528,84 @@ function ($scope, $stateParams, $state, $meteor, $modal, uiGridConstants) {
         if (cuentasContablesAgregadas) { 
             // hacemos el binding entre la lista y el ui-grid 
             $scope.cuentasContablesLista = lodash.sortBy($scope.cuentasContablesLista, ['descripcion']);
-
             $scope.partidas_ui_grid.columnDefs[2].editDropdownOptionsArray = $scope.cuentasContablesLista;   
+        }
+
+        if (partidaSeleccionada && !lodash.isEmpty(partidaSeleccionada) && itemSeleccionado && itemSeleccionado.id) { 
+
+            // el usuario seleccionó una cuenta contable en la lista; actualizamos la partida seleccionada ... 
+
+            // primero obtenemos el index del item 
+            const idx = $scope.asientoContable.partidas.findIndex(x => x.partida === partidaSeleccionada.partida); 
+
+            if(idx != -1) {
+                // Ok, hay una partida seleccionada; la tenemos; no ha sido marcada como eliminada 
+                const itemHas_docState = Object.prototype.hasOwnProperty.call($scope.asientoContable.partidas[idx], "docState");
+
+                if (!itemHas_docState) { 
+
+                    // la partida no ha sido editada 
+                    $scope.asientoContable.partidas[idx].cuentaContableID = itemSeleccionado.id;
+                    $scope.asientoContable.partidas[idx].docState = 2;
+
+                } else if ($scope.asientoContable.partidas[idx].docState === 2) { 
+
+                    // la partida se ha editado (modificado)
+                    $scope.asientoContable.partidas[idx].cuentaContableID = itemSeleccionado.id;
+
+                } else if ($scope.asientoContable.partidas[idx].docState === 0) { 
+
+                    // la partida es nueva 
+                    $scope.asientoContable.partidas[idx].docState = 1; 
+                    $scope.asientoContable.partidas[idx].cuentaContableID = itemSeleccionado.id;
+
+                    if (idx > 0) {
+
+                        const partidaAnterior = $scope.asientoContable.partidas[idx - 1];
+                        if (partidaAnterior) {
+                            if (partidaAnterior.descripcion && !partidaSeleccionada.descripcion) { 
+                                partidaSeleccionada.descripcion = partidaAnterior.descripcion;
+                            }
+                                
+                            if (partidaAnterior.referencia && !partidaSeleccionada.referencia) { 
+                                partidaSeleccionada.referencia = partidaAnterior.referencia;
+                            }
+                                
+                            if (!partidaSeleccionada.debe && !partidaSeleccionada.haber) {
+                                // intentamos cuadrar el asiento en la partida actual ...
+                                const totalDebe = lodash.sumBy($scope.asientoContable.partidas, (x) => { return x.debe ? x.debe : 0; });
+                                const totalHaber = lodash.sumBy($scope.asientoContable.partidas, (x) => { return x.haber ? x.haber : 0; });
+
+                                if (totalDebe > totalHaber) {
+                                    partidaSeleccionada.haber = lodash.round(totalDebe - totalHaber, 2);
+                                }
+                                else {
+                                    partidaSeleccionada.debe = lodash.round(totalHaber - totalDebe, 2);
+                                }
+                            }
+                        }
+                    }
+
+                    // para agregar una partida nueva sin que el usuario tenga que hacer click en nuevo. Si el usuario no la usa, 
+                    // se ignora al grabar ... 
+                    $scope.agregarPartida(); 
+                }
+
+                $scope.partidas_ui_grid.data = [];
+                if (Array.isArray($scope.asientoContable.partidas)) { 
+                    $scope.partidas_ui_grid.data = $scope.asientoContable.partidas;
+
+                    partidas_uiGrid_Api.grid.modifyRows($scope.partidas_ui_grid.data);
+                    partidas_uiGrid_Api.core.refresh();
+                }
+            }
+
+
+            if (!$scope.asientoContable.docState) { 
+                $scope.asientoContable.docState = 2;
+            }
+
+            return true;
         }
     }
 
