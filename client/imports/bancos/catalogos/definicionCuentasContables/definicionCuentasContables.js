@@ -1,5 +1,7 @@
 
 
+import { Meteor } from 'meteor/meteor'
+import { Mongo } from 'meteor/mongo'; 
 import angular from 'angular';
 import numeral from 'numeral';
 import lodash from 'lodash'; 
@@ -9,8 +11,9 @@ import { Monedas } from '/imports/collections/monedas.js';
 import { CompaniaSeleccionada } from '/imports/collections/companiaSeleccionada';
 import { Filtros } from '/imports/collections/general/filtros'; 
 import { TiposProveedor } from '/imports/collections/bancos/catalogos'; 
+import { Temp_Consulta_Bancos_CuentasContables_Definicion } from '/imports/collections/temp/cuentasContablesDefinicion'; 
 
-import { CuentasContables_Definicion_Schema } from '/models/bancos/consultas/cuentasContablesDefinicion'; 
+import { CuentasContables_Definicion_Schema } from '/imports/collections/temp/cuentasContablesDefinicion'; 
 
 import { mensajeErrorDesdeMethod_preparar } from '/client/imports/clientGlobalMethods/mensajeErrorDesdeMethod_preparar'; 
 
@@ -39,7 +42,7 @@ export default angular.module("contabm.bancos.catalogos.definicionCuentasContabl
 
     // ------------------------------------------------------------------------------------------------
     // leemos la compañía seleccionada
-    let companiaSeleccionadaUser = CompaniaSeleccionada.findOne({ userID: Meteor.userId() });
+    const companiaSeleccionadaUser = CompaniaSeleccionada.findOne({ userID: Meteor.userId() });
     let companiaSeleccionada = {};
 
     if (companiaSeleccionadaUser)
@@ -82,7 +85,6 @@ export default angular.module("contabm.bancos.catalogos.definicionCuentasContabl
         },
     })
 
-    let cuentasContables_ui_grid_api = null;
     $scope.itemSeleccionado = {};
 
     // cuando el usuario hace un click en un item en la lista, se abre el modal para editarlo 
@@ -103,8 +105,6 @@ export default angular.module("contabm.bancos.catalogos.definicionCuentasContabl
         rowHeight: 25,
 
         onRegisterApi: function (gridApi) {
-
-            cuentasContables_ui_grid_api = gridApi;
 
             gridApi.selection.on.rowSelectionChanged($scope, function (row) {
 
@@ -276,7 +276,7 @@ export default angular.module("contabm.bancos.catalogos.definicionCuentasContabl
     }
 
     $scope.nuevo = function () {
-        let item = {
+        const item = {
             _id: new Mongo.ObjectID()._str,
             claveUnica: 0,             // este es el pk en sql; tendrá un valor válido cuando insertemos el record en sql
             user: Meteor.userId(),
@@ -305,9 +305,7 @@ export default angular.module("contabm.bancos.catalogos.definicionCuentasContabl
         }).result.then(
             function (result) {
 
-                let { editedItem } = result; 
-
-
+                const { editedItem } = result; 
 
                 // TODO: recibir el item que se pudo haber leído, bueno, los items: cuenta contable y proveedor; 
                 // si no existe en las listas aquí, agregar ... 
@@ -334,7 +332,7 @@ export default angular.module("contabm.bancos.catalogos.definicionCuentasContabl
 
                 return true;
             },
-            function (cancel) {
+            function () {
                 return true;
             })
     }
@@ -354,7 +352,7 @@ export default angular.module("contabm.bancos.catalogos.definicionCuentasContabl
                      JSON.stringify($scope.filtro), $scope.companiaSeleccionada.numero, (err, result) => {
 
             if (err) {
-                let errorMessage = mensajeErrorDesdeMethod_preparar(err);
+                const errorMessage = mensajeErrorDesdeMethod_preparar(err);
 
                 $scope.alerts.length = 0;
                 $scope.alerts.push({
@@ -431,7 +429,7 @@ export default angular.module("contabm.bancos.catalogos.definicionCuentasContabl
         Meteor.call('getCollectionCount', 'Temp_Consulta_Bancos_CuentasContables_Definicion', (err, result) => {
 
             if (err) {
-                let errorMessage = mensajeErrorDesdeMethod_preparar(err);
+                const errorMessage = mensajeErrorDesdeMethod_preparar(err);
 
                 $scope.alerts.length = 0;
                 $scope.alerts.push({
@@ -508,11 +506,11 @@ export default angular.module("contabm.bancos.catalogos.definicionCuentasContabl
         $scope.showProgress = true;
 
         // eliminamos los items eliminados; del $scope y del collection
-        let editedItems = $scope.cuentasContablesDefinicion.filter(item => item.docState);
+        const editedItems = $scope.cuentasContablesDefinicion.filter(item => item.docState);
 
         // nótese como validamos cada item antes de intentar guardar (en el servidor)
         let isValid = false;
-        let errores = [];
+        const errores = [];
 
         // nótese como validamos contra un mondelo 'temp...', pues los registros no están realmente en mongo,
         // solo se copian cuando el usuario filtra en la página para consultar o editar
@@ -550,7 +548,7 @@ export default angular.module("contabm.bancos.catalogos.definicionCuentasContabl
         Meteor.call('bancos.cuentasContablesDefinicionSave', editedItems, (err, result) => {
 
             if (err) {
-                let errorMessage = mensajeErrorDesdeMethod_preparar(err);
+                const errorMessage = mensajeErrorDesdeMethod_preparar(err);
     
                 $scope.alerts.length = 0;
                 $scope.alerts.push({
@@ -596,6 +594,6 @@ export default angular.module("contabm.bancos.catalogos.definicionCuentasContabl
     $scope.$on('$destroy', function() {
         if (subscriptionHandle && subscriptionHandle.stop) {
             subscriptionHandle.stop();
-        };
+        }
     })
 }])

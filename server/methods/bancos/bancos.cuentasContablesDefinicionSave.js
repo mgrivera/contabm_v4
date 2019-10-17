@@ -1,5 +1,9 @@
 
+
+import { Meteor } from 'meteor/meteor'
 import lodash from 'lodash';
+
+import { Temp_Consulta_Bancos_CuentasContables_Definicion } from '/imports/collections/temp/cuentasContablesDefinicion'; 
 
 Meteor.methods(
 {

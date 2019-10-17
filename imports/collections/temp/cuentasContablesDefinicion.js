@@ -22,4 +22,4 @@ export const CuentasContables_Definicion_Schema = new SimpleSchema({
     docState: { type: Number, optional: true, }
 });
 
-Temp_Consulta_Bancos_CuentasContables_Definicion = new Mongo.Collection("temp_consulta_bancos_cuentasContables_definicion");
+export const Temp_Consulta_Bancos_CuentasContables_Definicion = new Mongo.Collection("temp_consulta_bancos_cuentasContables_definicion");

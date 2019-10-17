@@ -1,10 +1,13 @@
 
 
+import { Meteor } from 'meteor/meteor'
+
 import SimpleSchema from 'simpl-schema';
 import { Temp_Consulta_Bancos_CajaChica } from '/imports/collections/bancos/temp.bancos.consulta.cajaChica'; 
 import { Temp_Consulta_Contab_ActivosFijos } from '/imports/collections/contab/temp.contab.consulta.activosFijos'; 
 
 import { Temp_Consulta_Bancos_MovimientosBancarios } from '/imports/collections/temp/tempConsultaMovimientosBancarios'; 
+import { Temp_Consulta_Bancos_CuentasContables_Definicion } from '/imports/collections/temp/cuentasContablesDefinicion'; 
 
 
 Meteor.methods({

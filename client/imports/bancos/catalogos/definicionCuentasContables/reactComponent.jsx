@@ -1,5 +1,7 @@
 
 
+import { Meteor } from 'meteor/meteor'
+
 import React from "react";
 import PropTypes from 'prop-types';
 import { Formik } from 'formik';
@@ -23,28 +25,23 @@ import { Companias } from '/imports/collections/companias';
 import { Monedas } from '/imports/collections/monedas.js';
 import { TiposProveedor } from '/imports/collections/bancos/catalogos'; 
 
-// bootstrap 4: no podemos importarlo aquí pues toda la aplicación usa bs3; la idea es que, por ahora, 
-// usemos react-bootstrap con la versión 3 ... 
-
-// import '/node_modules/bootstrap/dist/css/bootstrap.min.css'; 
-
 export default class DefinicionCuentasContables extends React.Component {
-
-    companias = []; 
-    monedas = [];  
-    cuentasContables = [];  
-    // proveedores = [];  
-    conceptos = []; 
-    tiposProveedor = []; 
 
     constructor(props) {
         super(props);
 
-        companias = Companias.find({}, { sort: { abreviatura: 1 }, fields: { _id: 1, abreviatura: 1, }}).fetch(); 
-        monedas = Monedas.find({}, { sort: { simbolo: 1 }, fields: { moneda: 1, simbolo: 1, }}).fetch(); 
-        tiposProveedor = TiposProveedor.find({}, { sort: { descripcion: 1 } }).fetch();
+        this.companias = []; 
+        this.monedas = [];  
+        this.cuentasContables = [];  
+        // proveedores = [];  
+        this.conceptos = []; 
+        this.tiposProveedor = []; 
 
-        conceptos = [
+        this.companias = Companias.find({}, { sort: { abreviatura: 1 }, fields: { _id: 1, abreviatura: 1, }}).fetch(); 
+        this.monedas = Monedas.find({}, { sort: { simbolo: 1 }, fields: { moneda: 1, simbolo: 1, }}).fetch(); 
+        this.tiposProveedor = TiposProveedor.find({}, { sort: { descripcion: 1 } }).fetch();
+
+        this.conceptos = [
             { id: 1, descripcion: "Compañías (CxP)" },
             { id: 2, descripcion: "Compras" },
             { id: 3, descripcion: "Impuestos retenidos" },
@@ -82,16 +79,20 @@ export default class DefinicionCuentasContables extends React.Component {
                 multiple: false, 
             }, 
         }; 
+
+        this.handleAlertDismiss = this.handleAlertDismiss.bind(this); 
+        this.handleProveedoresTypeAheadSearch = this.handleProveedoresTypeAheadSearch.bind(this); 
+        this.handleCuentasTypeAheadSearch = this.handleCuentasTypeAheadSearch.bind(this); 
     }
 
-    handleAlertDismiss = () => {
+    handleAlertDismiss() {
         this.setState({ showAlert: false, }); 
     }
 
-    handleProveedoresTypeAheadSearch = (query) => { 
+    handleProveedoresTypeAheadSearch(query) { 
 
         // como el state contiene inner objects, nos aseguramos que el setState se ejecute en forma correcta 
-        let proveedoresTypeAheadOptions = JSON.parse(JSON.stringify(this.state.proveedoresTypeAheadOptions))
+        const proveedoresTypeAheadOptions = JSON.parse(JSON.stringify(this.state.proveedoresTypeAheadOptions))
         proveedoresTypeAheadOptions.isLoading = true; 
         this.setState({proveedoresTypeAheadOptions}) 
 
@@ -99,7 +100,7 @@ export default class DefinicionCuentasContables extends React.Component {
             .then((options) => { 
 
                 // como el state contiene inner objects, nos aseguramos que el setState se ejecute en forma correcta 
-                let proveedoresTypeAheadOptions = JSON.parse(JSON.stringify(this.state.proveedoresTypeAheadOptions))
+                const proveedoresTypeAheadOptions = JSON.parse(JSON.stringify(this.state.proveedoresTypeAheadOptions))
 
                 proveedoresTypeAheadOptions.isLoading = false; 
                 proveedoresTypeAheadOptions.options = options; 
@@ -108,10 +109,10 @@ export default class DefinicionCuentasContables extends React.Component {
             })
     }
 
-    handleCuentasTypeAheadSearch = (query) => { 
+    handleCuentasTypeAheadSearch(query) { 
 
         // como el state contiene inner objects, nos aseguramos que el setState se ejecute en forma correcta 
-        let cuentasTypeAheadOptions = JSON.parse(JSON.stringify(this.state.cuentasTypeAheadOptions))
+        const cuentasTypeAheadOptions = JSON.parse(JSON.stringify(this.state.cuentasTypeAheadOptions))
         cuentasTypeAheadOptions.isLoading = true; 
         this.setState({cuentasTypeAheadOptions}) 
 
@@ -119,7 +120,7 @@ export default class DefinicionCuentasContables extends React.Component {
             .then((options) => { 
 
                 // como el state contiene inner objects, nos aseguramos que el setState se ejecute en forma correcta 
-                let cuentasTypeAheadOptions = JSON.parse(JSON.stringify(this.state.cuentasTypeAheadOptions))
+                const cuentasTypeAheadOptions = JSON.parse(JSON.stringify(this.state.cuentasTypeAheadOptions))
 
                 cuentasTypeAheadOptions.isLoading = false; 
                 cuentasTypeAheadOptions.options = options; 
@@ -151,9 +152,9 @@ export default class DefinicionCuentasContables extends React.Component {
                        `; 
         }
 
-        const conceptoSelectOption = conceptos.map((i) => (<option key={i.id} value={i.id}>{i.descripcion}</option>)); 
-        const monedaSelectOption = monedas.map((i) => (<option key={i.moneda} value={i.moneda}>{i.simbolo}</option>)); 
-        const rubroSelectOption = tiposProveedor.map((i) => (<option key={i.tipo} value={i.tipo}>{i.descripcion}</option>)); 
+        const conceptoSelectOption = this.conceptos.map((i) => (<option key={i.id} value={i.id}>{i.descripcion}</option>)); 
+        const monedaSelectOption = this.monedas.map((i) => (<option key={i.moneda} value={i.moneda}>{i.simbolo}</option>)); 
+        const rubroSelectOption = this.tiposProveedor.map((i) => (<option key={i.tipo} value={i.tipo}>{i.descripcion}</option>)); 
 
         const errorMessageStyle = { fontSize: "small", color: "red" }; 
 
@@ -162,7 +163,7 @@ export default class DefinicionCuentasContables extends React.Component {
             cuentaContableID: Yup.number('El valor debe ser un número').required('El valor es requerido'),
         });
 
-        let initialValues = this.props.item; 
+        const initialValues = this.props.item; 
 
         // todos los values deben ir en el objeto; como son selects, pasamos empty string si viene un null, 
         // pues un option en el select no puede tener value null ...   
@@ -170,7 +171,7 @@ export default class DefinicionCuentasContables extends React.Component {
         initialValues.compania = this.props.item.compania ? this.props.item.compania : ""; 
         initialValues.moneda = this.props.item.moneda ? this.props.item.moneda : ""; 
         initialValues.concepto = this.props.item.concepto ? this.props.item.concepto : ""; 
-        initialValues.concepto2 = this.props.item.concepto2 ? this.props.item.concepto2 : ""; 
+        initialValues.concepto2 = this.props.item.concepto2 ? this.props.item.concepto2 : null; 
         initialValues.cuentaContableID = this.props.item.cuentaContableID ? this.props.item.cuentaContableID : ""; 
 
         return (

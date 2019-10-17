@@ -13,7 +13,7 @@ export default angular.module("contabm.bancos.catalogos.definicionCuentasContabl
 
     $scope.alerts = [];
 
-    $scope.cancel = function (index) {
+    $scope.cancel = function () {
         $modalInstance.dismiss("Cancel");
     }
 
