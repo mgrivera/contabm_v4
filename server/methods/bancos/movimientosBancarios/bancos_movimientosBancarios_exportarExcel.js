@@ -1,7 +1,8 @@
 
+
+import { Meteor } from 'meteor/meteor'
 import moment from 'moment';
 import lodash from 'lodash';
-import JSZip from 'jszip';
 import XlsxInjector from 'xlsx-injector';
 import fs from 'fs';
 import path from 'path';

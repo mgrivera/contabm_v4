@@ -2,6 +2,7 @@
 // hacemos un save desde una consulta. La verdad es que nunca se actualizan los saldos contables de esta forma. 
 // siempre con un cierre. esta es una excepción para corregir saldos que viene con muchos decimales desde hace 
 // varios años 
+import { Meteor } from 'meteor/meteor'
 import SimpleSchema from 'simpl-schema';
 
 import { SaldosContables_sql } from '/server/imports/sqlModels/contab/saldosContables'; 

@@ -1,5 +1,6 @@
 
 
+import { Meteor } from 'meteor/meteor'
 import lodash from 'lodash';
 import moment from 'moment';
 import numeral from 'numeral';

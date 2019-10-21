@@ -1,7 +1,7 @@
 
 
+import { Meteor } from 'meteor/meteor'
 import SimpleSchema from 'simpl-schema';
-import { Proveedores_sql } from '../../../imports/sqlModels/bancos/proveedores'; 
 import { Departamentos_sql } from '../../../imports/sqlModels/nomina/catalogos/departamentos'; 
 import { TiposDeProducto_sql } from '../../../imports/sqlModels/contab/tiposProducto'; 
 

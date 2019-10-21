@@ -1,5 +1,6 @@
 
 
+import { Meteor } from 'meteor/meteor'
 import lodash from 'lodash';   
 import { Cargos_sql } from '/server/imports/sqlModels/nomina/catalogos/cargos';         
 

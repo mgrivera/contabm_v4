@@ -1,7 +1,6 @@
 
 
-
-
+import { Meteor } from 'meteor/meteor'
 import * as lodash from 'lodash'; 
 import SimpleSchema from 'simpl-schema';
 

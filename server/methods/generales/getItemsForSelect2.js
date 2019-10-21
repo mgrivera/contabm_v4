@@ -3,7 +3,7 @@
 // para leer registros desde sql para llenar la lista del select2 que usamos en: facturas, movimientos, pagos 
 // también en asientos, etc., con las cuentas contables. 
 // Nota: en realidad, no usamos select2, sino ui-select (angular) que debe ser un packaging para select2 
-
+import { Meteor } from 'meteor/meteor'
 import { sequelize } from '/server/sqlModels/_globals/_loadThisFirst/_globals';
 import SimpleSchema from 'simpl-schema';
 

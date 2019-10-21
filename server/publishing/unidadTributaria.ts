@@ -1,5 +1,6 @@
 
 
+import { Meteor } from 'meteor/meteor'
 import { UnidadTributaria } from '../../imports/collections/bancos/unidadTributaria';
 
 Meteor.publish('unidadTributaria', function () {

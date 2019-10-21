@@ -1,5 +1,6 @@
 
 
+import { Meteor } from 'meteor/meteor'
 import { VacacPorAnoGenericas_sql, VacacPorAnoParticulares_sql } from '../../../server/imports/sqlModels/nomina/parametros/cantidadDiasVacacionesPorAno'; 
 import '../../../imports/globals/tsDeclares'; 
 

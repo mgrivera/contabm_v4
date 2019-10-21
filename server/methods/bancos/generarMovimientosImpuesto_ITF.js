@@ -1,6 +1,6 @@
 
 
-import moment from 'moment'; 
+import { Meteor } from 'meteor/meteor'
 import numeral from 'numeral'; 
 
 import { CuentasBancarias_sql } from '/server/imports/sqlModels/bancos/movimientosBancarios'; 

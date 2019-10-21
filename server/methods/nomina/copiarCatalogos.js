@@ -1,5 +1,6 @@
 
 
+import { Meteor } from 'meteor/meteor'
 import numeral from 'numeral';
 
 // para usar los operators en sequelize 

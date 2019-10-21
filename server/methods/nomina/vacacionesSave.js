@@ -1,5 +1,6 @@
 
 
+import { Meteor } from 'meteor/meteor'
 Meteor.methods(
 {
     vacacionesSave: function (item) {

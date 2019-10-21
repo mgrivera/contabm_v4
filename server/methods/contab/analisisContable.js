@@ -1,4 +1,7 @@
 
+
+import { Meteor } from 'meteor/meteor'
+
 Meteor.methods(
 {
     analisisContableSave: function (analisisContable, analisisContableCuentasContables) {

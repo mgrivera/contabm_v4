@@ -1,6 +1,6 @@
 
 
-
+import { Meteor } from 'meteor/meteor'
 import SimpleSchema from 'simpl-schema';
 import { Temp_Consulta_Bancos_CajaChica } from '../../imports/collections/bancos/temp.bancos.consulta.cajaChica'; 
 

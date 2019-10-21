@@ -1,5 +1,6 @@
 
 
+import { Meteor } from 'meteor/meteor'
 import { GruposContables } from '/imports/collections/contab/gruposContables'; 
 
 Meteor.methods(

@@ -1,4 +1,6 @@
 
+
+import { Meteor } from 'meteor/meteor'
 import numeral from 'numeral';
 import lodash from 'lodash';
 import SimpleSchema from 'simpl-schema';

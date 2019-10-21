@@ -1,6 +1,6 @@
 
 
-
+import { Meteor } from 'meteor/meteor'
 import lodash from 'lodash';           
 
 Meteor.methods(

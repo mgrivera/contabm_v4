@@ -1,7 +1,6 @@
 
 
-
-import * as lodash from 'lodash';
+import { Meteor } from 'meteor/meteor'
 import { InventarioActivosFijos_sql } from '../../../imports/sqlModels/contab/inventarioActivosFijos'; 
 import { Temp_Consulta_Contab_ActivosFijos } from '../../../../imports/collections/contab/temp.contab.consulta.activosFijos'; 
 

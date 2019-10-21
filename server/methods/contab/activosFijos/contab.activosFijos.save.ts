@@ -1,5 +1,6 @@
 
 
+import { Meteor } from 'meteor/meteor'
 import * as moment from 'moment';
 import SimpleSchema from 'simpl-schema';
 import { TimeOffset } from '../../../../globals/globals'; 

@@ -1,5 +1,7 @@
 
 
+import { Meteor } from 'meteor/meteor'
+
 Meteor.methods(
 {
     'bancos.pagos.exportarAExcel': function (ciaSeleccionada)

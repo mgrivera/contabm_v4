@@ -204,6 +204,7 @@ export default class DefinicionCuentasContables extends React.Component {
                                     values.compania = values.compania ? parseInt(values.compania) : null; 
                                     values.moneda = values.moneda ? parseInt(values.moneda) : null;
                                     values.concepto = values.concepto ? parseInt(values.concepto) : null;
+                                    values.concepto2 = values.concepto2 === "" ? null : values.concepto2;
                                     values.cuentaContableID = values.cuentaContableID ? parseInt(values.cuentaContableID) : null;
                                 
                                     setSubmitting(false);

@@ -1,4 +1,6 @@
 
+
+import { Meteor } from 'meteor/meteor'
 Meteor.methods(
 {
     usuariosRolesSave: function (users) {

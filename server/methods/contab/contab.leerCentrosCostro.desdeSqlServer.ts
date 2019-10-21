@@ -1,5 +1,6 @@
 
 
+import { Meteor } from 'meteor/meteor'
 
 declare const Async;                // pues no tenemos el 'type definition file' para 'meteorhacks:async' ...
 import { CentrosCosto_sql } from '../../imports/sqlModels/contab/centrosCosto';

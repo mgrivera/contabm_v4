@@ -1,5 +1,6 @@
 
 
+import { Meteor } from 'meteor/meteor'
 import { ParametrosBancos } from '/imports/collections/bancos/parametrosBancos'; 
 
 Meteor.methods(

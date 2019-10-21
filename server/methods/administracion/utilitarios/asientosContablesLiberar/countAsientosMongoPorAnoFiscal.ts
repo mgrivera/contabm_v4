@@ -1,5 +1,6 @@
 
 
+import { Meteor } from 'meteor/meteor'
 import SimpleSchema from 'simpl-schema';
 import * as moment from 'moment'; 
 

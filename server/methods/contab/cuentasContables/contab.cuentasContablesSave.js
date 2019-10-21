@@ -1,5 +1,6 @@
 
 
+import { Meteor } from 'meteor/meteor'
 import lodash from 'lodash';
 // para usar los operators en sequelize 
 import Sequelize from 'sequelize';

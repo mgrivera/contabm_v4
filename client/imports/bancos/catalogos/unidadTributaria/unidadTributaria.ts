@@ -2,9 +2,8 @@
 
 
 import * as angular from 'angular';
-import * as angularMeteor from 'angular-meteor';
 import * as lodash from 'lodash';
-import { Mongo } from 'meteor/mongo'; 
+import * as Mongo from 'meteor/mongo';
 
 import { UnidadTributaria } from '../../../../../imports/collections/bancos/unidadTributaria';
 import { mensajeErrorDesdeMethod_preparar } from '../../../clientGlobalMethods/mensajeErrorDesdeMethod_preparar'; 

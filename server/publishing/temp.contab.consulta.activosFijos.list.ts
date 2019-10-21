@@ -1,5 +1,6 @@
 
 
+import { Meteor } from 'meteor/meteor'
 import SimpleSchema from 'simpl-schema';
 import { Temp_Consulta_Contab_ActivosFijos } from '../../imports/collections/contab/temp.contab.consulta.activosFijos'; 
 

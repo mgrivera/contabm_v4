@@ -1,5 +1,6 @@
 ﻿
 
+import { Meteor } from 'meteor/meteor'
 import { Monedas } from '../../imports/collections/monedas';
 import { Companias } from '../../imports/collections/companias';
 import { CompaniaSeleccionada } from '../../imports/collections/companiaSeleccionada';

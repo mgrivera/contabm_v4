@@ -1,5 +1,6 @@
 
 
+import { Meteor } from 'meteor/meteor'
 import SimpleSchema from 'simpl-schema';
 import { CajaChica_Rubros_sql, CajaChica_CajasChicas_sql } from '../../../imports/sqlModels/bancos/cajasChicas'; 
 import { Proveedores_sql } from '../../../imports/sqlModels/bancos/proveedores'; 

@@ -1,5 +1,6 @@
 
 
+import { Meteor } from 'meteor/meteor'
 import { ParametrosNomina_sql } from '../../../server/imports/sqlModels/nomina/parametros/parametrosNomina'; 
 import { CompaniaSeleccionada } from '../../../imports/collections/companiaSeleccionada';
 import { Companias } from '../../../imports/collections/companias';

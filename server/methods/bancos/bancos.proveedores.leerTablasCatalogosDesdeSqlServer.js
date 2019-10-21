@@ -1,5 +1,6 @@
 
 
+import { Meteor } from 'meteor/meteor'
 import { CategoriasRetencion_sql } from '../../imports/sqlModels/bancos/categoriasRetencion'; 
 
 Meteor.methods(

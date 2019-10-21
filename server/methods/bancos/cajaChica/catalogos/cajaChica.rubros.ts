@@ -1,9 +1,7 @@
 
 
-
-
+import { Meteor } from 'meteor/meteor'
 import * as lodash from 'lodash'; 
-import SimpleSchema from 'simpl-schema';
 import { CajaChica_Rubros_sql } from '../../../../imports/sqlModels/bancos/cajasChicas'; 
 
 Meteor.methods(

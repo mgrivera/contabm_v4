@@ -1,5 +1,6 @@
 
 
+import { Meteor } from 'meteor/meteor'
 import { Monedas } from '../../../imports/collections/monedas';
 import * as lodash from 'lodash';
 declare const Async;                // pues no tenemos el 'type definition file' para 'meteorhacks:async' ...
