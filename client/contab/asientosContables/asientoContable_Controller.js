@@ -645,6 +645,7 @@ function ($scope, $stateParams, $state, $meteor, $modal, uiGridConstants) {
         showColumnFooter: true,
         enableCellEdit: false,
         enableCellEditOnFocus: true,
+        enableFiltering: true,
         enableRowSelection: true,
         enableRowHeaderSelection: false,
         multiSelect: false,
@@ -742,6 +743,7 @@ function ($scope, $stateParams, $state, $meteor, $modal, uiGridConstants) {
             name: 'docState',
             field: 'docState',
             displayName: '',
+            enableFiltering: false,
             cellTemplate:
             '<span ng-show="row.entity[col.field] == 0" class="fa fa-circle-thin" style="color: gray; font: xx-small; padding-top: 8px; "></span>' +
             '<span ng-show="row.entity[col.field] == 1" class="fa fa-asterisk" style="color: blue; font: xx-small; padding-top: 8px; "></span>' +
@@ -770,7 +772,7 @@ function ($scope, $stateParams, $state, $meteor, $modal, uiGridConstants) {
             field: 'cuentaContableID',
             displayName: 'Cuenta contable',
             width: "*",
-            enableFiltering: true,
+            enableFiltering: false,
             headerCellClass: 'ui-grid-leftCell',
             cellClass: 'ui-grid-leftCell',
             // cellFilter: 'cuentaContable_mostrarDescripcion',
@@ -857,6 +859,7 @@ function ($scope, $stateParams, $state, $meteor, $modal, uiGridConstants) {
             field: 'centroCosto',
             displayName: 'Centro de costo',
             width: "100",
+            enableFiltering: false,
             headerCellClass: 'ui-grid-leftCell',
             cellClass: 'ui-grid-leftCell',
             
@@ -874,6 +877,7 @@ function ($scope, $stateParams, $state, $meteor, $modal, uiGridConstants) {
         {
             name: 'delButton',
             displayName: '',
+            enableFiltering: false,
             cellTemplate: '<span ng-click="grid.appScope.deleteItem(row.entity)" class="fa fa-close redOnHover" style="padding-top: 8px; "></span>',
             enableCellEdit: false,
             enableSorting: false,
