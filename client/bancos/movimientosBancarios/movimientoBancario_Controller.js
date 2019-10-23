@@ -4,11 +4,14 @@ import angular from 'angular';
 import { Meteor } from 'meteor/meteor'
 import moment from 'moment';
 import lodash from 'lodash'; 
+import saveAs from 'save-as'
+
 import { DialogModal } from '/client/imports/general/genericUIBootstrapModal/angularGenericModal'; 
 
 import { Companias } from '/imports/collections/companias';
 import { CompaniaSeleccionada } from '/imports/collections/companiaSeleccionada';
 import { Chequeras } from '/imports/collections/bancos/chequeras'; 
+import { MovimientosBancarios } from '/imports/collections/bancos/movimientosBancarios'; 
 
 import "/client/imports/css/angularjs-ui-select.css"; 
 
@@ -31,13 +34,13 @@ function ($scope, $stateParams, $state, $meteor, $modal) {
     // leemos la compañía seleccionada
     $scope.helpers({
         companiaSeleccionada: () => {
-            let ciaContabSeleccionada = CompaniaSeleccionada.findOne({ userID: Meteor.userId() });
+            const ciaContabSeleccionada = CompaniaSeleccionada.findOne({ userID: Meteor.userId() });
             return Companias.findOne(ciaContabSeleccionada ? ciaContabSeleccionada.companiaID : -999,
                 { fields: { _id: 1, numero: 1, nombre: 1, nombreCorto: 1 } });
         },
         chequerasList: () => {
-            let ciaContabSeleccionada = CompaniaSeleccionada.findOne({ userID: Meteor.userId() });
-            let companiaSeleccionada = Companias.findOne(
+            const ciaContabSeleccionada = CompaniaSeleccionada.findOne({ userID: Meteor.userId() });
+            const companiaSeleccionada = Companias.findOne(
                 ciaContabSeleccionada ? ciaContabSeleccionada.companiaID : '-xyz', {
                     fields: { numero: 1, }
                 });
@@ -63,7 +66,7 @@ function ($scope, $stateParams, $state, $meteor, $modal) {
             Meteor.call('movBancos.leerProveedor', $scope.movimientoBancario.provClte, (err, result) => {
 
                 if (err) {
-                    let errorMessage = mensajeErrorDesdeMethod_preparar(err);
+                    const errorMessage = mensajeErrorDesdeMethod_preparar(err);
     
                     $scope.alerts.length = 0;
                     $scope.alerts.push({
@@ -169,7 +172,7 @@ function ($scope, $stateParams, $state, $meteor, $modal) {
         if (value == 'claveUnicaChequera' && $scope.movimientoBancario && $scope.movimientoBancario.claveUnicaChequera) {
             if ($scope.movimientoBancario.tipo && $scope.movimientoBancario.tipo === 'CH') {
                 // el último cheque usado en la chequera viene con la misma; intentamos asignar el próximo
-                let chequera = Chequeras.findOne({
+                const chequera = Chequeras.findOne({
                     numeroChequera: $scope.movimientoBancario.claveUnicaChequera
                 })
 
@@ -206,9 +209,9 @@ function ($scope, $stateParams, $state, $meteor, $modal) {
                 $scope.movimientoBancario.montoBase *= -1;
             }
 
-            let montoBase = $scope.movimientoBancario.montoBase ? $scope.movimientoBancario.montoBase : 0;
-            let comision = $scope.movimientoBancario.comision ? $scope.movimientoBancario.comision : 0;
-            let impuestos = $scope.movimientoBancario.impuestos ? $scope.movimientoBancario.impuestos : 0;
+            const montoBase = $scope.movimientoBancario.montoBase ? $scope.movimientoBancario.montoBase : 0;
+            const comision = $scope.movimientoBancario.comision ? $scope.movimientoBancario.comision : 0;
+            const impuestos = $scope.movimientoBancario.impuestos ? $scope.movimientoBancario.impuestos : 0;
 
             $scope.movimientoBancario.monto = montoBase + comision + impuestos;
         }
@@ -232,7 +235,7 @@ function ($scope, $stateParams, $state, $meteor, $modal) {
         Meteor.call('bancos.getProveedoresParaSelect2', where, (err, result) => {
 
             if (err) {
-                let errorMessage = mensajeErrorDesdeMethod_preparar(err);
+                const errorMessage = mensajeErrorDesdeMethod_preparar(err);
 
                 $scope.alerts.length = 0;
                 $scope.alerts.push({
@@ -454,11 +457,11 @@ function ($scope, $stateParams, $state, $meteor, $modal) {
         $scope.showProgress = true;
 
         // obtenemos un clone de los datos a guardar ...
-        let editedItem = lodash.cloneDeep($scope.movimientoBancario);
+        const editedItem = lodash.cloneDeep($scope.movimientoBancario);
 
         // nótese como validamos cada item antes de intentar guardar en el servidor
         let isValid = false;
-        let errores = [];
+        const errores = [];
 
         if (editedItem.docState != 3) {
             isValid = MovimientosBancarios.simpleSchema().namedContext().validate(editedItem);
@@ -517,7 +520,7 @@ function ($scope, $stateParams, $state, $meteor, $modal) {
                 },
                 function (err) {
 
-                    let errorMessage = mensajeErrorDesdeMethod_preparar(err);
+                    const errorMessage = mensajeErrorDesdeMethod_preparar(err);
 
                     $scope.alerts.length = 0;
                     $scope.alerts.push({
@@ -540,7 +543,7 @@ function ($scope, $stateParams, $state, $meteor, $modal) {
 
         if ($scope.id == "0") {
 
-            let usuario = Meteor.user();
+            const usuario = Meteor.user();
 
             $scope.movimientoBancario = {};
             $scope.movimientoBancario = {
@@ -578,7 +581,7 @@ function ($scope, $stateParams, $state, $meteor, $modal) {
         Meteor.call('movimientoBancario.leerByID.desdeSql', pk, (err, result) => {
 
             if (err) {
-                let errorMessage = mensajeErrorDesdeMethod_preparar(err);
+                const errorMessage = mensajeErrorDesdeMethod_preparar(err);
 
                 $scope.alerts.length = 0;
                 $scope.alerts.push({
@@ -639,4 +642,91 @@ function ($scope, $stateParams, $state, $meteor, $modal) {
             $scope.$apply();
         })
     }
+
+    $scope.exportarMovimientoBancario = function() { 
+
+        // grabamos el movimiento bancario como un json al pc del usuario 
+        try {
+            const movimientoBancario = lodash.cloneDeep($scope.movimientoBancario);
+
+            // el proveedor puede o no venir 
+            const proveedorID = movimientoBancario.provClte ? movimientoBancario.provClte : -1; 
+
+            exportToTxt_leerInfoCuentaBancaria(movimientoBancario.claveUnicaChequera, proveedorID)
+            .then((result) => { 
+
+                // agregamos datos al movimiento bancario que fueron leídos desde el server 
+                delete movimientoBancario.provClte; 
+                
+                movimientoBancario.cuentaBancaria = result.cuentaBancariaInfo.cuentaBancaria; 
+
+                movimientoBancario.compania = { 
+                    id: result.proveedorInfo.proveedor, 
+                    nombre: result.proveedorInfo.nombre,  
+                    abreviatura: result.proveedorInfo.abreviatura, 
+                }; 
+
+                movimientoBancario.moneda = { 
+                    id: result.cuentaBancariaInfo.moneda, 
+                    descripcion: result.cuentaBancariaInfo.monedaDescripcion,  
+                    signo: result.cuentaBancariaInfo.monedaSimbolo, 
+                }; 
+
+                movimientoBancario.banco = { 
+                    id: result.cuentaBancariaInfo.banco, 
+                    nombre: result.cuentaBancariaInfo.bancoNombre,  
+                    nombreCorto: result.cuentaBancariaInfo.bancoNombreCorto, 
+                    abreviatura: result.cuentaBancariaInfo.bancoAbreviatura, 
+                }
+
+                var blob = new Blob([JSON.stringify(movimientoBancario)], {type: "text/plain;charset=utf-8"});
+                saveAs(blob, "movimiento bancario");
+            })
+            .catch((err) => { 
+
+                const errorMessage = mensajeErrorDesdeMethod_preparar(err);
+
+                $scope.alerts.length = 0;
+                $scope.alerts.push({
+                    type: 'danger',
+                    msg: errorMessage
+                });
+
+                $scope.showProgress = false;
+                $scope.$apply();
+
+                return;
+            });
+        }
+        catch(err) {
+            const message = err.message ? err.message : err.toString();
+
+            $scope.alerts.length = 0;
+            $scope.alerts.push({
+                type: 'danger',
+                msg: message
+            });
+
+            $scope.showProgress = false;
+            $scope.$apply();
+
+            return;
+        }
+    }
 }])
+
+
+// -----------------------------------------------------------------------------------------------
+// exportar archivo txt (json): para ejecutar el método que regresa la info de la cuenta bancaria 
+function exportToTxt_leerInfoCuentaBancaria(chequeraID, proveedorID) { 
+    return new Promise((resolve, reject) => { 
+        Meteor.call('bancos.movBanc.leerInfo.exportarTxt', chequeraID, proveedorID, (err, result) => {
+
+            if (err) {
+                reject(err); 
+            }
+    
+            resolve(result); 
+        })
+    })
+}

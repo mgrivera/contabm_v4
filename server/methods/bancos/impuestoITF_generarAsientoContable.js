@@ -12,6 +12,7 @@ import { Bancos } from '/imports/collections/bancos/bancos';
 import { ParametrosBancos } from '/imports/collections/bancos/parametrosBancos'; 
 import { Chequeras } from '/imports/collections/bancos/chequeras'; 
 import { ParametrosGlobalBancos } from '/imports/collections/bancos/parametrosGlobalBancos'; 
+import { MovimientosBancarios } from '/imports/collections/bancos/movimientosBancarios'; 
 
 import { AsientosContables_sql, dAsientosContables_sql } from '/server/imports/sqlModels/contab/asientosContables'; 
 

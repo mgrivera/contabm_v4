@@ -1,8 +1,12 @@
 
+
+import angular from 'angular';
 import { DialogModal } from '/client/imports/general/genericUIBootstrapModal/angularGenericModal'; 
 
 import { Companias } from '/imports/collections/companias';
 import { CompaniaSeleccionada } from '/imports/collections/companiaSeleccionada';
+import { MovimientosBancarios } from '/imports/collections/bancos/movimientosBancarios'; 
+
 import { Filtros } from '/imports/collections/general/filtros'; 
 
 angular.module("contabm").controller("Bancos_ImpuestoITF_resultados_Controller",

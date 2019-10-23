@@ -11,6 +11,7 @@ import { Bancos } from '/imports/collections/bancos/bancos';
 import { Chequeras } from '/imports/collections/bancos/chequeras'; 
 import { MovimientosBancarios_sql } from '/server/imports/sqlModels/bancos/movimientosBancarios'; 
 import { Chequeras_sql } from '/server/imports/sqlModels/bancos/movimientosBancarios'; 
+import { MovimientosBancarios } from '/imports/collections/bancos/movimientosBancarios'; 
 
 Meteor.methods(
 {

@@ -5,6 +5,7 @@ import moment from 'moment';
 
 import { TimeOffset } from '/globals/globals'; 
 import { MovimientosBancarios_sql } from '/server/imports/sqlModels/bancos/movimientosBancarios'; 
+import { MovimientosBancarios } from '/imports/collections/bancos/movimientosBancarios'; 
 
 Meteor.methods(
 {

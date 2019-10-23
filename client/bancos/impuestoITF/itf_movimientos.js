@@ -1,9 +1,12 @@
 
 
+import angular from 'angular';
 import lodash from 'lodash'; 
 
 import { Companias } from '/imports/collections/companias';
 import { CompaniaSeleccionada } from '/imports/collections/companiaSeleccionada';
+
+import { MovimientosBancarios } from '/imports/collections/bancos/movimientosBancarios'; 
 
 angular.module("contabm").controller("Bancos_ImpuestoITF_Movimientos_Controller",
 ['$scope', '$meteor', '$state', 'uiGridConstants', function ($scope, $meteor, $state, uiGridConstants) {

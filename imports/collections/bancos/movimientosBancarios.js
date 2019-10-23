@@ -4,9 +4,9 @@ import SimpleSchema from 'simpl-schema';
 
 // solo para registrar movimientos bancarios para el proceso de agregar itf a movimientos que existen
 
-MovimientosBancarios = new Mongo.Collection("movimientosBancarios");
+export const MovimientosBancarios = new Mongo.Collection("movimientosBancarios");
 
-let schema = new SimpleSchema({
+const schema = new SimpleSchema({
 
     // aunque es mongo este valor nunca debería faltar, para validar lo que leemos desde sql server
     // debemos  ponerlo como 'opcional'

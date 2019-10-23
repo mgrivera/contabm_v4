@@ -66,7 +66,7 @@ Meteor.methods(
                 throw new Meteor.Error(error && error.message ? error.message : error.toString());
             }
                 
-            let items = []; 
+            const items = []; 
 
             for (const item of cuentasBancarias) {
                 items.push(item); 

@@ -7,6 +7,7 @@ import { CuentasBancarias_sql } from '/server/imports/sqlModels/bancos/movimient
 import { MovimientosBancarios_sql } from '/server/imports/sqlModels/bancos/movimientosBancarios'; 
 import { ParametrosGlobalBancos } from '/imports/collections/bancos/parametrosGlobalBancos'; 
 import { Chequeras_sql } from '/server/imports/sqlModels/bancos/movimientosBancarios'; 
+import { MovimientosBancarios } from '/imports/collections/bancos/movimientosBancarios'; 
 
 Meteor.methods(
 {
