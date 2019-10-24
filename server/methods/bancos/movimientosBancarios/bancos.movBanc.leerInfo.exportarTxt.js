@@ -6,11 +6,17 @@ import { Match } from 'meteor/check'
 import { sequelize } from '/server/sqlModels/_globals/_loadThisFirst/_globals';
 
 import { Proveedores_sql } from '/server/imports/sqlModels/bancos/proveedores'; 
+import { AsientosContables_sql } from '/server/imports/sqlModels/contab/asientosContables'; 
+
+// para usar los operators en sequelize 
+import Sequelize from 'sequelize';
+const Op = Sequelize.Op
 
 Meteor.methods(
 {
-    "bancos.movBanc.leerInfo.exportarTxt": async function (chequeraID, proveedorID)
+    "bancos.movBanc.leerInfo.exportarTxt": async function (movimientoBancarioID, chequeraID, proveedorID)
     {
+        check(movimientoBancarioID, Match.Integer);
         check(chequeraID, Match.Integer);
         check(proveedorID, Match.Integer);
 
@@ -54,13 +60,33 @@ Meteor.methods(
             throw new Meteor.Error(error && error.message ? error.message : error.toString());
         }
 
+
+        // ----------------------------------------------------------------------------------------------------
+        // ahora leemos los datos del asiento contable asociado al movimiento bancario; puede no haber uno ...  
+        let asientoInfo = null; 
+
+        try { 
+            asientoInfo = await AsientosContables_sql.findOne({ 
+                where: { 
+                    [Op.and]: [
+                        { 'provieneDe': { [Op.eq]: 'Bancos' }},       
+                        { 'provieneDe_id': { [Op.eq]: movimientoBancarioID }}       
+                    ]
+                }, 
+                attributes: [ 'factorDeCambio', ], 
+            });
+        } catch(error) { 
+            throw new Meteor.Error(error && error.message ? error.message : error.toString());
+        }
+
         const message = `Ok, los datos de la cuenta bancaria fueron leídos en forma correcta.`;
 
         return {
             error: false,
             message: message,
             cuentaBancariaInfo: cuentaBancariaInfo, 
-            proveedorInfo: proveedorInfo.dataValues, 
+            proveedorInfo: proveedorInfo && proveedorInfo.dataValues ? proveedorInfo.dataValues : {},  
+            asientoInfo: asientoInfo && asientoInfo.dataValues ? asientoInfo.dataValues : {}, 
         };
     }
 })

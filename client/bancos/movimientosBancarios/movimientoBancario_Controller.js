@@ -652,7 +652,7 @@ function ($scope, $stateParams, $state, $meteor, $modal) {
             // el proveedor puede o no venir 
             const proveedorID = movimientoBancario.provClte ? movimientoBancario.provClte : -1; 
 
-            exportToTxt_leerInfoCuentaBancaria(movimientoBancario.claveUnicaChequera, proveedorID)
+            exportToTxt_leerInfoCuentaBancaria(movimientoBancario.claveUnica, movimientoBancario.claveUnicaChequera, proveedorID)
             .then((result) => { 
 
                 // agregamos datos al movimiento bancario que fueron leídos desde el server 
@@ -677,6 +677,10 @@ function ($scope, $stateParams, $state, $meteor, $modal) {
                     nombre: result.cuentaBancariaInfo.bancoNombre,  
                     nombreCorto: result.cuentaBancariaInfo.bancoNombreCorto, 
                     abreviatura: result.cuentaBancariaInfo.bancoAbreviatura, 
+                }
+
+                if (result.asientoInfo) { 
+                    movimientoBancario.factorCambio = result.asientoInfo.factorDeCambio; 
                 }
 
                 var blob = new Blob([JSON.stringify(movimientoBancario)], {type: "text/plain;charset=utf-8"});
@@ -718,9 +722,9 @@ function ($scope, $stateParams, $state, $meteor, $modal) {
 
 // -----------------------------------------------------------------------------------------------
 // exportar archivo txt (json): para ejecutar el método que regresa la info de la cuenta bancaria 
-function exportToTxt_leerInfoCuentaBancaria(chequeraID, proveedorID) { 
+function exportToTxt_leerInfoCuentaBancaria(movimientoBancarioID, chequeraID, proveedorID) { 
     return new Promise((resolve, reject) => { 
-        Meteor.call('bancos.movBanc.leerInfo.exportarTxt', chequeraID, proveedorID, (err, result) => {
+        Meteor.call('bancos.movBanc.leerInfo.exportarTxt', movimientoBancarioID, chequeraID, proveedorID, (err, result) => {
 
             if (err) {
                 reject(err); 

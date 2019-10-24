@@ -1,6 +1,7 @@
 
 
 import { Meteor } from 'meteor/meteor'
+import { check } from 'meteor/check'
 import lodash from 'lodash';
 import moment from 'moment';
 
