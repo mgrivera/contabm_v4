@@ -1,5 +1,7 @@
 
 
+import angular from 'angular'; 
+
 angular.module("contabm").config(['$urlRouterProvider', '$stateProvider', '$locationProvider',
   function ($urlRouterProvider, $stateProvider, $locationProvider) {
 
@@ -144,6 +146,11 @@ angular.module("contabm").config(['$urlRouterProvider', '$stateProvider', '$loca
             url: '/diasFeriados',
             templateUrl: 'client/nomina/catalogos/diasFeriados/diasFeriados.html',
             controller: 'Catalogos_Nomina_DiasFeriados_Controller',
+            parent: 'nomina.parametros'
+        })
+        .state('nomina.parametros.definicionUtilidades', {
+            url: '/definicionUtilidades',
+            template: `<nomina-parametros-definicion-utilidades titulo-pagina="'Nómina - Parámetros - Definición de utilidades'"/>`,
             parent: 'nomina.parametros'
         })
 

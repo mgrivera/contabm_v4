@@ -1,5 +1,7 @@
 
 
+import angular from 'angular'; 
+
 angular.module("contabm").config(['$urlRouterProvider', '$stateProvider', '$locationProvider',
   function ($urlRouterProvider, $stateProvider, $locationProvider) {
 

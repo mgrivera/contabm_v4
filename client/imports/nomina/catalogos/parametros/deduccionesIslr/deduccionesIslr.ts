@@ -10,9 +10,11 @@ import { nomina_deduccionesIslr_schema } from '../../../../../../imports/collect
 import { Companias } from '../../../../../../imports/collections/companias';
 import { CompaniaSeleccionada } from '../../../../../../imports/collections/companiaSeleccionada';
 
-// Este controller (angular) se carga con la página primera del programa
-angular.module("contabm.nomina.catalogos").controller("catalogos_nomina_parametros_deduccionesIslr_Controller",
-['$scope', function ($scope) {
+// importamos el template propio de este controller 
+import '/client/imports/nomina/catalogos/parametros/deduccionesIslr/deduccionesIslr.html'; 
+
+export default angular.module("contabm.nomina.catalogos.parametros.deduccionesIslr", [ ])
+                      .controller("catalogos_nomina_parametros_deduccionesIslr_Controller", ['$scope', function ($scope) {
 
     $scope.showProgress = false;
 

@@ -7,9 +7,12 @@ import { Meteor } from 'meteor/meteor';
 import { mensajeErrorDesdeMethod_preparar } from '../../../../../imports/clientGlobalMethods/mensajeErrorDesdeMethod_preparar'; 
 import { nominaParametrosSalarioMinimo_schema } from '../../../../../../imports/collections/nomina/parametros.nomina.salarioMinimo'; 
 
+// importamos el template propio de este controller 
+import '/client/imports/nomina/catalogos/parametros/salarioMinimo/salarioMinimo.html'; 
+
 // Este controller (angular) se carga con la página primera del programa
-angular.module("contabm.nomina.catalogos").controller("catalogos_nomina_parametros_salarioMinimo_Controller",
-['$scope', function ($scope) {
+export default angular.module("contabm.nomina.catalogos.parametros.salarioMinimo", [ ])
+                      .controller("catalogos_nomina_parametros_salarioMinimo_Controller", ['$scope', function ($scope) {
 
     $scope.showProgress = false;
 

@@ -13,9 +13,11 @@ import { Monedas } from '../../../../../../imports/collections/monedas';
 import { TiposAsientoContable } from '../../../../../../imports/collections/contab/tiposAsientoContable'; 
 import { CuentasContablesClient } from 'client/imports/clientCollections/cuentasContables'; 
 
-// Este controller (angular) se carga con la página primera del programa
-angular.module("contabm.nomina.catalogos").controller("catalogos_nomina_parametros_parametrosNomina_Controller",
-['$scope', function ($scope) {
+// importamos el template propio de este controller 
+import '/client/imports/nomina/catalogos/parametros/parametrosNomina/parametrosNomina.html'; 
+
+export default angular.module("contabm.nomina.catalogos.parametros.parametrosNomina", [ ])
+                      .controller("catalogos_nomina_parametros_parametrosNomina_Controller", ['$scope', function ($scope) {
 
     $scope.showProgress = false;
 

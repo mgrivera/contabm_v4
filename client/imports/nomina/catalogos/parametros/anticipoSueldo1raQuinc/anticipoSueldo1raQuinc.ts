@@ -12,9 +12,12 @@ import { nomina_DefinicionAnticipos_empleados_schema } from '../../../../../../i
 import { Companias } from '../../../../../../imports/collections/companias';
 import { CompaniaSeleccionada } from '../../../../../../imports/collections/companiaSeleccionada';
 
-// Este controller (angular) se carga con la página primera del programa
-angular.module("contabm.nomina.catalogos").controller("catalogos_nomina_parametros_anticipoSueldo1raQuinc_Controller",
-['$scope', '$modal', function ($scope, $modal) {
+// importamos el template propio de este controller 
+import '/client/imports/nomina/catalogos/parametros/anticipoSueldo1raQuinc/anticipoSueldo1raQuinc.html'; 
+
+export default angular.module("contabm.nomina.catalogos.parametros.anticipoSueldo1raQuincena", [ ])
+                      .controller("catalogos_nomina_parametros_anticipoSueldo1raQuinc_Controller",
+                      ['$scope', '$modal', function ($scope, $modal) {
 
     $scope.showProgress = false;
 

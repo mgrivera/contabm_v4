@@ -1,2 +1,7 @@
 
-angular.module('contabm.nomina.catalogos', []); 
+
+import angular from 'angular';
+
+import NominaCatalogosParametros from '/client/imports/nomina/catalogos/parametros/angular.module.nomina.catalogos.parametros'; 
+
+angular.module('contabm.nomina.catalogos', [ NominaCatalogosParametros.name ]); 
