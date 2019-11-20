@@ -16,7 +16,7 @@
     "@types/meteor": "^1.4.14",
     "@types/sequelize": "^4.27.14",
     "@uirouter/angularjs": "0.3.2",
-    "angular": "1.7.5",
+    "angular": "1.7.9",
     "angular-meteor": "1.3.9",
     "angular-sanitize": "1.7.5",
     "angular-ui-grid": "4.8.2",
