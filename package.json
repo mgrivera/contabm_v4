@@ -32,7 +32,7 @@
     "get-stream": "4.1.0",
     "isomorphic-fetch": "2.2.1",
     "jszip": "2.0.0",
-    "lodash": "4.17.13",
+    "lodash": "4.17.21",
     "meteor-node-stubs": "0.2.4",
     "mkdirp": "0.5.1",
     "moment": "2.20.0",
