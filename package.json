@@ -61,7 +61,7 @@
     "typeface-roboto": "0.0.54",
     "ui-select": "0.19.8",
     "written-number": "^0.8.1",
-    "xlsx": "0.9.13",
+    "xlsx": "0.17.0",
     "xlsx-injector": "0.0.3",
     "yup": "0.27.0"
   },
