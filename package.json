@@ -31,7 +31,7 @@
     "formik": "1.5.8",
     "get-stream": "4.1.0",
     "isomorphic-fetch": "2.2.1",
-    "jszip": "2.0.0",
+    "jszip": "2.7.0",
     "lodash": "4.17.13",
     "meteor-node-stubs": "0.2.4",
     "mkdirp": "0.5.1",
